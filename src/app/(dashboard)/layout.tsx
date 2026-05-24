@@ -1,3 +1,4 @@
+import React from 'react'
 import { Sidebar } from '@/components/shared/sidebar'
 import { Header } from '@/components/shared/header'
 
