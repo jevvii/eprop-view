@@ -12,7 +12,11 @@ export function useProjects() {
     queryFn: async (): Promise<Project[]> => {
       const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
       if (error) throw error
-      return data || []
+      return (data || []).map((p) => ({
+        ...p,
+        latitude: p.geom?.coordinates?.[1] ?? null,
+        longitude: p.geom?.coordinates?.[0] ?? null,
+      }))
     },
   })
 }
@@ -74,7 +78,11 @@ export function useRiskHotspots(projectId?: string) {
       if (projectId) query = query.eq('project_id', projectId)
       const { data, error } = await query
       if (error) throw error
-      return data || []
+      return (data || []).map((h) => ({
+        ...h,
+        latitude: h.geom?.coordinates?.[1] ?? null,
+        longitude: h.geom?.coordinates?.[0] ?? null,
+      }))
     },
   })
 }
@@ -109,11 +117,14 @@ export function useGeospatialZones(projectId?: string) {
   return useQuery({
     queryKey: ['geospatial-zones', projectId],
     queryFn: async (): Promise<GeospatialZone[]> => {
-      let query = supabase.from('geospatial_zones').select('*')
+      let query = supabase.from('geospatial_zones').select('*').order('name', { ascending: true })
       if (projectId) query = query.eq('project_id', projectId)
       const { data, error } = await query
       if (error) throw error
-      return data || []
+      return (data || []).map((z) => ({
+        ...z,
+        coordinates: z.geom?.coordinates?.[0] ?? [],
+      }))
     },
   })
 }
