@@ -131,6 +131,31 @@ CREATE INDEX risk_hotspots_geom_idx ON risk_hotspots USING GIST (geom);
 CREATE INDEX geospatial_zones_geom_idx ON geospatial_zones USING GIST (geom);
 
 -- =================================================================
+-- BTREE INDEXES
+-- =================================================================
+
+CREATE INDEX inspections_project_id_idx ON inspections(project_id);
+CREATE INDEX inspections_lead_inspector_id_idx ON inspections(lead_inspector_id);
+CREATE INDEX inspection_images_inspection_id_idx ON inspection_images(inspection_id);
+CREATE INDEX reports_project_id_idx ON reports(project_id);
+CREATE INDEX reports_inspection_id_idx ON reports(inspection_id);
+CREATE INDEX reports_lead_inspector_id_idx ON reports(lead_inspector_id);
+CREATE INDEX environmental_risks_project_id_idx ON environmental_risks(project_id);
+CREATE INDEX risk_hotspots_project_id_idx ON risk_hotspots(project_id);
+CREATE INDEX maintenance_priorities_project_id_idx ON maintenance_priorities(project_id);
+CREATE INDEX maintenance_priorities_assigned_to_idx ON maintenance_priorities(assigned_to);
+CREATE INDEX damage_trends_project_id_idx ON damage_trends(project_id);
+CREATE INDEX geospatial_zones_project_id_idx ON geospatial_zones(project_id);
+
+CREATE INDEX projects_status_idx ON projects(status);
+CREATE INDEX inspections_status_idx ON inspections(status);
+CREATE INDEX reports_status_idx ON reports(status);
+CREATE INDEX reports_date_idx ON reports(date);
+CREATE INDEX maintenance_priorities_status_idx ON maintenance_priorities(status);
+CREATE INDEX maintenance_priorities_due_date_idx ON maintenance_priorities(due_date);
+CREATE INDEX inspections_inspection_date_idx ON inspections(inspection_date);
+
+-- =================================================================
 -- ROW LEVEL SECURITY
 -- =================================================================
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -206,17 +231,54 @@ CREATE TRIGGER inspections_risk_level_trigger
   BEFORE INSERT OR UPDATE ON inspections
   FOR EACH ROW EXECUTE FUNCTION calculate_risk_level();
 
--- Auto-generate report_id atomically
+-- NOTE: inspections.risk_level is auto-derived from risk_score by the trigger above.
+-- Client-provided values for risk_level are ignored on insert/update.
+
+-- Auto-generate report_id safely using a sequence
+CREATE SEQUENCE reports_id_seq START 1;
+
 CREATE OR REPLACE FUNCTION generate_report_id()
 RETURNS text AS $$
-DECLARE
-  next_num int;
 BEGIN
-  SELECT COALESCE(MAX(CAST(SUBSTRING(report_id FROM 5) AS int)), 0) + 1
-  INTO next_num FROM reports;
-  RETURN 'RPT-' || LPAD(next_num::text, 3, '0');
+  RETURN 'RPT-' || LPAD(nextval('reports_id_seq')::text, 3, '0');
 END;
 $$ LANGUAGE plpgsql;
+
+-- Add trigger to auto-populate report_id
+CREATE TRIGGER reports_report_id_trigger
+  BEFORE INSERT ON reports
+  FOR EACH ROW
+  WHEN (NEW.report_id IS NULL OR NEW.report_id = '')
+  EXECUTE FUNCTION generate_report_id();
+
+-- Auto-update updated_at timestamp
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER projects_updated_at_trigger
+  BEFORE UPDATE ON projects
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER inspections_updated_at_trigger
+  BEFORE UPDATE ON inspections
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER reports_updated_at_trigger
+  BEFORE UPDATE ON reports
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER environmental_risks_updated_at_trigger
+  BEFORE UPDATE ON environmental_risks
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER maintenance_priorities_updated_at_trigger
+  BEFORE UPDATE ON maintenance_priorities
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Geospatial: find projects within radius
 CREATE OR REPLACE FUNCTION get_projects_within_radius(
