@@ -147,6 +147,7 @@ CREATE INDEX maintenance_priorities_assigned_to_idx ON maintenance_priorities(as
 CREATE INDEX damage_trends_project_id_idx ON damage_trends(project_id);
 CREATE INDEX geospatial_zones_project_id_idx ON geospatial_zones(project_id);
 
+CREATE INDEX projects_created_by_idx ON projects(created_by);
 CREATE INDEX projects_status_idx ON projects(status);
 CREATE INDEX inspections_status_idx ON inspections(status);
 CREATE INDEX reports_status_idx ON reports(status);
@@ -238,9 +239,10 @@ CREATE TRIGGER inspections_risk_level_trigger
 CREATE SEQUENCE reports_id_seq START 1;
 
 CREATE OR REPLACE FUNCTION generate_report_id()
-RETURNS text AS $$
+RETURNS trigger AS $$
 BEGIN
-  RETURN 'RPT-' || LPAD(nextval('reports_id_seq')::text, 3, '0');
+  NEW.report_id := 'RPT-' || LPAD(nextval('reports_id_seq')::text, 3, '0');
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
