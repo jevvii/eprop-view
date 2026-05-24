@@ -29,7 +29,11 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (error) {
+    console.error('Auth error:', error.message)
+  }
 
   return { supabase, supabaseResponse, user }
 }
