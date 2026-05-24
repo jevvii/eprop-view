@@ -4,14 +4,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
 import type { Report, Inspection, EnvironmentalRisk } from '@/app/types'
 
-const supabase = createClient()
+function getClient() {
+  return createClient()
+}
 
 export function useCreateInspection() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (inspection: Omit<Inspection, 'id' | 'created_at' | 'updated_at' | 'risk_level' | 'lead_inspector_id'>) => {
-      const { data, error } = await supabase.from('inspections').insert(inspection).select().single()
+      const { data, error } = await getClient().from('inspections').insert(inspection).select().single()
       if (error) throw error
       return data
     },
@@ -27,7 +29,7 @@ export function useCreateReport() {
 
   return useMutation({
     mutationFn: async (report: Omit<Report, 'id' | 'report_id' | 'created_at' | 'updated_at' | 'lead_inspector_id'>) => {
-      const { data, error } = await supabase.rpc('create_report_with_id', { report_data: report })
+      const { data, error } = await getClient().rpc('create_report_with_id', { report_data: report })
       if (error) throw error
       return data
     },
@@ -43,7 +45,7 @@ export function useUpdateEnvironmentalRisk() {
 
   return useMutation({
     mutationFn: async ({ id, project_id: _project_id, ...updates }: Partial<EnvironmentalRisk> & { id: string; project_id: string }) => {
-      const { data, error } = await supabase.from('environmental_risks').update(updates).eq('id', id).select().single()
+      const { data, error } = await getClient().from('environmental_risks').update(updates).eq('id', id).select().single()
       if (error) throw error
       return data
     },
