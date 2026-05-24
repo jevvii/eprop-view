@@ -1,5 +1,16 @@
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/app/lib/supabase/middleware'
+
+function copyHeaders(from: Response, to: NextResponse): NextResponse {
+  from.headers.forEach((value, key) => {
+    if (key === 'set-cookie') {
+      to.headers.append('set-cookie', value)
+    } else {
+      to.headers.set(key, value)
+    }
+  })
+  return to
+}
 
 export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
@@ -10,12 +21,16 @@ export async function middleware(request: NextRequest) {
 
   // Redirect unauthenticated users from protected routes to login
   if (isProtectedRoute && !user) {
-    return Response.redirect(new URL('/login', request.url))
+    const redirectUrl = new URL('/login', request.url)
+    const redirectResponse = NextResponse.redirect(redirectUrl)
+    return copyHeaders(supabaseResponse, redirectResponse)
   }
 
   // Redirect authenticated users away from auth pages
   if (isAuthRoute && user) {
-    return Response.redirect(new URL('/dashboard', request.url))
+    const redirectUrl = new URL('/dashboard', request.url)
+    const redirectResponse = NextResponse.redirect(redirectUrl)
+    return copyHeaders(supabaseResponse, redirectResponse)
   }
 
   return supabaseResponse
