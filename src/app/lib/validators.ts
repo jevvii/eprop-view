@@ -2,22 +2,22 @@ import { z } from 'zod'
 
 export const inspectionFormSchema = z.object({
   project_id: z.string().uuid('Select a valid project'),
-  inspection_date: z.string().min(1, 'Date is required'),
-  location: z.string().min(1, 'Location is required'),
+  inspection_date: z.string().refine((d) => !isNaN(Date.parse(d)), { message: 'Invalid date' }),
+  location: z.string().min(1, 'Location is required').trim().max(200),
   risk_score: z.coerce.number().min(0).max(10, 'Risk score must be between 0 and 10'),
   status: z.enum(['pending', 'in_progress', 'completed', 'requires_followup']),
-  notes: z.string().default(''),
+  notes: z.string().max(2000).default(''),
 })
 
 export const reportFormSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().min(1, 'Title is required').trim().max(200),
   project_id: z.string().uuid(),
   inspection_id: z.string().uuid().optional(),
-  date: z.string().min(1, 'Date is required'),
-  location: z.string().min(1, 'Location is required'),
+  date: z.string().refine((d) => !isNaN(Date.parse(d)), { message: 'Invalid date' }),
+  location: z.string().min(1, 'Location is required').trim().max(200),
   status: z.enum(['open', 'in_review', 'critical', 'completed']),
   risk_score: z.coerce.number().min(0).max(10),
-  key_findings: z.string().default(''),
+  key_findings: z.string().max(2000).default(''),
 })
 
 export const environmentalRiskSchema = z.object({
@@ -25,5 +25,5 @@ export const environmentalRiskSchema = z.object({
   soil_liquefaction_risk: z.enum(['zone_a', 'zone_b', 'zone_c', 'none']),
   erosion_potential: z.enum(['severe', 'moderate', 'low', 'negligible']),
   overall_risk_score: z.coerce.number().min(0).max(10),
-  additional_analysis: z.string().default(''),
+  additional_analysis: z.string().max(2000).default(''),
 })
