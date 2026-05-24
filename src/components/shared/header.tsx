@@ -2,6 +2,8 @@ import { verifySession } from '@/app/lib/dal'
 
 export async function Header() {
   const session = await verifySession()
+  const email = session?.email ?? ''
+  const initial = email[0]?.toUpperCase() ?? 'U'
 
   // Get current page from URL (simplified - in real app pass as prop)
   const currentPage = 'Dashboard'
@@ -15,9 +17,9 @@ export async function Header() {
       </div>
       <div className="flex items-center gap-2.5 text-sm text-slate-600">
         <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold">
-          {session.email?.[0]?.toUpperCase() || 'U'}
+          {initial}
         </div>
-        <span className="font-medium">{session.email}</span>
+        <span className="font-medium">{email}</span>
       </div>
     </header>
   )
