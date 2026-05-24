@@ -7,13 +7,23 @@ export const verifySession = cache(async () => {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
 
+  if (error) {
+    console.error('Auth error:', error.message)
+  }
+
   if (error || !user) {
     redirect('/login')
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', user.id)
+    .single()
+
   return {
     userId: user.id,
-    role: user.user_metadata?.role as string,
-    email: user.email as string,
+    role: profile?.role ?? 'viewer',
+    email: user.email ?? '',
   }
 })
