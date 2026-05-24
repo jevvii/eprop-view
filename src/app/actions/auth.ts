@@ -54,7 +54,7 @@ export async function signup(prevState: unknown, formData: FormData) {
     return { error: validated.error.issues[0].message }
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: validated.data.email,
     password: validated.data.password,
     options: {
@@ -69,10 +69,9 @@ export async function signup(prevState: unknown, formData: FormData) {
   }
 
   // Create profile entry with role
-  const { data: { user } } = await supabase.auth.getUser()
-  if (user) {
+  if (data?.user) {
     await supabase.from('profiles').insert({
-      id: user.id,
+      id: data.user.id,
       role: validated.data.role,
     })
   }
