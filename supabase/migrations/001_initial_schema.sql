@@ -171,41 +171,41 @@ ALTER TABLE damage_trends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE geospatial_zones ENABLE ROW LEVEL SECURITY;
 
 -- Admin: full access to all tables
-CREATE POLICY "admin_all_profiles" ON profiles FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
-CREATE POLICY "admin_all_projects" ON projects FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
-CREATE POLICY "admin_all_inspections" ON inspections FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
-CREATE POLICY "admin_all_inspection_images" ON inspection_images FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
-CREATE POLICY "admin_all_reports" ON reports FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
-CREATE POLICY "admin_all_env_risks" ON environmental_risks FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
-CREATE POLICY "admin_all_hotspots" ON risk_hotspots FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
-CREATE POLICY "admin_all_maintenance" ON maintenance_priorities FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
-CREATE POLICY "admin_all_trends" ON damage_trends FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
-CREATE POLICY "admin_all_zones" ON geospatial_zones FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');
+CREATE POLICY "admin_all_profiles" ON profiles FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+CREATE POLICY "admin_all_projects" ON projects FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+CREATE POLICY "admin_all_inspections" ON inspections FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+CREATE POLICY "admin_all_inspection_images" ON inspection_images FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+CREATE POLICY "admin_all_reports" ON reports FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+CREATE POLICY "admin_all_env_risks" ON environmental_risks FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+CREATE POLICY "admin_all_hotspots" ON risk_hotspots FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+CREATE POLICY "admin_all_maintenance" ON maintenance_priorities FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+CREATE POLICY "admin_all_trends" ON damage_trends FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+CREATE POLICY "admin_all_zones" ON geospatial_zones FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
 
 -- Viewer: read-only on all tables
-CREATE POLICY "viewer_select_profiles" ON profiles FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
-CREATE POLICY "viewer_select_projects" ON projects FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
-CREATE POLICY "viewer_select_inspections" ON inspections FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
-CREATE POLICY "viewer_select_images" ON inspection_images FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
-CREATE POLICY "viewer_select_reports" ON reports FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
-CREATE POLICY "viewer_select_env_risks" ON environmental_risks FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
-CREATE POLICY "viewer_select_hotspots" ON risk_hotspots FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
-CREATE POLICY "viewer_select_maintenance" ON maintenance_priorities FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
-CREATE POLICY "viewer_select_trends" ON damage_trends FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
-CREATE POLICY "viewer_select_zones" ON geospatial_zones FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'viewer');
+CREATE POLICY "viewer_select_profiles" ON profiles FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
+CREATE POLICY "viewer_select_projects" ON projects FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
+CREATE POLICY "viewer_select_inspections" ON inspections FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
+CREATE POLICY "viewer_select_images" ON inspection_images FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
+CREATE POLICY "viewer_select_reports" ON reports FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
+CREATE POLICY "viewer_select_env_risks" ON environmental_risks FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
+CREATE POLICY "viewer_select_hotspots" ON risk_hotspots FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
+CREATE POLICY "viewer_select_maintenance" ON maintenance_priorities FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
+CREATE POLICY "viewer_select_trends" ON damage_trends FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
+CREATE POLICY "viewer_select_zones" ON geospatial_zones FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'viewer');
 
 -- Inspector: read all, write operational tables
-CREATE POLICY "inspector_select_profiles" ON profiles FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'inspector');
-CREATE POLICY "inspector_select_projects" ON projects FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'inspector');
-CREATE POLICY "inspector_select_zones" ON geospatial_zones FOR SELECT TO authenticated USING (auth.jwt() ->> 'role' = 'inspector');
+CREATE POLICY "inspector_select_profiles" ON profiles FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
+CREATE POLICY "inspector_select_projects" ON projects FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
+CREATE POLICY "inspector_select_zones" ON geospatial_zones FOR SELECT TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
 
-CREATE POLICY "inspector_all_inspections" ON inspections FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'inspector') WITH CHECK (auth.jwt() ->> 'role' = 'inspector');
-CREATE POLICY "inspector_all_images" ON inspection_images FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'inspector') WITH CHECK (auth.jwt() ->> 'role' = 'inspector');
-CREATE POLICY "inspector_all_reports" ON reports FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'inspector') WITH CHECK (auth.jwt() ->> 'role' = 'inspector');
-CREATE POLICY "inspector_all_env_risks" ON environmental_risks FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'inspector') WITH CHECK (auth.jwt() ->> 'role' = 'inspector');
-CREATE POLICY "inspector_all_hotspots" ON risk_hotspots FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'inspector') WITH CHECK (auth.jwt() ->> 'role' = 'inspector');
-CREATE POLICY "inspector_all_maintenance" ON maintenance_priorities FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'inspector') WITH CHECK (auth.jwt() ->> 'role' = 'inspector');
-CREATE POLICY "inspector_all_trends" ON damage_trends FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'inspector') WITH CHECK (auth.jwt() ->> 'role' = 'inspector');
+CREATE POLICY "inspector_all_inspections" ON inspections FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector') WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
+CREATE POLICY "inspector_all_images" ON inspection_images FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector') WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
+CREATE POLICY "inspector_all_reports" ON reports FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector') WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
+CREATE POLICY "inspector_all_env_risks" ON environmental_risks FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector') WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
+CREATE POLICY "inspector_all_hotspots" ON risk_hotspots FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector') WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
+CREATE POLICY "inspector_all_maintenance" ON maintenance_priorities FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector') WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
+CREATE POLICY "inspector_all_trends" ON damage_trends FOR ALL TO authenticated USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector') WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
 
 -- =================================================================
 -- DATABASE FUNCTIONS
@@ -327,15 +327,15 @@ $$ LANGUAGE plpgsql;
 
 -- Storage RLS policies
 CREATE POLICY "admin_storage_all" ON storage.objects FOR ALL TO authenticated
-  USING (bucket_id = 'inspection-images' AND auth.jwt() ->> 'role' = 'admin')
-  WITH CHECK (bucket_id = 'inspection-images' AND auth.jwt() ->> 'role' = 'admin');
+  USING (bucket_id = 'inspection-images' AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin')
+  WITH CHECK (bucket_id = 'inspection-images' AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY "viewer_storage_read" ON storage.objects FOR SELECT TO authenticated
-  USING (bucket_id = 'inspection-images' AND auth.jwt() ->> 'role' IN ('viewer', 'inspector'));
+  USING (bucket_id = 'inspection-images' AND (auth.jwt() -> 'user_metadata' ->> 'role') IN ('viewer', 'inspector'));
 
 CREATE POLICY "inspector_storage_write" ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'inspection-images' AND auth.jwt() ->> 'role' = 'inspector');
+  WITH CHECK (bucket_id = 'inspection-images' AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
 
 CREATE POLICY "inspector_storage_update" ON storage.objects FOR UPDATE TO authenticated
-  USING (bucket_id = 'inspection-images' AND auth.jwt() ->> 'role' = 'inspector')
-  WITH CHECK (bucket_id = 'inspection-images' AND auth.jwt() ->> 'role' = 'inspector');
+  USING (bucket_id = 'inspection-images' AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector')
+  WITH CHECK (bucket_id = 'inspection-images' AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'inspector');
