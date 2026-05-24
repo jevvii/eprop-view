@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/app/lib/supabase/client'
 
 export function RealtimeSync() {
   const queryClient = useQueryClient()
+  const supabase = useMemo(() => (typeof window !== 'undefined' ? createClient() : null), [])
 
   useEffect(() => {
-    const supabase = createClient()
+    if (!supabase) return
 
     const channel = supabase
       .channel('dashboard-sync')
@@ -24,12 +25,18 @@ export function RealtimeSync() {
         queryClient.invalidateQueries({ queryKey: ['maintenance'] })
         queryClient.invalidateQueries({ queryKey: ['stats'] })
       })
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Realtime sync channel error')
+        } else if (status === 'TIMED_OUT') {
+          console.warn('Realtime sync connection timed out')
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [queryClient])
+  }, [queryClient, supabase])
 
   return null
 }
