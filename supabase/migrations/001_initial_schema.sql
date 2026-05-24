@@ -318,6 +318,46 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Dashboard stats aggregation
+CREATE OR REPLACE FUNCTION get_dashboard_stats()
+RETURNS json AS $$
+DECLARE
+  result json;
+BEGIN
+  SELECT json_build_object(
+    'active_projects', (SELECT COUNT(*) FROM projects WHERE status = 'active'),
+    'critical_risk_reports', (SELECT COUNT(*) FROM reports WHERE status = 'critical'),
+    'reports_in_review', (SELECT COUNT(*) FROM reports WHERE status = 'in_review'),
+    'completed_repairs', (SELECT COUNT(*) FROM maintenance_priorities WHERE status = 'completed'),
+    'total_open_reports', (SELECT COUNT(*) FROM reports WHERE status IN ('open', 'in_review')),
+    'total_completed_reports', (SELECT COUNT(*) FROM reports WHERE status = 'completed')
+  ) INTO result;
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create report wrapper (trigger handles report_id generation)
+CREATE OR REPLACE FUNCTION create_report_with_id(report_data jsonb)
+RETURNS SETOF reports AS $$
+BEGIN
+  RETURN QUERY
+  INSERT INTO reports (
+    title, project_id, inspection_id, date, location, status, risk_score, key_findings
+  )
+  VALUES (
+    report_data->>'title',
+    (report_data->>'project_id')::uuid,
+    NULLIF(report_data->>'inspection_id', '')::uuid,
+    (report_data->>'date')::date,
+    report_data->>'location',
+    report_data->>'status',
+    (report_data->>'risk_score')::float,
+    report_data->>'key_findings'
+  )
+  RETURNING *;
+END;
+$$ LANGUAGE plpgsql;
+
 -- =================================================================
 -- STORAGE BUCKETS
 -- =================================================================
