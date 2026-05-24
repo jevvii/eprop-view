@@ -16,10 +16,18 @@ import { Line } from 'react-chartjs-2'
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 export function DamageTrendChart() {
-  const { data: trends, isLoading } = useDamageTrends()
+  const { data: trends, isLoading, isError } = useDamageTrends()
 
   if (isLoading) {
     return <div className="bg-white p-6 rounded-2xl shadow-lg h-64 animate-pulse" />
+  }
+
+  if (isError) {
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600">
+        Failed to load damage trends
+      </div>
+    )
   }
 
   const dates = [...new Set(trends?.map((t) => t.date) || [])].sort()
@@ -46,11 +54,13 @@ export function DamageTrendChart() {
     datasets,
   }
 
+  const maxValue = Math.max(10, ...(trends?.map((t) => t.value) || [0]))
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
-      y: { min: 0, max: 10, grid: { color: '#e2e8f0' } },
+      y: { min: 0, max: maxValue, grid: { color: '#e2e8f0' } },
       x: { grid: { display: false } },
     },
     plugins: {

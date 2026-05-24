@@ -3,7 +3,7 @@
 import { useDashboardStats } from '@/app/lib/queries'
 
 export function StatsCards() {
-  const { data: stats, isLoading } = useDashboardStats()
+  const { data: stats, isLoading, isError } = useDashboardStats()
 
   if (isLoading) {
     return (
@@ -11,6 +11,14 @@ export function StatsCards() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="bg-white p-6 rounded-2xl shadow-lg animate-pulse h-28" />
         ))}
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600 mb-6">
+        Failed to load stats
       </div>
     )
   }
@@ -27,10 +35,11 @@ export function StatsCards() {
       {cards.map((card) => (
         <div
           key={card.label}
-          className={`bg-white p-6 rounded-2xl shadow-lg ${
+          className={`p-6 rounded-2xl shadow-lg ${
             card.variant === 'critical' ? 'bg-red-50' :
             card.variant === 'info' ? 'bg-blue-50' :
-            card.variant === 'success' ? 'bg-green-50' : ''
+            card.variant === 'success' ? 'bg-green-50' :
+            'bg-white'
           }`}
         >
           <div className="text-xs font-bold text-slate-500 mb-3 tracking-wide">{card.label}</div>
