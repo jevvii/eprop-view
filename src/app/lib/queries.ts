@@ -4,8 +4,10 @@ import { useQuery } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
 import type { Project, Report, Inspection, DashboardStats, EnvironmentalRisk, RiskHotspot, MaintenancePriority, DamageTrend, GeospatialZone } from '@/app/types'
 
+let client: ReturnType<typeof createClient> | null = null
 function getClient() {
-  return createClient()
+  if (!client) client = createClient()
+  return client
 }
 
 export function useProjects() {

@@ -3,23 +3,31 @@
 import { useMaintenancePriorities } from '@/app/lib/queries'
 
 export function MaintenanceTable() {
-  const { data: items, isLoading } = useMaintenancePriorities()
+  const { data: items, isLoading, isError } = useMaintenancePriorities()
 
   if (isLoading) {
     return <div className="bg-white p-6 rounded-2xl shadow-lg h-48 animate-pulse" />
   }
 
+  if (isError) {
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600">
+        Failed to load maintenance priorities
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white p-6 rounded-2xl shadow-lg">
       <h3 className="text-sm font-bold text-slate-900 mb-4 tracking-wide">MAINTENANCE PRIORITIES</h3>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" aria-label="Maintenance priorities" tabIndex={0}>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200">
-              <th className="text-left py-2 font-semibold text-slate-600">Title</th>
-              <th className="text-left py-2 font-semibold text-slate-600">Location</th>
-              <th className="text-left py-2 font-semibold text-slate-600">Risk Score</th>
-              <th className="text-left py-2 font-semibold text-slate-600">Status</th>
+              <th scope="col" className="text-left py-2 font-semibold text-slate-600">Title</th>
+              <th scope="col" className="text-left py-2 font-semibold text-slate-600">Location</th>
+              <th scope="col" className="text-left py-2 font-semibold text-slate-600">Risk Score</th>
+              <th scope="col" className="text-left py-2 font-semibold text-slate-600">Status</th>
             </tr>
           </thead>
           <tbody>

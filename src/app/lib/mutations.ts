@@ -4,8 +4,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
 import type { Report, Inspection, EnvironmentalRisk } from '@/app/types'
 
+let client: ReturnType<typeof createClient> | null = null
 function getClient() {
-  return createClient()
+  if (!client) client = createClient()
+  return client
 }
 
 export function useCreateInspection() {
@@ -44,7 +46,8 @@ export function useUpdateEnvironmentalRisk() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, project_id: _project_id, ...updates }: Partial<EnvironmentalRisk> & { id: string; project_id: string }) => {
+    mutationFn: async ({ id, project_id, ...updates }: Partial<EnvironmentalRisk> & { id: string; project_id: string }) => {
+      void project_id
       const { data, error } = await getClient().from('environmental_risks').update(updates).eq('id', id).select().single()
       if (error) throw error
       return data
