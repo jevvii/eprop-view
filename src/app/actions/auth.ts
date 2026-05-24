@@ -7,13 +7,12 @@ import { z } from 'zod'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['admin', 'inspector', 'viewer']).default('viewer'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
 export async function login(prevState: unknown, formData: FormData) {
@@ -25,7 +24,9 @@ export async function login(prevState: unknown, formData: FormData) {
   })
 
   if (!validated.success) {
-    return { error: validated.error.issues[0].message }
+    const fieldErrors = validated.error.flatten().fieldErrors
+    const firstError = Object.values(fieldErrors).flat()[0]
+    return { error: firstError ?? 'Invalid form data' }
   }
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -47,19 +48,21 @@ export async function signup(prevState: unknown, formData: FormData) {
   const validated = signupSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
-    role: formData.get('role') || 'viewer',
   })
 
   if (!validated.success) {
-    return { error: validated.error.issues[0].message }
+    const fieldErrors = validated.error.flatten().fieldErrors
+    const firstError = Object.values(fieldErrors).flat()[0]
+    return { error: firstError ?? 'Invalid form data' }
   }
 
   const { data, error } = await supabase.auth.signUp({
     email: validated.data.email,
     password: validated.data.password,
     options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/auth/callback`,
       data: {
-        role: validated.data.role,
+        role: 'viewer',
       },
     },
   })
@@ -68,12 +71,14 @@ export async function signup(prevState: unknown, formData: FormData) {
     return { error: error.message }
   }
 
-  // Create profile entry with role
   if (data?.user) {
-    await supabase.from('profiles').insert({
+    const { error: insertError } = await supabase.from('profiles').insert({
       id: data.user.id,
-      role: validated.data.role,
+      role: 'viewer',
     })
+    if (insertError) {
+      return { error: 'Account created but profile setup failed. Please contact support.' }
+    }
   }
 
   revalidatePath('/', 'layout')
@@ -82,7 +87,10 @@ export async function signup(prevState: unknown, formData: FormData) {
 
 export async function logout() {
   const supabase = await createClient()
-  await supabase.auth.signOut()
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    return { error: error.message }
+  }
   revalidatePath('/', 'layout')
   redirect('/login')
 }
