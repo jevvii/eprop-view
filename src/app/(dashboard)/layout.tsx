@@ -1,6 +1,7 @@
 import React from 'react'
 import { Sidebar } from '@/components/shared/sidebar'
 import { Header } from '@/components/shared/header'
+import { RealtimeSync } from '@/components/dashboard/realtime-sync'
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col">
         <Header />
         <main className="flex-1 p-7 overflow-y-auto">
+          <RealtimeSync />
           {children}
         </main>
       </div>
