@@ -6,6 +6,8 @@ import { login } from '@/app/actions/auth'
 export function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined)
 
+  const hasError = !!state?.error
+
   return (
     <form action={action} className="space-y-4">
       <div>
@@ -16,6 +18,9 @@ export function LoginForm() {
           type="email"
           placeholder="Enter your email"
           required
+          autoComplete="email"
+          aria-invalid={hasError ? 'true' : undefined}
+          aria-describedby={hasError ? 'login-error' : undefined}
           className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
         />
       </div>
@@ -27,11 +32,14 @@ export function LoginForm() {
           type="password"
           placeholder="Enter your password"
           required
+          autoComplete="current-password"
+          aria-invalid={hasError ? 'true' : undefined}
+          aria-describedby={hasError ? 'login-error' : undefined}
           className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
         />
       </div>
       {state?.error && (
-        <p className="text-sm text-red-600 font-medium">{state.error}</p>
+        <p id="login-error" role="alert" className="text-sm text-red-600 font-medium">{state.error}</p>
       )}
       <button
         type="submit"

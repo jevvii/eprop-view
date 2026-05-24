@@ -33,19 +33,21 @@ export function Sidebar() {
           <Link
             key={item.href}
             href={item.href}
+            aria-current={pathname === item.href ? 'page' : undefined}
             className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               pathname === item.href
                 ? 'bg-blue-600 text-white border-l-4 border-blue-300'
-                : 'text-slate-300 hover:bg-slate-700/40'
+                : 'text-slate-300 hover:bg-slate-700/40 border-l-4 border-transparent'
             }`}
           >
-            <span className="text-base">{item.icon}</span>
+            <span className="text-base" aria-hidden="true">{item.icon}</span>
             <span>{item.label}</span>
           </Link>
         ))}
       </nav>
 
       <button
+        type="button"
         onClick={() => logout()}
         className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold rounded-xl hover:translate-y-[-1px] transition-transform"
       >
