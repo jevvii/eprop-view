@@ -9,6 +9,11 @@ export interface MigrationResult {
 }
 
 export async function runMigration(): Promise<MigrationResult> {
+  // NOTE: This migration does not use database transactions. If it fails partway,
+  // re-running it may create duplicates or partial state. For production use,
+  // consider adding idempotency checks (e.g., skip existing users/projects by email/name)
+  // or wrapping in a Supabase transaction if supported.
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -36,9 +41,12 @@ export async function runMigration(): Promise<MigrationResult> {
     // Migrate users
     const users = db.prepare('SELECT * FROM auth_user').all()
     for (const user of users) {
-      const password = user.username === 'admin'
-        ? (process.env.MIGRATION_ADMIN_PASSWORD || 'admin123')
-        : (process.env.MIGRATION_DEFAULT_PASSWORD || 'inspect2024')
+      const adminPassword = process.env.MIGRATION_ADMIN_PASSWORD
+      const defaultPassword = process.env.MIGRATION_DEFAULT_PASSWORD
+      if (!adminPassword || !defaultPassword) {
+        return { success: false, message: 'Migration passwords not configured', usersMigrated: 0, projectsMigrated: 0, errors: ['Missing MIGRATION_ADMIN_PASSWORD or MIGRATION_DEFAULT_PASSWORD'] }
+      }
+      const password = user.username === 'admin' ? adminPassword : defaultPassword
 
       const { data: authUser, error } = await supabase.auth.admin.createUser({
         email: user.username + '@eprop.local',
