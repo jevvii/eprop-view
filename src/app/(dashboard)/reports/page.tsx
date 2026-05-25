@@ -16,6 +16,18 @@ export default function ReportsPage() {
     }
   }, [projectId, projects])
 
+  const reportStats = useMemo(() => {
+    const stats = { open: 0, in_review: 0, critical: 0, completed: 0 }
+    reports?.forEach((report) => {
+      if (report.status in stats) {
+        stats[report.status as keyof typeof stats] += 1
+      }
+    })
+    return stats
+  }, [reports])
+
+  const selectedProjectName = projects?.find((project) => project.id === projectId)?.name
+
   if (isLoading) {
     return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
   }
@@ -35,18 +47,6 @@ export default function ReportsPage() {
       </div>
     )
   }
-
-  const reportStats = useMemo(() => {
-    const stats = { open: 0, in_review: 0, critical: 0, completed: 0 }
-    reports?.forEach((report) => {
-      if (report.status in stats) {
-        stats[report.status as keyof typeof stats] += 1
-      }
-    })
-    return stats
-  }, [reports])
-
-  const selectedProjectName = projects?.find((project) => project.id === projectId)?.name
 
   return (
     <div className="space-y-6">
