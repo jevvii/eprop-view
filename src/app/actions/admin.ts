@@ -104,3 +104,41 @@ export async function toggleUserStatus(userId: string, currentStatus: boolean) {
   revalidatePath('/settings')
   return { success: true }
 }
+
+export async function getAllProfilesWithEmails() {
+  const supabase = await createClient()
+
+  // 1. Verify Admin Role
+  const { data: { user: adminUser }, error: authError } = await supabase.auth.getUser()
+  if (authError || !adminUser) throw new Error('Unauthorized')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', adminUser.id)
+    .single()
+
+  if (profile?.role !== 'admin') throw new Error('Admin access required')
+
+  // 2. Fetch using Admin Client
+  const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+  const supabaseAdmin = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+
+  const { data: profiles, error: pError } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (pError) throw pError
+
+  const { data: { users }, error: uError } = await supabaseAdmin.auth.admin.listUsers()
+  if (uError) throw uError
+
+  return (profiles || []).map((p) => ({
+    ...p,
+    email: users.find(u => u.id === p.id)?.email ?? '',
+  }))
+}
