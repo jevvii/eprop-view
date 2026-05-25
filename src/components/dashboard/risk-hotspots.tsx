@@ -96,7 +96,6 @@ export function RiskHotspots() {
               }}
               onMouseMove={(event) => handleMouseMove(event, hotspot)}
               onMouseLeave={handleMouseLeave}
-              onFocus={(event) => handleMouseMove(event, hotspot)}
               onBlur={handleMouseLeave}
             />
           ))
