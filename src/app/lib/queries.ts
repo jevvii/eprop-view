@@ -45,7 +45,15 @@ export function useReports(projectId?: string) {
       if (projectId) query = query.eq('project_id', projectId)
       const { data, error } = await query
       if (error) throw error
-      return data || []
+      return (data || []).map((report) => ({
+        ...report,
+        project_name: typeof report.project_name === 'string'
+          ? report.project_name
+          : report.project_name?.name ?? '',
+        lead_inspector_name: typeof report.lead_inspector_name === 'string'
+          ? report.lead_inspector_name
+          : report.lead_inspector_name?.full_name ?? '',
+      }))
     },
   })
 }
