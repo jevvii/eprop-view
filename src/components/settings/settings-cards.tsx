@@ -1,12 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useProfile } from '@/app/lib/queries'
+import { useEffect, useMemo, useState } from 'react'
+import { useGeospatialZones, useInspections, useProfile, useProjects, useReports } from '@/app/lib/queries'
 import { useUpdateProfile } from '@/app/lib/mutations'
 import { Button } from '@/components/ui/button'
 
 export function SettingsCards() {
   const { data: profile, isLoading, isError } = useProfile()
+  const { data: reports } = useReports()
+  const { data: inspections } = useInspections()
+  const { data: projects } = useProjects()
+  const { data: zones } = useGeospatialZones()
   const updateProfile = useUpdateProfile()
 
   const [fullName, setFullName] = useState('')
@@ -23,6 +27,20 @@ export function SettingsCards() {
     setPhone(profile.phone ?? '')
     setDepartment(profile.department ?? '')
   }, [profile])
+
+  const activeProject = useMemo(() => {
+    if (!projects || projects.length === 0) return null
+    return projects.find((project) => project.status === 'active') ?? projects[0]
+  }, [projects])
+
+  const zoneRiskLevel = useMemo(() => {
+    if (!zones || zones.length === 0) return { label: 'Low', color: 'bg-emerald-100 text-emerald-700' }
+    const hasZoneA = zones.some((zone) => zone.risk_level === 'zone_a')
+    const hasZoneB = zones.some((zone) => zone.risk_level === 'zone_b')
+    if (hasZoneA) return { label: 'Critical', color: 'bg-red-100 text-red-700' }
+    if (hasZoneB) return { label: 'Moderate', color: 'bg-amber-100 text-amber-700' }
+    return { label: 'Low', color: 'bg-emerald-100 text-emerald-700' }
+  }, [zones])
 
   const handleSave = async () => {
     setError(null)
@@ -52,7 +70,7 @@ export function SettingsCards() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <div className="bg-white p-6 rounded-2xl shadow-lg space-y-4">
         <div>
           <h3 className="text-sm font-bold text-slate-900 tracking-wide">ACCOUNT PROFILE</h3>
@@ -150,6 +168,52 @@ export function SettingsCards() {
             <span>Last Sign-in</span>
             <span>{profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}</span>
           </div>
+          <div className="flex items-center justify-between">
+            <span>Total Reports</span>
+            <span>{reports?.length ?? 0}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Total Inspections</span>
+            <span>{inspections?.length ?? 0}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Active Project</span>
+            <span>{activeProject?.name ?? 'N/A'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl shadow-lg space-y-4">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900 tracking-wide">DATA MANAGEMENT</h3>
+          <p className="text-xs text-slate-500">Snapshot of active monitoring data.</p>
+        </div>
+        <div className="space-y-3 text-sm text-slate-600">
+          <div className="flex items-center justify-between">
+            <span>Project Status</span>
+            <span className="text-emerald-600 font-semibold">
+              {activeProject?.status === 'active' ? 'Active Monitoring' : activeProject?.status ?? 'N/A'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Risk Level</span>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${zoneRiskLevel.color}`}>
+              {zoneRiskLevel.label}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Geospatial Zones</span>
+            <span>{zones ? `${zones.length} zone${zones.length !== 1 ? 's' : ''}` : '0 zones'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Environmental Record</span>
+            <span className="text-emerald-600 font-semibold">On File</span>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button type="button" variant="outline" onClick={() => window.print()}>
+            Print Reports
+          </Button>
         </div>
       </div>
     </div>
