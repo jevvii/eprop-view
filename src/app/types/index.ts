@@ -9,6 +9,17 @@ export type MaintenanceStatus = 'pending' | 'in_progress' | 'completed' | 'defer
 export type ZoneType = 'fault_line' | 'liquefaction' | 'erosion' | 'flood' | 'general'
 export type ZoneRiskLevel = 'zone_a' | 'zone_b' | 'zone_c'
 
+export interface Profile {
+  id: string
+  role: Role
+  full_name: string
+  phone: string
+  department: string
+  created_at: string
+  email?: string
+  is_active: boolean
+}
+
 export interface Project {
   id: string
   name: string
@@ -123,4 +134,13 @@ export interface DashboardStats {
   completed_repairs: number
   total_open_reports: number
   total_completed_reports: number
+}
+
+export interface InspectionImage {
+  id: string
+  inspection_id: string
+  storage_path: string
+  caption: string
+  uploaded_at: string
+  signed_url?: string | null
 }

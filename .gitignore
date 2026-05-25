@@ -32,5 +32,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# project archives
+/EPROPVIEW_v1/
+*.zip
+*.rar
+
 # old django backend
 /backend/

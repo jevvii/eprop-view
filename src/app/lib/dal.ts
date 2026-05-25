@@ -12,7 +12,7 @@ export const verifySession = cache(async () => {
   }
 
   if (error || !user) {
-    redirect('/login')
+    redirect('/')
   }
 
   const { data: profile } = await supabase

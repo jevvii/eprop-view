@@ -2,7 +2,19 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
-import type { Project, Report, Inspection, DashboardStats, EnvironmentalRisk, RiskHotspot, MaintenancePriority, DamageTrend, GeospatialZone } from '@/app/types'
+import type {
+  Project,
+  Report,
+  Inspection,
+  DashboardStats,
+  EnvironmentalRisk,
+  RiskHotspot,
+  MaintenancePriority,
+  DamageTrend,
+  GeospatialZone,
+  InspectionImage,
+  Profile,
+} from '@/app/types'
 
 let client: ReturnType<typeof createClient> | null = null
 function getClient() {
@@ -129,6 +141,74 @@ export function useGeospatialZones(projectId?: string) {
         ...z,
         coordinates: z.geom?.coordinates?.[0] ?? [],
       }))
+    },
+  })
+}
+
+export function useInspectionImages(inspectionId?: string) {
+  return useQuery({
+    queryKey: ['inspection-images', inspectionId],
+    enabled: !!inspectionId,
+    queryFn: async (): Promise<InspectionImage[]> => {
+      if (!inspectionId) return []
+      const { data, error } = await getClient()
+        .from('inspection_images')
+        .select('*')
+        .eq('inspection_id', inspectionId)
+        .order('uploaded_at', { ascending: false })
+      if (error) throw error
+
+      const results = await Promise.all(
+        (data || []).map(async (image) => {
+          const { data: signedData, error: signedError } = await getClient()
+            .storage
+            .from('inspection-images')
+            .createSignedUrl(image.storage_path, 60 * 60)
+          return {
+            ...image,
+            signed_url: signedError ? null : signedData?.signedUrl ?? null,
+          }
+        })
+      )
+      return results
+    },
+  })
+}
+
+export function useProfile() {
+  return useQuery({
+    queryKey: ['profile'],
+    queryFn: async (): Promise<Profile> => {
+      const { data: authData, error: authError } = await getClient().auth.getUser()
+      if (authError || !authData.user) {
+        throw authError ?? new Error('Not authenticated')
+      }
+
+      const { data, error } = await getClient()
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single()
+      if (error) throw error
+
+      return {
+        ...data,
+        email: authData.user.email ?? '',
+      }
+    },
+  })
+}
+
+export function useAllProfiles() {
+  return useQuery({
+    queryKey: ['all-profiles'],
+    queryFn: async (): Promise<Profile[]> => {
+      const { data, error } = await getClient()
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data || []
     },
   })
 }

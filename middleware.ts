@@ -12,14 +12,25 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   const isProtectedRoute = path.startsWith('/dashboard')
-  const isAuthRoute = path === '/login' || path === '/signup'
+  const isAuthRoute = path === '/' || path === '/login' || path === '/signup'
 
   // Redirect unauthenticated users from protected routes to login
   if (isProtectedRoute && !user) {
-    const redirectUrl = new URL('/login', request.url)
+    const redirectUrl = new URL('/', request.url)
     const redirectResponse = NextResponse.redirect(redirectUrl)
     copyCookies(supabaseResponse, redirectResponse)
     return redirectResponse
+  }
+
+  // Redirect authenticated non-admins away from settings
+  if (path.startsWith('/settings') && user) {
+    const role = user.app_metadata?.role || user.user_metadata?.role
+    if (role !== 'admin') {
+      const redirectUrl = new URL('/dashboard', request.url)
+      const redirectResponse = NextResponse.redirect(redirectUrl)
+      copyCookies(supabaseResponse, redirectResponse)
+      return redirectResponse
+    }
   }
 
   // Redirect authenticated users away from auth pages

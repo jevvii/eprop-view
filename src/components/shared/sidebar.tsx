@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
+import { useProfile } from '@/app/lib/queries'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -10,11 +11,13 @@ const navItems = [
   { href: '/environmental', label: 'Environmental View', icon: '🌍' },
   { href: '/reports', label: 'Reports', icon: '📋' },
   { href: '/document', label: 'Document', icon: '📄' },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/settings', label: 'Settings', icon: '⚙️', adminOnly: true },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { data: profile } = useProfile()
+  const isAdmin = profile?.role === 'admin'
 
   return (
     <aside className="w-60 bg-gradient-to-b from-slate-800 to-slate-900 flex flex-col p-4 border-r border-slate-700/20">
@@ -29,21 +32,25 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 flex flex-col gap-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={pathname === item.href ? 'page' : undefined}
-            className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-              pathname === item.href
-                ? 'bg-blue-600 text-white border-l-4 border-blue-300'
-                : 'text-slate-300 hover:bg-slate-700/40 border-l-4 border-transparent'
-            }`}
-          >
-            <span className="text-base" aria-hidden="true">{item.icon}</span>
-            <span>{item.label}</span>
-          </Link>
-        ))}
+        {navItems.map((item) => {
+          if (item.adminOnly && !isAdmin) return null
+          
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={pathname === item.href ? 'page' : undefined}
+              className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                pathname === item.href
+                  ? 'bg-blue-600 text-white border-l-4 border-blue-300'
+                  : 'text-slate-300 hover:bg-slate-700/40 border-l-4 border-transparent'
+              }`}
+            >
+              <span className="text-base" aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
       </nav>
 
       <button

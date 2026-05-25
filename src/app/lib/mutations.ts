@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
-import type { Report, Inspection, EnvironmentalRisk } from '@/app/types'
+import type { Report, Inspection, EnvironmentalRisk, Profile } from '@/app/types'
 
 let client: ReturnType<typeof createClient> | null = null
 function getClient() {
@@ -54,6 +54,50 @@ export function useUpdateEnvironmentalRisk() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['environmental-risk', variables.project_id] })
+    },
+  })
+}
+
+export function useUpsertEnvironmentalRisk() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: Partial<EnvironmentalRisk> & { project_id: string }) => {
+      const { data, error } = await getClient()
+        .from('environmental_risks')
+        .upsert(payload, { onConflict: 'project_id' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['environmental-risk', variables.project_id] })
+    },
+  })
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (updates: Partial<Profile>) => {
+      const { data: authData, error: authError } = await getClient().auth.getUser()
+      if (authError || !authData.user) {
+        throw authError ?? new Error('Not authenticated')
+      }
+
+      const { data, error } = await getClient()
+        .from('profiles')
+        .update(updates)
+        .eq('id', authData.user.id)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
   })
 }
