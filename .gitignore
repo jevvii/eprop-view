@@ -39,3 +39,6 @@ next-env.d.ts
 
 # old django backend
 /backend/
+
+# project documentation
+/docs/
