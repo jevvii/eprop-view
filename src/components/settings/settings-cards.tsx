@@ -88,7 +88,7 @@ export function SettingsCards() {
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
             <input
-              value={profile?.email ?? ''}
+              value={profile?.email || 'N/A'}
               disabled
               className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-500"
             />
