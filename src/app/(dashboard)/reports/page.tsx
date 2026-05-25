@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useProjects, useReports } from '@/app/lib/queries'
 import { ReportForm } from '@/components/reports/report-form'
 import { ReportsTable } from '@/components/reports/reports-table'
+import { Button } from '@/components/ui/button'
 
 export default function ReportsPage() {
   const { data: projects, isLoading, isError } = useProjects()
   const [projectId, setProjectId] = useState('')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const { data: reports, isLoading: reportsLoading, isError: reportsError } = useReports(projectId || undefined)
 
   useEffect(() => {
@@ -57,17 +59,22 @@ export default function ReportsPage() {
             {selectedProjectName ? `Reports · ${selectedProjectName}` : 'Generate and review inspection reports.'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-slate-600">Project</label>
-          <select
-            value={projectId}
-            onChange={(event) => setProjectId(event.target.value)}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-          >
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>{project.name}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-slate-600">Project</label>
+            <select
+              value={projectId}
+              onChange={(event) => setProjectId(event.target.value)}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white"
+            >
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </select>
+          </div>
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            Create New Report
+          </Button>
         </div>
       </div>
 
@@ -90,8 +97,18 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <ReportForm projectId={projectId} />
       <ReportsTable reports={reports} isLoading={reportsLoading} isError={reportsError} />
+
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-[2rem] bg-white p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <ReportForm 
+              projectId={projectId} 
+              onClose={() => setIsCreateModalOpen(false)} 
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

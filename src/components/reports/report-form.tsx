@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button'
 
 type ReportFormProps = {
   projectId?: string
+  onClose?: () => void
 }
 
 const statusOptions = ['open', 'in_review', 'critical', 'completed'] as const
 
-export function ReportForm({ projectId }: ReportFormProps) {
+export function ReportForm({ projectId, onClose }: ReportFormProps) {
   const { data: projects } = useProjects()
   const [selectedProjectId, setSelectedProjectId] = useState(projectId ?? '')
   const { data: inspections } = useInspections(selectedProjectId || undefined)
@@ -81,44 +82,40 @@ export function ReportForm({ projectId }: ReportFormProps) {
         ...parsed.data,
         inspection_id: parsed.data.inspection_id ?? null,
       })
-      setTitle('')
-      setInspectionId('')
-      setDate(new Date().toISOString().slice(0, 10))
-      setLocation('')
-      setStatus('open')
-      setRiskScore('5')
-      setKeyFindings('')
       setSuccessMessage('Report created successfully.')
+      if (onClose) {
+        setTimeout(onClose, 1500)
+      }
     } catch (mutationError) {
       setError(mutationError instanceof Error ? mutationError.message : 'Failed to create report.')
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-lg space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900">CREATE NEW REPORT</h3>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Create New Report</h3>
         {createReport.isPending && (
           <span className="text-xs font-medium text-slate-500">Saving...</span>
         )}
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Report Title</label>
+        <div className="md:col-span-2">
+          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Report Title</label>
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="Geotechnical inspection summary"
             required
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Project</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Project</label>
           <select
             value={selectedProjectId}
             onChange={(event) => setSelectedProjectId(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
             required
           >
             <option value="" disabled>Select a project</option>
@@ -128,11 +125,11 @@ export function ReportForm({ projectId }: ReportFormProps) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Inspection (Optional)</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Inspection (Optional)</label>
           <select
             value={inspectionId}
             onChange={(event) => setInspectionId(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
           >
             <option value="">No linked inspection</option>
             {filteredInspections.map((inspection) => (
@@ -143,31 +140,21 @@ export function ReportForm({ projectId }: ReportFormProps) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Date</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Date</label>
           <input
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             required
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Location</label>
-          <input
-            value={location}
-            onChange={(event) => setLocation(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            placeholder="Zone / building"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Status</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Status</label>
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value as (typeof statusOptions)[number])}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>
@@ -177,7 +164,17 @@ export function ReportForm({ projectId }: ReportFormProps) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Risk Score</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Location</label>
+          <input
+            value={location}
+            onChange={(event) => setLocation(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="Zone / building"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Risk Score</label>
           <input
             type="number"
             min="0"
@@ -185,25 +182,41 @@ export function ReportForm({ projectId }: ReportFormProps) {
             step="0.1"
             value={riskScore}
             onChange={(event) => setRiskScore(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             required
           />
         </div>
       </div>
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Key Findings</label>
+        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Key Findings</label>
         <textarea
           value={keyFindings}
           onChange={(event) => setKeyFindings(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm min-h-[100px]"
+          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm min-h-[120px] focus:ring-2 focus:ring-blue-500 outline-none"
           placeholder="Summary of critical observations..."
         />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {successMessage && <p className="text-sm text-emerald-600">{successMessage}</p>}
-      <div className="flex justify-end">
+      
+      {error && (
+        <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium">
+          {error}
+        </div>
+      )}
+      
+      {successMessage && (
+        <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-3 rounded-xl text-sm font-medium">
+          {successMessage}
+        </div>
+      )}
+
+      <div className="flex justify-end gap-3 pt-4">
+        {onClose && (
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+        )}
         <Button type="submit" disabled={createReport.isPending}>
-          Create Report
+          {createReport.isPending ? 'Saving...' : 'Create Report'}
         </Button>
       </div>
     </form>
