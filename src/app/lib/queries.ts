@@ -211,12 +211,26 @@ export function useAllProfiles() {
   return useQuery({
     queryKey: ['all-profiles'],
     queryFn: async (): Promise<Profile[]> => {
-      const { data, error } = await getClient()
+      const supabase = getClient()
+      const { data: profiles, error: pError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
-      if (error) throw error
-      return data || []
+      if (pError) throw pError
+
+      // Fetch emails from auth.users (requires service role or specific permissions, 
+      // but for this app we can simulate/mock if needed, or use the metadata if synced)
+      // Since we are in a dev environment and want actual emails:
+      const { data: { users }, error: uError } = await supabase.auth.admin.listUsers()
+      if (uError) {
+        console.error('Auth fetch error:', uError.message)
+        return (profiles || []).map(p => ({ ...p, email: 'Email Hidden' }))
+      }
+
+      return (profiles || []).map((p) => ({
+        ...p,
+        email: users.find(u => u.id === p.id)?.email ?? '',
+      }))
     },
   })
 }
