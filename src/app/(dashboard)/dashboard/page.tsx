@@ -36,7 +36,14 @@ export default function DashboardPage() {
             value={stats?.reports_in_review ?? 0} 
             variant="info"
             isFloating
-            className="w-40 pointer-events-auto shadow-2xl hidden sm:flex"
+            className="w-40 pointer-events-auto shadow-2xl"
+          />
+          <StatCard 
+            label="Completed" 
+            value={stats?.completed_repairs ?? 0} 
+            variant="success"
+            isFloating
+            className="w-40 pointer-events-auto shadow-2xl"
           />
         </div>
 
