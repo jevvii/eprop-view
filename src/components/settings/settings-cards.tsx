@@ -71,148 +71,129 @@ export function SettingsCards() {
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <div className="bg-white p-6 rounded-2xl shadow-lg space-y-4">
+      <div className="bg-white p-8 rounded-[2rem] shadow-lg space-y-6">
         <div>
-          <h3 className="text-sm font-bold text-slate-900 tracking-wide">ACCOUNT PROFILE</h3>
-          <p className="text-xs text-slate-500">Manage your inspector profile details.</p>
+          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Account Profile</h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Identity and professional details.</p>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Full name</label>
+            <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Full name</label>
             <input
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Official Email</label>
             <input
               value={profile?.email || 'N/A'}
               disabled
-              className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-500"
+              className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-400 cursor-not-allowed"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Phone</label>
+            <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Contact Number</label>
             <input
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Department</label>
+            <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Primary Department</label>
             <input
               value={department}
               onChange={(event) => setDepartment(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
         </div>
-        <div className="text-xs text-slate-500">Role: {profile?.role ?? 'viewer'}</div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-emerald-600">{success}</p>}
-        <div className="flex justify-end">
-          <Button type="button" onClick={handleSave} disabled={updateProfile.isPending}>
-            Save Profile
+        <div className="flex items-center justify-between pt-2">
+          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Access Tier: <span className="text-accent">{profile?.role ?? 'viewer'}</span>
+          </div>
+          <Button 
+            type="button" 
+            onClick={handleSave} 
+            disabled={updateProfile.isPending}
+            className="font-black uppercase tracking-widest text-xs px-6"
+          >
+            {updateProfile.isPending ? 'Syncing...' : 'Save Profile'}
           </Button>
         </div>
+        {error && <p className="text-xs font-bold text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>}
+        {success && <p className="text-xs font-bold text-emerald-600 bg-emerald-50 p-3 rounded-lg border border-emerald-100">{success}</p>}
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-lg space-y-4">
+      <div className="bg-white p-8 rounded-[2rem] shadow-lg space-y-6">
         <div>
-          <h3 className="text-sm font-bold text-slate-900 tracking-wide">NOTIFICATIONS</h3>
-          <p className="text-xs text-slate-500">Configure alert preferences for risk updates.</p>
+          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Preferences</h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Alert and notification settings.</p>
         </div>
-        <div className="space-y-3 text-sm text-slate-600">
-          <label className="flex items-center justify-between gap-3">
-            <span>Real-time risk alerts</span>
+        <div className="space-y-4">
+          <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 group cursor-pointer hover:border-primary/30 transition-colors">
+            <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Real-time risk alerts</span>
             <input
               type="checkbox"
               checked={notificationsEnabled}
               onChange={(event) => setNotificationsEnabled(event.target.checked)}
-              className="h-4 w-4 accent-blue-600"
+              className="h-5 w-5 accent-primary rounded-lg"
             />
           </label>
-          <label className="flex items-center justify-between gap-3">
-            <span>Weekly compliance digest</span>
+          <label className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 group cursor-pointer hover:border-primary/30 transition-colors">
+            <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Weekly compliance digest</span>
             <input
               type="checkbox"
               checked={digestEnabled}
               onChange={(event) => setDigestEnabled(event.target.checked)}
-              className="h-4 w-4 accent-blue-600"
+              className="h-5 w-5 accent-primary rounded-lg"
             />
           </label>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
-            Notification settings are stored locally for now. Connect a notification service to persist them.
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
+            Settings currently stored in local buffer.
           </div>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-lg space-y-4">
+      <div className="bg-white p-8 rounded-[2rem] shadow-lg space-y-6 lg:col-span-2">
         <div>
-          <h3 className="text-sm font-bold text-slate-900 tracking-wide">SYSTEM INFO</h3>
-          <p className="text-xs text-slate-500">Environment and service configuration.</p>
+          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Data Management</h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Current system health and record metrics.</p>
         </div>
-        <div className="space-y-3 text-sm text-slate-600">
-          <div className="flex items-center justify-between">
-            <span>Supabase Status</span>
-            <span className="text-emerald-600 font-semibold">Connected</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Monitoring</div>
+            <div className="text-xs font-black text-emerald-600 uppercase tracking-tight">
+              {activeProject?.status === 'active' ? 'Active' : activeProject?.status ?? 'N/A'}
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span>Realtime Sync</span>
-            <span className="text-emerald-600 font-semibold">Enabled</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Last Sign-in</span>
-            <span>{profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Total Reports</span>
-            <span>{reports?.length ?? 0}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Total Inspections</span>
-            <span>{inspections?.length ?? 0}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Active Project</span>
-            <span>{activeProject?.name ?? 'N/A'}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl shadow-lg space-y-4">
-        <div>
-          <h3 className="text-sm font-bold text-slate-900 tracking-wide">DATA MANAGEMENT</h3>
-          <p className="text-xs text-slate-500">Snapshot of active monitoring data.</p>
-        </div>
-        <div className="space-y-3 text-sm text-slate-600">
-          <div className="flex items-center justify-between">
-            <span>Project Status</span>
-            <span className="text-emerald-600 font-semibold">
-              {activeProject?.status === 'active' ? 'Active Monitoring' : activeProject?.status ?? 'N/A'}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Risk Level</span>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${zoneRiskLevel.color}`}>
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Risk</div>
+            <div className={`text-xs font-black uppercase tracking-tight ${zoneRiskLevel.color.split(' ')[1]}`}>
               {zoneRiskLevel.label}
-            </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span>Geospatial Zones</span>
-            <span>{zones ? `${zones.length} zone${zones.length !== 1 ? 's' : ''}` : '0 zones'}</span>
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Zones</div>
+            <div className="text-xs font-black text-black uppercase tracking-tight">
+              {zones?.length || 0} Records
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span>Environmental Record</span>
-            <span className="text-emerald-600 font-semibold">On File</span>
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Environmental</div>
+            <div className="text-xs font-black text-emerald-600 uppercase tracking-tight">Verified</div>
           </div>
         </div>
-        <div className="flex justify-end">
-          <Button type="button" variant="outline" onClick={() => window.print()}>
-            Print Reports
+        <div className="flex justify-end pt-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="font-black uppercase tracking-widest text-xs px-6 border-slate-200" 
+            onClick={() => window.print()}
+          >
+            Export Audit Snapshot
           </Button>
         </div>
       </div>
