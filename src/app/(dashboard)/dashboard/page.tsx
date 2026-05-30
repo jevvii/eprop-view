@@ -17,26 +17,26 @@ export default function DashboardPage() {
         <GeospatialMap />
 
         {/* Top Floating Stats */}
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-wrap justify-center gap-4 w-full px-8 lg:w-auto">
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex items-center justify-center gap-4 w-full px-8">
           <StatCard 
             label="Active Units" 
             value={stats?.active_projects ?? 0} 
             isFloating
-            className="w-44 pointer-events-auto shadow-2xl"
+            className="w-40 pointer-events-auto shadow-2xl"
           />
           <StatCard 
             label="Critical Alerts" 
             value={stats?.critical_risk_reports ?? 0} 
             variant="critical"
             isFloating
-            className="w-44 pointer-events-auto shadow-2xl"
+            className="w-40 pointer-events-auto shadow-2xl"
           />
           <StatCard 
             label="In Sync" 
             value={stats?.reports_in_review ?? 0} 
             variant="info"
             isFloating
-            className="w-44 pointer-events-auto shadow-2xl hidden xl:flex"
+            className="w-40 pointer-events-auto shadow-2xl hidden sm:flex"
           />
         </div>
 
