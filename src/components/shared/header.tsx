@@ -29,7 +29,7 @@ export function Header() {
         {/* Mobile Menu Button */}
         <button 
           onClick={toggle}
-          className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
+          className="lg:hidden p-2 -ml-2 text-primary hover:bg-brand-gray rounded-lg transition-colors"
           aria-label="Toggle Menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,15 +37,15 @@ export function Header() {
           </svg>
         </button>
         
-        <span className="font-bold text-slate-900 text-sm lg:text-base">{currentPage}</span>
+        <span className="font-koulen text-primary text-xl lg:text-2xl tracking-wide uppercase leading-none pt-1">{currentPage}</span>
       </div>
 
       <div className="flex items-center gap-2.5">
         <div className="hidden sm:block text-right">
-          <div className="text-xs font-bold text-slate-900 leading-tight">{profile?.full_name}</div>
-          <div className="text-[10px] text-slate-500 font-medium">{email}</div>
+          <div className="text-xs font-black text-black leading-tight uppercase tracking-tight">{profile?.full_name}</div>
+          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{email}</div>
         </div>
-        <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 font-black text-xs lg:text-sm shadow-inner">
+        <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-primary flex items-center justify-center text-white font-black text-xs lg:text-sm shadow-md">
           {initial}
         </div>
       </div>
