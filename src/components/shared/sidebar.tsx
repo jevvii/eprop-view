@@ -33,15 +33,14 @@ export function Sidebar() {
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 relative drop-shadow-sm">
             <Image 
-              src="/logo.png" 
+              src="/logo-blue.png" 
               alt="EPROP VIEW Logo" 
               fill
               priority
               sizes="40px"
-              className="object-contain invert brightness-0 saturate-100 hue-rotate-[210deg] sepia-[100%] contrast-[100%]" 
+              className="object-contain" 
             />
-            {/* Note: if the logo is white, we might need to adjust filter to make it primary blue or keep it as is if it's already colorful */}
-            <div className="absolute inset-0 bg-primary/10 rounded-xl -z-10 scale-125" />
+            <div className="absolute inset-0 bg-primary/5 rounded-xl -z-10 scale-125" />
           </div>
           <span className="text-black font-koulen text-2xl tracking-wider leading-none pt-1">EPROP VIEW</span>
         </div>
@@ -73,10 +72,10 @@ export function Sidebar() {
               className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-black uppercase tracking-[0.1em] transition-all duration-200 ${
                 isActive
                   ? 'bg-slate-50 text-primary shadow-sm ring-1 ring-slate-200/50'
-                  : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                  : 'text-black hover:bg-slate-50 hover:text-primary'
               }`}
             >
-              <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'grayscale opacity-50'}`} aria-hidden="true">{item.icon}</span>
+              <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'grayscale opacity-70'}`} aria-hidden="true">{item.icon}</span>
               <span>{item.label}</span>
             </Link>
           )
