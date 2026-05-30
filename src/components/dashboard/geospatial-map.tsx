@@ -5,87 +5,86 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useGeospatialZones, useProjects } from '@/app/lib/queries'
 
+const riskColors: Record<string, string> = {
+  zone_a: '#ef4444', // Red
+  zone_b: '#fbbf24', // Amber
+  zone_c: '#10b981', // Emerald
+}
+
 export function GeospatialMap() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<mapboxgl.Marker[]>([])
   const addedLayersRef = useRef<{ sourceId: string; layerId: string }[]>([])
   const styleReadyRef = useRef(false)
+
   const { data: zones, isError: zonesError } = useGeospatialZones()
   const { data: projects, isError: projectsError } = useProjects()
 
   useEffect(() => {
-    if (!mapContainer.current || map.current) return
+    if (map.current || !mapContainer.current) return
 
     const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
-    if (!token) {
-      throw new Error('Missing NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN')
-    }
+    if (!token) return
+
     mapboxgl.accessToken = token
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [121.0437, 14.6760], // Quezon City
-      zoom: 14,
+      style: 'mapbox://styles/mapbox/light-v11',
+      center: [121.0484, 14.6507], // Default center (e.g., Quezon City)
+      zoom: 13,
+      antialias: true
     })
 
-    map.current.on('load', () => {
+    map.current.on('style.load', () => {
       styleReadyRef.current = true
     })
 
     return () => {
       map.current?.remove()
       map.current = null
-      styleReadyRef.current = false
     }
   }, [])
 
   useEffect(() => {
-    if (!map.current || !zones) return
+    if (!map.current || !styleReadyRef.current || (!zones && !projects)) return
 
     const updateLayers = () => {
-      // Clear previous markers
+      if (!map.current) return
+
+      // Clear existing markers
       markersRef.current.forEach((m) => m.remove())
       markersRef.current = []
 
-      // Clear previous layers/sources
+      // Clear existing layers
       addedLayersRef.current.forEach(({ sourceId, layerId }) => {
-        if (map.current!.getLayer(layerId)) map.current!.removeLayer(layerId)
-        if (map.current!.getSource(sourceId)) map.current!.removeSource(sourceId)
+        if (map.current?.getLayer(layerId)) map.current.removeLayer(layerId)
+        if (map.current?.getSource(sourceId)) map.current.removeSource(sourceId)
       })
       addedLayersRef.current = []
 
-      zones.forEach((zone) => {
-        const sourceId = `zone-${zone.id}`
-        const layerId = `zone-layer-${zone.id}`
-
-        const colors: Record<string, string> = {
-          fault_line: '#dc2626',
-          liquefaction: '#f97316',
-          erosion: '#eab308',
-          flood: '#3b82f6',
-          general: '#6366f1',
-        }
-
-        if (zone.coordinates?.length > 0) {
-          const geojson = {
-            type: 'Feature' as const,
-            geometry: {
-              type: 'Polygon' as const,
-              coordinates: [zone.coordinates],
-            },
-            properties: {},
-          }
+      zones?.forEach((zone) => {
+        if (zone.geom && zone.geom.type === 'Polygon') {
+          const sourceId = `source-${zone.id}`
+          const layerId = `layer-${zone.id}`
 
           if (!map.current!.getSource(sourceId)) {
-            map.current!.addSource(sourceId, { type: 'geojson', data: geojson })
+            map.current!.addSource(sourceId, {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: zone.geom,
+              },
+            })
+
             map.current!.addLayer({
               id: layerId,
               type: 'fill',
               source: sourceId,
               paint: {
-                'fill-color': colors[zone.zone_type] || '#94a3b8',
+                'fill-color': riskColors[zone.risk_level] || '#94a3b8',
                 'fill-opacity': 0.3,
               },
             })
@@ -96,34 +95,42 @@ export function GeospatialMap() {
 
       projects?.forEach((project) => {
         if (project.latitude && project.longitude) {
-          const marker = new mapboxgl.Marker({ color: '#2563eb' })
+          const marker = new mapboxgl.Marker({ color: '#346BDA' })
             .setLngLat([project.longitude, project.latitude])
-            .setPopup(new mapboxgl.Popup().setHTML(`<strong>${project.name}</strong>`))
+            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+              <div class="p-2">
+                <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Active Project</div>
+                <div class="font-koulen text-lg text-primary tracking-wide">${project.name}</div>
+              </div>
+            `))
             .addTo(map.current!)
           markersRef.current.push(marker)
         }
       })
     }
 
-    if (styleReadyRef.current || map.current.isStyleLoaded()) {
+    if (map.current.isStyleLoaded()) {
       updateLayers()
     } else {
-      map.current.once('load', updateLayers)
+      map.current.once('idle', updateLayers)
     }
   }, [zones, projects])
 
-  if (zonesError || projectsError) {
+  if (!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600">
-        Failed to load map data
+      <div className="flex h-full w-full items-center justify-center bg-slate-50 text-xs font-black text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 rounded-[2rem]">
+        Mapbox Access Token Required
       </div>
     )
   }
 
-  return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg">
-      <h3 className="text-sm font-bold text-slate-900 mb-4 tracking-wide">GEOSPATIAL RISK SCORE ASSESSMENT OVERVIEW</h3>
-      <div ref={mapContainer} className="w-full h-80 rounded-xl overflow-hidden border border-slate-200" />
-    </div>
-  )
+  if (zonesError || projectsError) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-red-50 text-xs font-black text-red-400 uppercase tracking-widest rounded-[2rem]">
+        Telemetry Error: Unable to sync geospatial data
+      </div>
+    )
+  }
+
+  return <div ref={mapContainer} className="w-full h-full" />
 }
