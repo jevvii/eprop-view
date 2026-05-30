@@ -11,7 +11,7 @@ export default function DashboardLayout({
   return (
     <NavWrapper>
       <Header />
-      <div className="p-4 lg:p-8">
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
         <RealtimeSync />
         {children}
       </div>

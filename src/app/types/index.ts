@@ -123,6 +123,10 @@ export interface GeospatialZone {
   zone_type: ZoneType
   risk_level: ZoneRiskLevel
   coordinates: number[][]
+  geom?: {
+    type: 'Polygon' | 'MultiPolygon' | 'Point'
+    coordinates: any
+  }
   description: string
   created_at: string
 }

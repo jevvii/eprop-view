@@ -2,14 +2,47 @@
 
 import { useDashboardStats } from '@/app/lib/queries'
 
+interface StatCardProps {
+  label: string
+  value: number | string
+  variant?: 'default' | 'critical' | 'info' | 'success'
+  className?: string
+  isFloating?: boolean
+}
+
+export function StatCard({ label, value, variant = 'default', className = '', isFloating = false }: StatCardProps) {
+  const bgColor = {
+    default: isFloating ? 'bg-white/90 backdrop-blur-md' : 'bg-white',
+    critical: isFloating ? 'bg-red-50/90 backdrop-blur-md' : 'bg-red-50',
+    info: isFloating ? 'bg-indigo-50/90 backdrop-blur-md' : 'bg-indigo-50',
+    success: isFloating ? 'bg-emerald-50/90 backdrop-blur-md' : 'bg-emerald-50'
+  }[variant]
+
+  const textColor = {
+    default: 'text-slate-900',
+    critical: 'text-red-600',
+    info: 'text-indigo-600',
+    success: 'text-emerald-600'
+  }[variant]
+
+  return (
+    <div className={`p-6 rounded-[2rem] shadow-xl border border-white/20 flex flex-col justify-between ${bgColor} ${className}`}>
+      <div className="text-[0.6rem] font-black text-slate-400 mb-1 tracking-[0.15em] uppercase">{label}</div>
+      <div className={`text-4xl font-koulen tracking-wider leading-none ${textColor}`}>
+        {value}
+      </div>
+    </div>
+  )
+}
+
 export function StatsCards() {
   const { data: stats, isLoading, isError } = useDashboardStats()
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-4 gap-5 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 px-8">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl shadow-lg animate-pulse h-28" />
+          <div key={i} className="bg-white p-8 rounded-[2rem] shadow-sm animate-pulse h-32" />
         ))}
       </div>
     )
@@ -17,39 +50,18 @@ export function StatsCards() {
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600 mb-6">
-        Failed to load stats
+      <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-red-100 text-red-600 mb-8 font-bold mx-8">
+        ERROR_FETCHING_METRICS
       </div>
     )
   }
 
-  const cards = [
-    { label: 'ACTIVE PROJECTS', value: stats?.active_projects ?? 0, variant: 'default' },
-    { label: 'CRITICAL RISK REPORTS', value: stats?.critical_risk_reports ?? 0, variant: 'critical' },
-    { label: 'REPORTS IN REVIEW', value: stats?.reports_in_review ?? 0, variant: 'info' },
-    { label: 'COMPLETED REPAIRS', value: stats?.completed_repairs ?? 0, variant: 'success' },
-  ]
-
   return (
-    <div className="grid grid-cols-4 gap-5 mb-6">
-      {cards.map((card) => (
-        <div
-          key={card.label}
-          className={`p-6 rounded-2xl shadow-lg ${
-            card.variant === 'critical' ? 'bg-red-50' :
-            card.variant === 'info' ? 'bg-blue-50' :
-            card.variant === 'success' ? 'bg-green-50' :
-            'bg-white'
-          }`}
-        >
-          <div className="text-xs font-bold text-slate-500 mb-3 tracking-wide">{card.label}</div>
-          <div className={`text-4xl font-extrabold ${
-            card.variant === 'critical' ? 'text-red-600' : 'text-slate-900'
-          }`}>
-            {card.value}
-          </div>
-        </div>
-      ))}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 px-8">
+      <StatCard label="Active Projects" value={stats?.active_projects ?? 0} />
+      <StatCard label="Critical Risk" value={stats?.critical_risk_reports ?? 0} variant="critical" />
+      <StatCard label="In Review" value={stats?.reports_in_review ?? 0} variant="info" />
+      <StatCard label="Completed" value={stats?.completed_repairs ?? 0} variant="success" />
     </div>
   )
 }
