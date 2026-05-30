@@ -26,9 +26,9 @@ export function StatCard({ label, value, variant = 'default', className = '', is
   }[variant]
 
   return (
-    <div className={`p-6 rounded-[2rem] shadow-xl border border-white/20 flex flex-col justify-between ${bgColor} ${className}`}>
-      <div className="text-[0.6rem] font-black text-slate-400 mb-1 tracking-[0.15em] uppercase">{label}</div>
-      <div className={`text-4xl font-koulen tracking-wider leading-none ${textColor}`}>
+    <div className={`px-6 py-4 rounded-[1.8rem] shadow-xl border border-white/20 flex flex-col justify-between ${bgColor} ${className}`}>
+      <div className="text-[0.55rem] font-black text-slate-400 mb-0.5 tracking-[0.15em] uppercase">{label}</div>
+      <div className={`text-3xl font-koulen tracking-wider leading-none ${textColor}`}>
         {value}
       </div>
     </div>
