@@ -19,31 +19,31 @@ export default function DashboardPage() {
         {/* Top Floating Stats */}
         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex items-center justify-center gap-4 w-full px-8">
           <StatCard 
-            label="Active Units" 
+            label="Active Projects" 
             value={stats?.active_projects ?? 0} 
             isFloating
-            className="w-40 pointer-events-auto shadow-2xl"
+            className="w-48 pointer-events-auto shadow-2xl"
           />
           <StatCard 
-            label="Critical Alerts" 
+            label="Critical Risk Reports" 
             value={stats?.critical_risk_reports ?? 0} 
             variant="critical"
             isFloating
-            className="w-40 pointer-events-auto shadow-2xl"
+            className="w-48 pointer-events-auto shadow-2xl"
           />
           <StatCard 
-            label="In Sync" 
+            label="Reports In Review" 
             value={stats?.reports_in_review ?? 0} 
             variant="info"
             isFloating
-            className="w-40 pointer-events-auto shadow-2xl"
+            className="w-48 pointer-events-auto shadow-2xl"
           />
           <StatCard 
-            label="Completed" 
+            label="Completed Repairs" 
             value={stats?.completed_repairs ?? 0} 
             variant="success"
             isFloating
-            className="w-40 pointer-events-auto shadow-2xl"
+            className="w-48 pointer-events-auto shadow-2xl"
           />
         </div>
 
