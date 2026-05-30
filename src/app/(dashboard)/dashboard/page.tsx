@@ -17,7 +17,7 @@ export default function DashboardPage() {
         <GeospatialMap />
 
         {/* Top Floating Stats */}
-        <div className="absolute top-8 left-8 right-8 lg:right-auto flex flex-wrap gap-4 z-10 pointer-events-none">
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-wrap justify-center gap-4 w-full px-8 lg:w-auto">
           <StatCard 
             label="Active Units" 
             value={stats?.active_projects ?? 0} 
@@ -41,8 +41,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Bottom Floating Chart */}
-        <div className="absolute bottom-8 left-8 right-8 z-10 pointer-events-none">
-          <div className="max-w-3xl pointer-events-auto">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-full px-8 max-w-4xl">
+          <div className="pointer-events-auto">
             <DamageTrendChart 
               isFloating 
               className="h-64 shadow-2xl"
