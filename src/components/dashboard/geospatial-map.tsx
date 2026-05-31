@@ -16,12 +16,13 @@ export function GeospatialMap() {
   const map = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<mapboxgl.Marker[]>([])
   const addedLayersRef = useRef<{ sourceId: string; layerId: string }[]>([])
-  const [isMapReady, setIsMapReady] = useState(false)
+  const [isStyleLoaded, setIsStyleLoaded] = useState(false)
+  const hasJumpedRef = useRef(false)
 
-  const { data: zones, isError: zonesError } = useGeospatialZones()
-  const { data: projects, isError: projectsError } = useProjects()
+  const { data: zones } = useGeospatialZones()
+  const { data: projects } = useProjects()
 
-  // 1. Initialize Map
+  // 1. Initialize Map once
   useEffect(() => {
     if (map.current || !mapContainer.current) return
 
@@ -30,23 +31,16 @@ export function GeospatialMap() {
 
     mapboxgl.accessToken = token
 
-    // Determine initial view: check projects if they are already in cache
-    const initialProject = projects?.[0]
-    const initialCenter: [number, number] = (initialProject?.longitude && initialProject?.latitude)
-      ? [initialProject.longitude, initialProject.latitude]
-      : [121.0484, 14.6507]
-    const initialZoom = initialProject ? 14.2 : 11
-
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: initialCenter,
-      zoom: initialZoom,
+      center: [121.0484, 14.6507],
+      zoom: 11,
       antialias: true
     })
 
     map.current.on('style.load', () => {
-      setIsMapReady(true)
+      setIsStyleLoaded(true)
     })
 
     const resizeObserver = new ResizeObserver(() => {
@@ -59,34 +53,54 @@ export function GeospatialMap() {
       map.current?.remove()
       map.current = null
     }
-  }, [projects]) // Allow re-init if projects arrive early
+  }, [])
 
-  // 2. Sync Data (Markers & Layers)
+  // 2. Initial Jump to Project
   useEffect(() => {
-    if (!map.current || !isMapReady) return
+    if (!map.current || !projects || projects.length === 0 || hasJumpedRef.current) return
 
-    // Center Logic: If map is initialized wide but projects are now available
-    const project = projects?.[0]
-    if (project?.longitude && project?.latitude) {
-      const currentZoom = map.current.getZoom()
-      if (currentZoom < 14) {
-        map.current.flyTo({
-          center: [project.longitude, project.latitude],
-          zoom: 14.2,
-          essential: true
-        })
-      }
+    const project = projects[0]
+    if (project.longitude && project.latitude) {
+      map.current.jumpTo({
+        center: [project.longitude, project.latitude],
+        zoom: 14.2
+      })
+      hasJumpedRef.current = true
     }
+  }, [projects])
 
-    const syncLayers = () => {
-      if (!map.current || !map.current.isStyleLoaded()) return
+  // 3. Sync Markers and Layers
+  useEffect(() => {
+    if (!map.current || !isStyleLoaded) return
 
-      // Clear
-      markersRef.current.forEach(m => m.remove())
+    const syncMap = () => {
+      const m = map.current
+      if (!m || !m.isStyleLoaded()) return
+
+      // --- Markers ---
+      markersRef.current.forEach(marker => marker.remove())
       markersRef.current = []
+
+      projects?.forEach((p) => {
+        if (p.latitude && p.longitude) {
+          const marker = new mapboxgl.Marker({ color: '#346BDA' })
+            .setLngLat([p.longitude, p.latitude])
+            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+              <div class="p-2">
+                <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Active Project</div>
+                <div class="font-koulen text-lg text-primary tracking-wide">${p.name}</div>
+              </div>
+            `))
+            .addTo(m)
+          markersRef.current.push(marker)
+        }
+      })
+
+      // --- Layers ---
+      // Clean up previous layers/sources recorded in our ref
       addedLayersRef.current.forEach(({ sourceId, layerId }) => {
-        if (map.current?.getLayer(layerId)) map.current.removeLayer(layerId)
-        if (map.current?.getSource(sourceId)) map.current.removeSource(sourceId)
+        if (m.getLayer(layerId)) m.removeLayer(layerId)
+        if (m.getSource(sourceId)) m.removeSource(sourceId)
       })
       addedLayersRef.current = []
 
@@ -95,11 +109,16 @@ export function GeospatialMap() {
         if (zone.geom && (zone.geom.type === 'Polygon' || zone.geom.type === 'MultiPolygon')) {
           const sourceId = `source-${zone.id}`
           const layerId = `layer-${zone.id}`
-          map.current!.addSource(sourceId, {
+
+          // Double check Mapbox internal state to prevent crashes
+          if (m.getSource(sourceId)) return
+
+          m.addSource(sourceId, {
             type: 'geojson',
             data: { type: 'Feature', properties: {}, geometry: zone.geom as any }
           })
-          map.current!.addLayer({
+
+          m.addLayer({
             id: layerId,
             type: 'fill',
             source: sourceId,
@@ -111,26 +130,16 @@ export function GeospatialMap() {
           addedLayersRef.current.push({ sourceId, layerId })
         }
       })
-
-      // Add Markers
-      projects?.forEach((p) => {
-        if (p.latitude && p.longitude) {
-          const marker = new mapboxgl.Marker({ color: '#346BDA' })
-            .setLngLat([p.longitude, p.latitude])
-            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
-              <div class="p-2">
-                <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Active Project</div>
-                <div class="font-koulen text-lg text-primary tracking-wide">${p.name}</div>
-              </div>
-            `))
-            .addTo(map.current!)
-          markersRef.current.push(marker)
-        }
-      })
     }
 
-    syncLayers()
-  }, [isMapReady, projects, zones])
+    syncMap()
+
+    // Also listen for re-loads (e.g. if style changes or map resets)
+    map.current.on('style.load', syncMap)
+    return () => {
+      map.current?.off('style.load', syncMap)
+    }
+  }, [isStyleLoaded, projects, zones])
 
   if (!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
     return (
@@ -140,5 +149,5 @@ export function GeospatialMap() {
     )
   }
 
-  return <div ref={mapContainer} className="w-full h-full" />
+  return <div ref={mapContainer} className="w-full h-full rounded-none" />
 }
