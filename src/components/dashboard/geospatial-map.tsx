@@ -15,13 +15,13 @@ export function GeospatialMap() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<mapboxgl.Marker[]>([])
-  const addedLayersRef = useRef<{ sourceId: string; layerId: string }[]>([])
   const [isStyleLoaded, setIsStyleLoaded] = useState(false)
+  const hasFocusedRef = useRef(false)
 
   const { data: zones } = useGeospatialZones()
   const { data: projects } = useProjects()
 
-  // 1. Initialize Map
+  // 1. Initialize Map (Strictly Once)
   useEffect(() => {
     if (map.current || !mapContainer.current) return
 
@@ -35,10 +35,30 @@ export function GeospatialMap() {
       style: 'mapbox://styles/mapbox/light-v11',
       center: [121.0484, 14.6507],
       zoom: 11,
-      antialias: true
+      antialias: true,
+      trackResize: true
     })
 
     map.current.on('style.load', () => {
+      const m = map.current
+      if (!m) return
+
+      // Initialize persistent sources
+      m.addSource('risk-zones', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      })
+
+      m.addLayer({
+        id: 'risk-zones-fill',
+        type: 'fill',
+        source: 'risk-zones',
+        paint: {
+          'fill-color': ['get', 'color'],
+          'fill-opacity': 0.35
+        }
+      })
+
       setIsStyleLoaded(true)
     })
 
@@ -54,93 +74,60 @@ export function GeospatialMap() {
     }
   }, [])
 
-  // 2. Sync Data and Zoom
+  // 2. Sync Data & Camera
   useEffect(() => {
-    if (!map.current || !isStyleLoaded || (!zones && !projects)) return
+    const m = map.current
+    if (!m || !isStyleLoaded) return
 
-    const syncMap = () => {
-      const m = map.current
-      if (!m || !m.isStyleLoaded()) return
-
-      // --- FLY TO PROJECT ---
-      if (projects && projects.length > 0 && projects[0].longitude && projects[0].latitude) {
-        const target: [number, number] = [projects[0].longitude, projects[0].latitude]
-        
-        // Don't interrupt if already moving or already there
-        if (!m.isMoving()) {
-          m.flyTo({
-            center: target,
-            zoom: 14.2,
-            speed: 1.2,
-            essential: true
-          })
-
-          // Force a resize and re-render after animation
-          m.once('moveend', () => {
-            m.resize()
-            // Delayed second resize as failsafe for slow browser paints
-            setTimeout(() => m.resize(), 500)
-          })
-        }
+    // --- CAMERA FOCUS ---
+    if (projects && projects.length > 0 && !hasFocusedRef.current) {
+      const p = projects[0]
+      if (p.longitude && p.latitude) {
+        m.jumpTo({
+          center: [p.longitude, p.latitude],
+          zoom: 14.2
+        })
+        m.resize() // Ensure tiles load at new position
+        hasFocusedRef.current = true
       }
-
-      // --- MARKERS ---
-      markersRef.current.forEach(marker => marker.remove())
-      markersRef.current = []
-
-      projects?.forEach((p) => {
-        if (p.latitude && p.longitude) {
-          const marker = new mapboxgl.Marker({ color: '#346BDA' })
-            .setLngLat([p.longitude, p.latitude])
-            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
-              <div class="p-2">
-                <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Active Project</div>
-                <div class="font-koulen text-lg text-primary tracking-wide">${p.name}</div>
-              </div>
-            `))
-            .addTo(m)
-          markersRef.current.push(marker)
-        }
-      })
-
-      // --- LAYERS ---
-      addedLayersRef.current.forEach(({ sourceId, layerId }) => {
-        if (m.getLayer(layerId)) m.removeLayer(layerId)
-        if (m.getSource(sourceId)) m.removeSource(sourceId)
-      })
-      addedLayersRef.current = []
-
-      zones?.forEach((zone) => {
-        if (zone.geom && (zone.geom.type === 'Polygon' || zone.geom.type === 'MultiPolygon')) {
-          const sourceId = `source-${zone.id}`
-          const layerId = `layer-${zone.id}`
-          
-          if (m.getSource(sourceId)) return
-
-          m.addSource(sourceId, {
-            type: 'geojson',
-            data: { type: 'Feature', properties: {}, geometry: zone.geom as any }
-          })
-
-          m.addLayer({
-            id: layerId,
-            type: 'fill',
-            source: sourceId,
-            paint: {
-              'fill-color': riskColors[zone.risk_level] || '#94a3b8',
-              'fill-opacity': 0.35
-            }
-          })
-          addedLayersRef.current.push({ sourceId, layerId })
-        }
-      })
     }
 
-    // Run sync immediately or wait for idle if needed
-    if (map.current.isStyleLoaded()) {
-      syncMap()
-    } else {
-      map.current.once('idle', syncMap)
+    // --- MARKERS ---
+    markersRef.current.forEach(marker => marker.remove())
+    markersRef.current = []
+
+    projects?.forEach((p) => {
+      if (p.latitude && p.longitude) {
+        const marker = new mapboxgl.Marker({ color: '#346BDA' })
+          .setLngLat([p.longitude, p.latitude])
+          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+            <div class="p-2">
+              <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Active Project</div>
+              <div class="font-koulen text-lg text-primary tracking-wide">${p.name}</div>
+            </div>
+          `))
+          .addTo(m)
+        markersRef.current.push(marker)
+      }
+    })
+
+    // --- ZONE DATA (FeatureCollection) ---
+    const source = m.getSource('risk-zones') as mapboxgl.GeoJSONSource
+    if (source) {
+      const features = (zones || [])
+        .filter(z => z.geom && (z.geom.type === 'Polygon' || z.geom.type === 'MultiPolygon'))
+        .map(z => ({
+          type: 'Feature',
+          geometry: z.geom,
+          properties: {
+            color: riskColors[z.risk_level] || '#94a3b8'
+          }
+        }))
+      
+      source.setData({
+        type: 'FeatureCollection',
+        features: features as any
+      })
     }
   }, [isStyleLoaded, projects, zones])
 
