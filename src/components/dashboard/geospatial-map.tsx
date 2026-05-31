@@ -57,7 +57,7 @@ export function GeospatialMap() {
       if (projects && projects.length > 0 && projects[0].longitude && projects[0].latitude) {
         map.current.flyTo({
           center: [projects[0].longitude, projects[0].latitude],
-          zoom: 15,
+          zoom: 14.2,
           speed: 1.5,
           curve: 1.42,
           essential: true
