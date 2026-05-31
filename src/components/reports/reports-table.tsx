@@ -16,6 +16,7 @@ type ReportsTableProps = {
 export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps) {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [modalReport, setModalReport] = useState<Report | null>(null)
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list')
 
   useEffect(() => {
     if (!reports || reports.length === 0) {
@@ -24,6 +25,11 @@ export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps)
     }
     setSelectedReport((current) => current ?? reports[0])
   }, [reports])
+
+  const handleSelectReport = (report: Report) => {
+    setSelectedReport(report)
+    setMobileView('detail')
+  }
 
   if (isLoading) {
     return <div className="bg-white p-10 rounded-[2.5rem] shadow-xl h-80 animate-pulse border border-slate-100" />
@@ -46,9 +52,11 @@ export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps)
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr,1.8fr]">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.6fr_1fr]">
       {/* 1. Log List (Compact) */}
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col">
+      <div className={`bg-white p-6 lg:p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col transition-all duration-300 ${
+        mobileView === 'detail' ? 'hidden lg:flex' : 'flex'
+      }`}>
         <div className="flex items-center justify-between mb-8 px-2">
           <div>
             <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Technical Logs</h3>
@@ -72,15 +80,38 @@ export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps)
                 return (
                   <tr
                     key={report.id}
-                    className={`group cursor-pointer transition-all ${isSelected ? 'bg-slate-50' : 'hover:bg-slate-50/50'}`}
-                    onClick={() => setSelectedReport(report)}
+                    className={`group cursor-pointer transition-all ${
+                      isSelected ? 'bg-primary/[0.03]' : 'hover:bg-slate-50/50'
+                    }`}
+                    onClick={() => handleSelectReport(report)}
                   >
                     <td className="py-6 pl-2">
-                      <div className={`font-black uppercase tracking-tight leading-tight transition-colors ${isSelected ? 'text-primary' : 'text-black'}`}>{report.title}</div>
-                      <div className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">{report.report_id}</div>
+                      <div className={`flex items-start gap-4 transition-all ${
+                        isSelected ? 'border-l-4 border-primary pl-4 scale-[1.01]' : 'pl-3 border-l-2 border-transparent'
+                      }`}>
+                        <div className="flex-1">
+                          <div className={`font-black uppercase tracking-tight leading-tight transition-colors ${
+                            isSelected ? 'text-primary' : 'text-black'
+                          }`}>
+                            {report.title}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">
+                            {report.report_id}
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-6 text-right pr-2">
-                      <RiskScore score={report.risk_score} />
+                      <div className="flex items-center justify-end gap-3">
+                        <RiskScore score={report.risk_score} />
+                        <div className={`transition-all duration-300 ${
+                          isSelected ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
+                        }`}>
+                          <svg className="w-5 h-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                          </svg>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -91,13 +122,31 @@ export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps)
       </div>
 
       {/* 2. Detail View (Expanded) */}
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-full min-h-[600px]">
+      <div className={`bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-full min-h-[600px] transition-all duration-300 ${
+        mobileView === 'list' ? 'hidden lg:flex' : 'flex'
+      }`}>
         {selectedReport ? (
           <div className="space-y-8 h-full flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-100 pb-6 px-2">
-              <div>
-                <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Detail View</h3>
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{selectedReport.report_id}</p>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setMobileView('list')}
+                  className="lg:hidden p-2 -ml-2 text-primary hover:bg-slate-50 rounded-full transition-colors"
+                  aria-label="Back to List"
+                >
+                  <svg className="w-5 h-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+                <div className="hidden lg:block">
+                  <svg className="w-5 h-5 text-primary/30 shrink-0 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Detail View</h3>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{selectedReport.report_id}</p>
+                </div>
               </div>
               <StatusBadge status={selectedReport.status} />
             </div>
