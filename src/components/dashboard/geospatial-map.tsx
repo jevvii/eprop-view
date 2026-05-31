@@ -64,12 +64,24 @@ export function GeospatialMap() {
 
       // --- FLY TO PROJECT ---
       if (projects && projects.length > 0 && projects[0].longitude && projects[0].latitude) {
-        m.flyTo({
-          center: [projects[0].longitude, projects[0].latitude],
-          zoom: 14.2,
-          speed: 1.5,
-          essential: true
-        })
+        const target: [number, number] = [projects[0].longitude, projects[0].latitude]
+        
+        // Don't interrupt if already moving or already there
+        if (!m.isMoving()) {
+          m.flyTo({
+            center: target,
+            zoom: 14.2,
+            speed: 1.2,
+            essential: true
+          })
+
+          // Force a resize and re-render after animation
+          m.once('moveend', () => {
+            m.resize()
+            // Delayed second resize as failsafe for slow browser paints
+            setTimeout(() => m.resize(), 500)
+          })
+        }
       }
 
       // --- MARKERS ---
