@@ -151,17 +151,20 @@ export function EnvMap({ projectId, center }: EnvMapProps) {
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900 tracking-wide">ENVIRONMENTAL RISK ZONES</h3>
-        <div className="flex items-center gap-2 text-xs">
+    <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-full min-h-[500px]">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Geospatial Hazards</h3>
+          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Multi-layer risk visualization.</p>
+        </div>
+        <div className="flex items-center gap-2">
           <StatusBadge status="fault_line" label="Fault" />
           <StatusBadge status="liquefaction" label="Liquefaction" />
           <StatusBadge status="erosion" label="Erosion" />
           <StatusBadge status="flood" label="Flood" />
         </div>
       </div>
-      <div ref={mapContainer} className="w-full h-80 rounded-xl overflow-hidden border border-slate-200" />
+      <div ref={mapContainer} className="flex-1 rounded-[1.8rem] overflow-hidden border border-slate-100 shadow-inner" />
     </div>
   )
 }

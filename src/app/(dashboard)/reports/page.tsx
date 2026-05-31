@@ -51,49 +51,49 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="space-y-10">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-2">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Reports</h2>
-          <p className="text-slate-500">
-            {selectedProjectName ? `Reports · ${selectedProjectName}` : 'Generate and review inspection reports.'}
+          <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Inspection Reports</h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            {selectedProjectName ? `Reports Archive · ${selectedProjectName}` : 'Generate and review technical inspection logs.'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-600">Project</label>
+          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Filter Site</label>
             <select
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white"
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             >
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
               ))}
             </select>
           </div>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            Create New Report
+          <Button onClick={() => setIsCreateModalOpen(true)} className="font-black uppercase tracking-[0.2em] text-[10px] px-8 h-12 shadow-lg shadow-primary/20">
+            Generate New Log
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl bg-white p-4 shadow-lg">
-          <div className="text-xs font-semibold text-slate-500">Total Open Reports</div>
-          <div className="text-2xl font-bold text-slate-900">{reportStats.open}</div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-[2rem] bg-white p-6 shadow-xl border border-slate-100 group hover:shadow-2xl transition-all">
+          <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Active Logs</div>
+          <div className="text-4xl font-koulen text-black">{reportStats.open}</div>
         </div>
-        <div className="rounded-2xl bg-blue-50 p-4 shadow-lg">
-          <div className="text-xs font-semibold text-blue-700">Reports In Review</div>
-          <div className="text-2xl font-bold text-blue-900">{reportStats.in_review}</div>
+        <div className="rounded-[2rem] bg-indigo-50/50 p-6 shadow-xl border border-indigo-100 group hover:shadow-2xl transition-all">
+          <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Pending Review</div>
+          <div className="text-4xl font-koulen text-indigo-700">{reportStats.in_review}</div>
         </div>
-        <div className="rounded-2xl bg-red-50 p-4 shadow-lg">
-          <div className="text-xs font-semibold text-red-700">Critical Risk Reports</div>
-          <div className="text-2xl font-bold text-red-900">{reportStats.critical}</div>
+        <div className="rounded-[2rem] bg-rose-50/50 p-6 shadow-xl border border-rose-100 group hover:shadow-2xl transition-all">
+          <div className="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-2">Critical Priority</div>
+          <div className="text-4xl font-koulen text-rose-600">{reportStats.critical}</div>
         </div>
-        <div className="rounded-2xl bg-emerald-50 p-4 shadow-lg">
-          <div className="text-xs font-semibold text-emerald-700">Completed Reports</div>
-          <div className="text-2xl font-bold text-emerald-900">{reportStats.completed}</div>
+        <div className="rounded-[2rem] bg-emerald-50/50 p-6 shadow-xl border border-emerald-100 group hover:shadow-2xl transition-all">
+          <div className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-2">Verified Complete</div>
+          <div className="text-4xl font-koulen text-emerald-600">{reportStats.completed}</div>
         </div>
       </div>
 
