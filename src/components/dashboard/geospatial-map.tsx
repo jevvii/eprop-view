@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useGeospatialZones, useProjects } from '@/app/lib/queries'
@@ -16,7 +16,7 @@ export function GeospatialMap() {
   const map = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<mapboxgl.Marker[]>([])
   const addedLayersRef = useRef<{ sourceId: string; layerId: string }[]>([])
-  const styleReadyRef = useRef(false)
+  const [isMapReady, setIsMapReady] = useState(false)
 
   const { data: zones, isError: zonesError } = useGeospatialZones()
   const { data: projects, isError: projectsError } = useProjects()
@@ -32,23 +32,30 @@ export function GeospatialMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: [121.0484, 14.6507], // Initial fallback center
-      zoom: 11, // Start a bit wider
+      center: [121.0484, 14.6507], 
+      zoom: 11, 
       antialias: true
     })
 
     map.current.on('style.load', () => {
-      styleReadyRef.current = true
+      setIsMapReady(true)
     })
 
+    // Handle container resize
+    const resizeObserver = new ResizeObserver(() => {
+      map.current?.resize()
+    })
+    resizeObserver.observe(mapContainer.current)
+
     return () => {
+      resizeObserver.disconnect()
       map.current?.remove()
       map.current = null
     }
   }, [])
 
   useEffect(() => {
-    if (!map.current || !styleReadyRef.current || (!zones && !projects)) return
+    if (!map.current || !isMapReady || (!zones && !projects)) return
 
     const updateLayers = () => {
       if (!map.current) return
