@@ -50,9 +50,9 @@ export default function DashboardPage() {
         {/* Bottom Floating Chart */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-full px-8 max-w-4xl">
           <div className="pointer-events-auto">
-            <DamageTrendChart 
-              isFloating 
-              className="h-64 shadow-2xl"
+            <DamageTrendChart
+              isFloating
+              className="h-48 shadow-2xl"
             />
           </div>
         </div>
