@@ -46,16 +46,15 @@ export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps)
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.8fr,1fr]">
-      {/* 1. Main Table */}
+    <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr,1.8fr]">
+      {/* 1. Log List (Compact) */}
       <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col">
         <div className="flex items-center justify-between mb-8 px-2">
           <div>
             <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Technical Logs</h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Historical inspection data and risk registry.</p>
           </div>
-          <div className="px-4 py-1.5 bg-slate-50 border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
-            {reports.length} Units Found
+          <div className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-full text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">
+            {reports.length} Units
           </div>
         </div>
 
@@ -64,8 +63,6 @@ export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps)
             <thead>
               <tr className="border-b border-slate-100">
                 <th scope="col" className="text-left py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] pl-2">Designation</th>
-                <th scope="col" className="text-left py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">Operation Date</th>
-                <th scope="col" className="text-left py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">Risk Protocol</th>
                 <th scope="col" className="text-right py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] pr-2">System Score</th>
               </tr>
             </thead>
@@ -82,12 +79,6 @@ export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps)
                       <div className={`font-black uppercase tracking-tight leading-tight transition-colors ${isSelected ? 'text-primary' : 'text-black'}`}>{report.title}</div>
                       <div className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">{report.report_id}</div>
                     </td>
-                    <td className="py-6 text-[11px] font-bold text-slate-600 uppercase tracking-tighter">
-                      {new Date(report.date).toLocaleDateString()}
-                    </td>
-                    <td className="py-6">
-                      <StatusBadge status={report.status} />
-                    </td>
                     <td className="py-6 text-right pr-2">
                       <RiskScore score={report.risk_score} />
                     </td>
@@ -99,8 +90,8 @@ export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps)
         </div>
       </div>
 
-      {/* 2. Detail Sidebar */}
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-full sticky top-24">
+      {/* 2. Detail View (Expanded) */}
+      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-full min-h-[600px]">
         {selectedReport ? (
           <div className="space-y-8 h-full flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-100 pb-6 px-2">
