@@ -83,11 +83,12 @@ export function GeospatialMap() {
     if (projects && projects.length > 0 && !hasFocusedRef.current) {
       const p = projects[0]
       if (p.longitude && p.latitude) {
-        m.jumpTo({
+        m.flyTo({
           center: [p.longitude, p.latitude],
-          zoom: 14.2
+          zoom: 14.2,
+          speed: 1.2,
+          essential: true
         })
-        m.resize() // Ensure tiles load at new position
         hasFocusedRef.current = true
       }
     }
