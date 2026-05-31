@@ -9,8 +9,15 @@ import { Button } from '@/components/ui/button'
 export default function ReportsPage() {
   const { data: projects, isLoading, isError } = useProjects()
   const [projectId, setProjectId] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const { data: reports, isLoading: reportsLoading, isError: reportsError } = useReports(projectId || undefined)
+
+  const filteredReports = useMemo(() => {
+    if (!reports) return []
+    if (statusFilter === 'all') return reports
+    return reports.filter(r => r.status === statusFilter)
+  }, [reports, statusFilter])
 
   useEffect(() => {
     if (!projectId && projects && projects.length > 0) {
@@ -72,8 +79,24 @@ export default function ReportsPage() {
               ))}
             </select>
           </div>
+
+          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Status</label>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            >
+              <option value="all">ALL_STATUS</option>
+              <option value="open">OPEN</option>
+              <option value="in_review">IN_REVIEW</option>
+              <option value="critical">CRITICAL</option>
+              <option value="completed">COMPLETED</option>
+            </select>
+          </div>
+
           <Button onClick={() => setIsCreateModalOpen(true)} className="font-black uppercase tracking-[0.2em] text-[10px] px-8 h-12 shadow-lg shadow-primary/20">
-            Generate New Log
+            Add New Log
           </Button>
         </div>
       </div>
@@ -97,7 +120,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <ReportsTable reports={reports} isLoading={reportsLoading} isError={reportsError} />
+      <ReportsTable reports={filteredReports} isLoading={reportsLoading} isError={reportsError} />
 
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">

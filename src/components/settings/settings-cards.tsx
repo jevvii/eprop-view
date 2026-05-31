@@ -170,14 +170,6 @@ export function SettingsCards() {
             <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">System Integrity</h3>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Current system health and metadata record status.</p>
           </div>
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="font-black uppercase tracking-[0.2em] text-[10px] px-8 border-slate-200" 
-            onClick={() => window.print()}
-          >
-            Export Logs
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

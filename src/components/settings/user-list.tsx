@@ -2,11 +2,23 @@
 
 import { useAllProfiles } from '@/app/lib/queries'
 import { toggleUserStatus } from '@/app/actions/admin'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 export function UserList() {
   const { data: users, isLoading, isError, refetch } = useAllProfiles()
   const [isToggling, setIsToggling] = useState<string | null>(null)
+  const [roleFilter, setRoleFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return []
+    return users.filter(user => {
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'active' ? user.is_active !== false : user.is_active === false)
+      return matchesRole && matchesStatus
+    })
+  }, [users, roleFilter, statusFilter])
 
   const handleToggle = async (userId: string, currentStatus: boolean) => {
     setIsToggling(userId)
@@ -33,13 +45,33 @@ export function UserList() {
 
   return (
     <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-10 px-2">
+      <div className="flex items-center justify-between mb-8 px-2">
         <div>
           <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Personnel Directory</h3>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Access control and status monitoring.</p>
         </div>
-        <div className="px-4 py-1.5 bg-slate-50 border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
-          {users?.length || 0} Registered Units
+        <div className="flex items-center gap-2">
+          <select 
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="text-[9px] font-black uppercase tracking-widest bg-slate-50 border border-slate-100 rounded-lg px-2 py-1 outline-none"
+          >
+            <option value="all">ALL_ROLES</option>
+            <option value="admin">ADMIN</option>
+            <option value="inspector">INSPECTOR</option>
+          </select>
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="text-[9px] font-black uppercase tracking-widest bg-slate-50 border border-slate-100 rounded-lg px-2 py-1 outline-none"
+          >
+            <option value="all">ALL_STATUS</option>
+            <option value="active">ONLINE</option>
+            <option value="inactive">DEACTIVATED</option>
+          </select>
+          <div className="px-4 py-1.5 bg-slate-50 border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+            {filteredUsers.length} Units
+          </div>
         </div>
       </div>
       
@@ -54,7 +86,7 @@ export function UserList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {users?.map((user) => (
+            {filteredUsers.map((user) => (
               <tr key={user.id} className="group hover:bg-slate-50/50 transition-all">
                 <td className="py-6 pl-2">
                   <div className="font-black text-black uppercase tracking-tight leading-tight">{user.full_name}</div>
