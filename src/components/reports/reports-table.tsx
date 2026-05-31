@@ -145,6 +145,9 @@ export function ReportsTable({ reports, isLoading, isError }: ReportsTableProps)
             </div>
 
             <div className="pt-8 border-t border-slate-100 flex flex-col gap-3">
+              <Button onClick={() => window.print()} variant="outline" className="w-full py-4 font-black uppercase tracking-[0.2em] text-[10px] h-auto border-slate-200">
+                Print Report
+              </Button>
               <Button onClick={() => setModalReport(selectedReport)} className="w-full py-4 font-black uppercase tracking-[0.2em] text-[10px] h-auto shadow-lg shadow-primary/10">
                 Generate Full Manifest
               </Button>
