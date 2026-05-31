@@ -50,34 +50,40 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
     datasets: [
       {
         label: 'CRITICAL',
-        data: trends?.filter((t) => t.severity === 'critical').map((t) => t.value) || [8.5, 8.2, 7.8, 6.9, 6.5],
+        data: trends?.filter((t) => t.severity === 'critical').map((t) => t.value) || [8.5, 8.2, 7.5, 6.8, 6.5],
         borderColor: '#ef4444',
         backgroundColor: '#ef4444',
         tension: 0.4,
       },
       {
         label: 'HIGH',
-        data: trends?.filter((t) => t.severity === 'high').map((t) => t.value) || [5.2, 5.0, 4.7, 4.3, 4.1],
+        data: trends?.filter((t) => t.severity === 'high').map((t) => t.value) || [5.2, 5.0, 4.8, 4.5, 4.2],
         borderColor: '#f97316',
         backgroundColor: '#f97316',
         tension: 0.4,
       },
       {
         label: 'MODERATE',
-        data: trends?.filter((t) => t.severity === 'moderate').map((t) => t.value) || [2.1, 2.3, 2.0, 1.8, 1.6],
+        data: trends?.filter((t) => t.severity === 'moderate').map((t) => t.value) || [3.8, 3.6, 3.4, 3.2, 3.0],
         borderColor: '#fbbf24',
         backgroundColor: '#fbbf24',
+        tension: 0.4,
+      },
+      {
+        label: 'LOW',
+        data: trends?.filter((t) => t.severity === 'low').map((t) => t.value) || [2.1, 2.3, 2.0, 1.8, 1.6],
+        borderColor: '#10b981',
+        backgroundColor: '#10b981',
         tension: 0.4,
       },
     ],
   }
 
-  const maxValue = 10
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
-      y: { min: 0, max: maxValue, grid: { color: 'rgba(226, 232, 240, 0.5)' } },
+      y: { min: 0, max: 10, grid: { color: 'rgba(226, 232, 240, 0.5)' } },
       x: { grid: { display: false } },
     },
     plugins: {
@@ -86,8 +92,9 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
         align: 'end' as const,
         labels: {
           font: { size: 10, weight: 'bold' as any },
-          boxWidth: 8,
-          usePointStyle: true
+          boxWidth: 20,
+          usePointStyle: false,
+          padding: 15
         }
       },
     },
@@ -96,8 +103,8 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
   const bgStyle = isFloating ? 'bg-white/90 backdrop-blur-md' : 'bg-white'
 
   return (
-    <div className={`${bgStyle} p-8 rounded-[2.5rem] shadow-xl border border-white/20 h-full flex flex-col ${className}`}>
-      <h3 className="text-[0.65rem] font-black text-slate-400 mb-6 tracking-[0.15em] uppercase">Damage Severity Trend</h3>
+    <div className={`${bgStyle} p-10 rounded-[2.5rem] shadow-xl border border-white/20 h-full flex flex-col ${className}`}>
+      <h3 className="text-[0.7rem] font-black text-black mb-6 tracking-wide uppercase">DAMAGE SEVERITY TREND</h3>
       <div className="flex-1 min-h-0">
         <Line data={chartData} options={options} />
       </div>

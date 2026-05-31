@@ -32,8 +32,8 @@ export function GeospatialMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: [121.0484, 14.6507], // Default center (e.g., Quezon City)
-      zoom: 13,
+      center: [121.0484, 14.6507], // Initial fallback center
+      zoom: 11, // Start a bit wider
       antialias: true
     })
 
@@ -52,6 +52,17 @@ export function GeospatialMap() {
 
     const updateLayers = () => {
       if (!map.current) return
+
+      // Center map on the first project if available
+      if (projects && projects.length > 0 && projects[0].longitude && projects[0].latitude) {
+        map.current.flyTo({
+          center: [projects[0].longitude, projects[0].latitude],
+          zoom: 15,
+          speed: 1.5,
+          curve: 1.42,
+          essential: true
+        })
+      }
 
       // Clear existing markers
       markersRef.current.forEach((m) => m.remove())
