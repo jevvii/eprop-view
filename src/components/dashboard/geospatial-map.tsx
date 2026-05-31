@@ -17,12 +17,11 @@ export function GeospatialMap() {
   const markersRef = useRef<mapboxgl.Marker[]>([])
   const addedLayersRef = useRef<{ sourceId: string; layerId: string }[]>([])
   const [isStyleLoaded, setIsStyleLoaded] = useState(false)
-  const hasJumpedRef = useRef(false)
 
   const { data: zones } = useGeospatialZones()
   const { data: projects } = useProjects()
 
-  // 1. Initialize Map once
+  // 1. Initialize Map
   useEffect(() => {
     if (map.current || !mapContainer.current) return
 
@@ -55,29 +54,25 @@ export function GeospatialMap() {
     }
   }, [])
 
-  // 2. Initial Jump to Project
+  // 2. Sync Data and Zoom
   useEffect(() => {
-    if (!map.current || !projects || projects.length === 0 || hasJumpedRef.current) return
-
-    const project = projects[0]
-    if (project.longitude && project.latitude) {
-      map.current.jumpTo({
-        center: [project.longitude, project.latitude],
-        zoom: 14.2
-      })
-      hasJumpedRef.current = true
-    }
-  }, [projects])
-
-  // 3. Sync Markers and Layers
-  useEffect(() => {
-    if (!map.current || !isStyleLoaded) return
+    if (!map.current || !isStyleLoaded || (!zones && !projects)) return
 
     const syncMap = () => {
       const m = map.current
       if (!m || !m.isStyleLoaded()) return
 
-      // --- Markers ---
+      // --- FLY TO PROJECT ---
+      if (projects && projects.length > 0 && projects[0].longitude && projects[0].latitude) {
+        m.flyTo({
+          center: [projects[0].longitude, projects[0].latitude],
+          zoom: 14.2,
+          speed: 1.5,
+          essential: true
+        })
+      }
+
+      // --- MARKERS ---
       markersRef.current.forEach(marker => marker.remove())
       markersRef.current = []
 
@@ -96,21 +91,18 @@ export function GeospatialMap() {
         }
       })
 
-      // --- Layers ---
-      // Clean up previous layers/sources recorded in our ref
+      // --- LAYERS ---
       addedLayersRef.current.forEach(({ sourceId, layerId }) => {
         if (m.getLayer(layerId)) m.removeLayer(layerId)
         if (m.getSource(sourceId)) m.removeSource(sourceId)
       })
       addedLayersRef.current = []
 
-      // Add Zones
       zones?.forEach((zone) => {
         if (zone.geom && (zone.geom.type === 'Polygon' || zone.geom.type === 'MultiPolygon')) {
           const sourceId = `source-${zone.id}`
           const layerId = `layer-${zone.id}`
-
-          // Double check Mapbox internal state to prevent crashes
+          
           if (m.getSource(sourceId)) return
 
           m.addSource(sourceId, {
@@ -132,12 +124,11 @@ export function GeospatialMap() {
       })
     }
 
-    syncMap()
-
-    // Also listen for re-loads (e.g. if style changes or map resets)
-    map.current.on('style.load', syncMap)
-    return () => {
-      map.current?.off('style.load', syncMap)
+    // Run sync immediately or wait for idle if needed
+    if (map.current.isStyleLoaded()) {
+      syncMap()
+    } else {
+      map.current.once('idle', syncMap)
     }
   }, [isStyleLoaded, projects, zones])
 
@@ -149,5 +140,5 @@ export function GeospatialMap() {
     )
   }
 
-  return <div ref={mapContainer} className="w-full h-full rounded-none" />
+  return <div ref={mapContainer} className="w-full h-full" />
 }
