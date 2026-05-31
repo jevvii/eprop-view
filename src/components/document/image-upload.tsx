@@ -83,87 +83,90 @@ export function ImageUpload() {
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg space-y-4">
-      <div>
-        <h3 className="text-sm font-bold text-slate-900 tracking-wide">INSPECTION IMAGE UPLOAD</h3>
-        <p className="text-xs text-slate-500">
-          Upload site photos to the secure inspection-images bucket.
-        </p>
-      </div>
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Inspection</label>
-        <select
-          value={inspectionId}
-          onChange={(event) => setInspectionId(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-        >
-          <option value="">Select an inspection</option>
-          {inspections?.map((inspection) => (
-            <option key={inspection.id} value={inspection.id}>
-              {new Date(inspection.inspection_date).toLocaleDateString()} · {inspection.location}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <label
-        className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center text-sm text-slate-500 cursor-pointer hover:border-blue-300 transition-colors"
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={handleDrop}
-      >
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(event) => handleFileChange(event.target.files)}
-        />
-        <span className="font-medium text-slate-700">Drop images here or click to browse</span>
-        <span className="text-xs text-slate-400 mt-1">PNG, JPG, or WEBP · Max 10MB each</span>
-      </label>
-
-      {files.length > 0 && (
-        <div className="text-xs text-slate-500">
-          Selected files: {files.map((file) => file.name).join(', ')}
+    <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-8 flex flex-col h-full">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-6 px-2">
+        <div>
+          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Asset Vault</h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Storage for site imagery and evidence.</p>
         </div>
-      )}
+        <div className="text-[9px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 px-3 py-1 rounded-full border border-primary/10">
+          Cloud Sync Active
+        </div>
+      </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {success && <p className="text-sm text-emerald-600">{success}</p>}
+      <div className="space-y-6 flex-1">
+        <div>
+          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Target Inspection</label>
+          <select
+            value={inspectionId}
+            onChange={(event) => setInspectionId(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+          >
+            <option value="">SELECT_ENTRY</option>
+            {inspections?.map((inspection) => (
+              <option key={inspection.id} value={inspection.id}>
+                {new Date(inspection.inspection_date).toLocaleDateString()} · {inspection.location}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div className="flex justify-end">
-        <Button type="button" onClick={handleUpload} disabled={uploading}>
-          {uploading ? 'Uploading...' : 'Upload Images'}
+        <label
+          className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-primary/30 transition-all group"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={handleDrop}
+        >
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(event) => handleFileChange(event.target.files)}
+          />
+          <div className="text-4xl mb-4 group-hover:scale-110 transition-transform grayscale group-hover:grayscale-0">📸</div>
+          <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Drop technical assets here</span>
+          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2">PNG, JPG, or WEBP · Max 10MB</span>
+        </label>
+
+        {files.length > 0 && (
+          <div className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/5 p-3 rounded-xl border border-primary/10">
+            Selected: {files.length} units ({files.map(f => f.name.slice(0, 10) + '...').join(', ')})
+          </div>
+        )}
+
+        {error && <p className="text-[10px] font-bold text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>}
+        {success && <p className="text-[10px] font-bold text-emerald-600 bg-emerald-50 p-3 rounded-lg border border-emerald-100">{success}</p>}
+      </div>
+
+      <div className="flex justify-end pt-4 border-t border-slate-100">
+        <Button type="button" onClick={handleUpload} disabled={uploading || files.length === 0} className="font-black uppercase tracking-[0.2em] text-[10px] px-10 py-5 h-auto shadow-lg shadow-primary/20">
+          {uploading ? 'Syncing...' : 'Upload to Vault'}
         </Button>
       </div>
 
-      {inspectionId && (
-        <div className="pt-2 border-t border-slate-100">
-          <div className="text-xs font-semibold text-slate-600 mb-2">
-            Uploaded images {selectedInspectionLabel ? `· ${selectedInspectionLabel}` : ''}
+      {inspectionId && images && images.length > 0 && (
+        <div className="pt-6 border-t border-slate-100">
+          <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+            Vault Registry {selectedInspectionLabel ? `· ${selectedInspectionLabel}` : ''}
           </div>
-          {isLoading ? (
-            <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
-          ) : images && images.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
-              {images.map((image) => (
-                <div key={image.id} className="rounded-xl border border-slate-200 overflow-hidden">
+          <div className="grid grid-cols-2 gap-4">
+            {images.map((image) => (
+              <div key={image.id} className="rounded-2xl border border-slate-100 overflow-hidden shadow-sm group hover:shadow-md transition-all">
+                <div className="relative h-28 w-full bg-slate-100">
                   {image.signed_url ? (
-                    <img src={image.signed_url} alt={image.caption || 'Inspection photo'} className="h-28 w-full object-cover" />
+                    <img src={image.signed_url} alt={image.caption || 'Technical photo'} className="h-full w-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" />
                   ) : (
-                    <div className="h-28 flex items-center justify-center text-xs text-slate-400">
-                      Preview unavailable
+                    <div className="h-full flex items-center justify-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      Preview_Offline
                     </div>
                   )}
-                  <div className="px-2 py-1 text-[11px] text-slate-500 truncate">
-                    {image.caption || image.storage_path}
-                  </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500">No images uploaded yet.</p>
-          )}
+                <div className="px-3 py-2 text-[9px] font-bold text-slate-500 truncate uppercase tracking-tighter bg-white">
+                  {image.caption || 'UNNAMED_ASSET'}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

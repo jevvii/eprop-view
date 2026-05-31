@@ -48,9 +48,9 @@ export function ProjectGrid() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="bg-white p-6 rounded-2xl shadow-lg h-48 animate-pulse" />
+          <div key={index} className="bg-white p-10 rounded-[2.5rem] shadow-xl h-64 animate-pulse border border-slate-100" />
         ))}
       </div>
     )
@@ -58,22 +58,22 @@ export function ProjectGrid() {
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600">
-        Failed to load projects
+      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-red-100 text-red-600 font-black uppercase tracking-widest text-center">
+        Telemetry Error: Database unreachable.
       </div>
     )
   }
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-slate-500">
-        No projects available yet.
+      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 text-slate-400 font-bold uppercase tracking-widest text-center italic">
+        System Status: No active projects on file.
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
       {projects.map((project) => {
         const inspectionsCount = inspectionCounts.get(project.id) ?? 0
         const reportsCount = reportCounts.get(project.id) ?? 0
@@ -81,33 +81,39 @@ export function ProjectGrid() {
         const lastInspection = latestInspectionDate.get(project.id)
 
         return (
-          <div key={project.id} className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
-            <div className="flex items-start justify-between gap-4 mb-4">
+          <div key={project.id} className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col group hover:shadow-2xl transition-all duration-300">
+            <div className="flex items-start justify-between gap-6 mb-8">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">{project.name}</h3>
-                <p className="text-sm text-slate-500">{project.location}</p>
+                <h3 className="text-xl font-koulen text-black tracking-wide leading-none mb-1 group-hover:text-primary transition-colors">{project.name}</h3>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{project.location}</p>
               </div>
               <StatusBadge status={project.status} />
             </div>
-            <p className="text-sm text-slate-600 mb-4 min-h-[3.5rem]">
-              {project.description || 'No description provided for this project.'}
+            
+            <p className="text-[11px] font-bold text-slate-600 mb-10 leading-relaxed flex-1 italic">
+              {project.description || 'No detailed technical overview provided for this designated unit.'}
             </p>
-            <div className="grid grid-cols-3 gap-3 text-sm">
-              <div className="rounded-xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold text-slate-500">Inspections</div>
-                <div className="text-lg font-bold text-slate-900">{inspectionsCount}</div>
+
+            <div className="grid grid-cols-3 gap-4 border-t border-slate-100 pt-8">
+              <div className="flex flex-col">
+                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Inspections</div>
+                <div className="text-2xl font-koulen text-black">{inspectionsCount}</div>
               </div>
-              <div className="rounded-xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold text-slate-500">Reports</div>
-                <div className="text-lg font-bold text-slate-900">{reportsCount}</div>
+              <div className="flex flex-col">
+                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Reports</div>
+                <div className="text-2xl font-koulen text-black">{reportsCount}</div>
               </div>
-              <div className="rounded-xl bg-rose-50 p-3">
-                <div className="text-xs font-semibold text-rose-600">Critical</div>
-                <div className="text-lg font-bold text-rose-700">{criticalCount}</div>
+              <div className="flex flex-col">
+                <div className="text-[8px] font-black text-rose-400 uppercase tracking-widest mb-1.5">Critical</div>
+                <div className="text-2xl font-koulen text-rose-600">{criticalCount}</div>
               </div>
             </div>
-            <div className="mt-4 text-xs text-slate-400">
-              Last inspection: {lastInspection ? new Date(lastInspection).toLocaleDateString() : 'Not yet scheduled'}
+
+            <div className="mt-8 flex items-center justify-between">
+              <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">
+                Last Telemetry: <span className="text-black">{lastInspection ? new Date(lastInspection).toLocaleDateString() : 'INITIAL_SCAN'}</span>
+              </div>
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </div>
           </div>
         )

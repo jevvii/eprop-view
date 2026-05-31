@@ -199,7 +199,7 @@ export function GeospatialMap() {
         hasFocusedRef.current = true;
 
         const timer = setTimeout(() => {
-            animateJumpTo(m, [lng, lat], 15.2, 1000);
+            animateJumpTo(m, [lng, lat], 13.6, 1000);
         }, 400);
 
         return () => clearTimeout(timer);
