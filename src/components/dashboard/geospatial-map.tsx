@@ -11,43 +11,6 @@ const riskColors: Record<string, string> = {
     zone_c: "#10b981", // Emerald
 };
 
-// Frame-by-frame jumpTo gives the same visual smoothness as flyTo/easeTo
-// but completely avoids the Mapbox v3.x tile-loading blank-out bug that
-// strikes when animated zoom completes at the destination.
-function animateJumpTo(
-    m: mapboxgl.Map,
-    target: [number, number],
-    targetZoom: number,
-    durationMs: number,
-) {
-    const startCenter = m.getCenter();
-    const startZoom = m.getZoom();
-    const startTime = performance.now();
-
-    const frame = (now: number) => {
-        const elapsed = now - startTime;
-        const t = Math.min(elapsed / durationMs, 1);
-        // easeOutCubic for a natural deceleration feel
-        const eased = 1 - Math.pow(1 - t, 3);
-
-        const lng = startCenter.lng + (target[0] - startCenter.lng) * eased;
-        const lat = startCenter.lat + (target[1] - startCenter.lat) * eased;
-        const zoom = startZoom + (targetZoom - startZoom) * eased;
-
-        m.jumpTo({ center: [lng, lat], zoom });
-
-        if (t < 1) {
-            requestAnimationFrame(frame);
-        } else {
-            // Final resize forces Mapbox to confirm tile coverage at the new
-            // zoom — this was the proven stabiliser in the non-animated version.
-            m.resize();
-        }
-    };
-
-    requestAnimationFrame(frame);
-}
-
 export function GeospatialMap() {
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<mapboxgl.Map | null>(null);
@@ -74,32 +37,27 @@ export function GeospatialMap() {
             zoom: 11,
             antialias: true,
             trackResize: true,
-            preserveDrawingBuffer: true,
-            failIfMajorPerformanceCaveat: false,
         });
 
         map.current.on("style.load", () => {
             const m = map.current;
             if (!m) return;
 
-            // Single persistent GeoJSON source — data updates via setData only,
-            // never recreating layers. This is the architecture that stayed stable.
+            // Persistent GeoJSON source for risk zones
             m.addSource("risk-zones", {
                 type: "geojson",
                 data: { type: "FeatureCollection", features: [] },
             });
 
-            // Insert the translucent fill BEFORE road layers so streets and labels
-            // render crisply on top of the zones instead of being fogged underneath.
+            // Insert layer below roads for better visibility
             const style = m.getStyle();
-            const firstOverlayLayer = style?.layers?.find(
+            const beforeId = style?.layers?.find(
                 (l) =>
                     l.id.startsWith("road-") ||
                     l.id.startsWith("bridge-") ||
                     l.id.startsWith("tunnel-") ||
                     l.id.startsWith("poi-"),
-            );
-            const beforeId = firstOverlayLayer?.id;
+            )?.id;
 
             m.addLayer(
                 {
@@ -129,15 +87,15 @@ export function GeospatialMap() {
         };
     }, []);
 
-    // 2. Sync Markers
+    // 2. Sync Markers and Data
     useEffect(() => {
         const m = map.current;
-        if (!m || !isStyleLoaded || !projects) return;
+        if (!m || !isStyleLoaded) return;
 
+        // Sync Markers
         markersRef.current.forEach((marker) => marker.remove());
         markersRef.current = [];
-
-        projects.forEach((p) => {
+        projects?.forEach((p) => {
             if (p.latitude && p.longitude) {
                 const marker = new mapboxgl.Marker({ color: "#346BDA" })
                     .setLngLat([p.longitude, p.latitude])
@@ -153,57 +111,50 @@ export function GeospatialMap() {
                 markersRef.current.push(marker);
             }
         });
-    }, [isStyleLoaded, projects]);
 
-    // 3. Sync Zone Data
-    useEffect(() => {
-        const m = map.current;
-        if (!m || !isStyleLoaded) return;
-
+        // Sync Zone Data
         const source = m.getSource("risk-zones") as mapboxgl.GeoJSONSource;
-        if (!source) return;
+        if (source) {
+            const features = (zones || [])
+                .filter((z) => z.geom && (z.geom.type === "Polygon" || z.geom.type === "MultiPolygon"))
+                .map((z) => ({
+                    type: "Feature",
+                    geometry: z.geom,
+                    properties: { color: riskColors[z.risk_level] || "#94a3b8" },
+                }));
+            source.setData({ type: "FeatureCollection", features: features as any });
+        }
+    }, [isStyleLoaded, projects, zones]);
 
-        const features = (zones || [])
-            .filter(
-                (z) =>
-                    z.geom &&
-                    (z.geom.type === "Polygon" ||
-                        z.geom.type === "MultiPolygon"),
-            )
-            .map((z) => ({
-                type: "Feature",
-                geometry: z.geom,
-                properties: {
-                    color: riskColors[z.risk_level] || "#94a3b8",
-                },
-            }));
-
-        source.setData({
-            type: "FeatureCollection",
-            features: features as any,
-        });
-    }, [isStyleLoaded, zones]);
-
-    // 4. Camera Focus — custom frame animation for smooth zoom without flyTo
+    // 3. Camera Focus with Load Safeguard
     useEffect(() => {
         const m = map.current;
-        if (!m || !isStyleLoaded) return;
-        if (!projects || projects.length === 0 || hasFocusedRef.current) return;
-        if (zones === undefined) return;
+        if (!m || !isStyleLoaded || !projects || projects.length === 0 || hasFocusedRef.current) return;
 
         const p = projects[0];
-        const lng = p.longitude;
-        const lat = p.latitude;
-        if (lng == null || lat == null) return;
+        if (p.longitude && p.latitude) {
+            hasFocusedRef.current = true;
+            
+            m.flyTo({
+                center: [p.longitude, p.latitude],
+                zoom: 15.2,
+                speed: 1, // Slower speed to allow tile loading during flight
+                essential: true
+            });
 
-        hasFocusedRef.current = true;
-
-        const timer = setTimeout(() => {
-            animateJumpTo(m, [lng, lat], 15.2, 1000);
-        }, 400);
-
-        return () => clearTimeout(timer);
-    }, [isStyleLoaded, projects, zones]);
+            // The LOAD FIX: 
+            // 1. Force resize on moveend
+            // 2. Add a tiny delay and nudge if tiles still aren't loading
+            const handleMoveEnd = () => {
+                m.resize();
+                // A tiny nudge (0.000001 degrees) can force a redraw of the local tile grid 
+                // if Mapbox gets stuck in a 'white out' state.
+                m.panBy([1, 1], { duration: 0 });
+                m.off('moveend', handleMoveEnd);
+            };
+            m.on('moveend', handleMoveEnd);
+        }
+    }, [isStyleLoaded, projects]);
 
     if (!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
         return (
