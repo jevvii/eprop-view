@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useGeospatialZones, useProjects } from '@/app/lib/queries'
@@ -15,13 +15,12 @@ export function GeospatialMap() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<mapboxgl.Marker[]>([])
-  const [isStyleLoaded, setIsStyleLoaded] = useState(false)
-  const hasFocusedRef = useRef(false)
+  const addedLayersRef = useRef<{ sourceId: string; layerId: string }[]>([])
+  const styleReadyRef = useRef(false)
 
-  const { data: zones } = useGeospatialZones()
-  const { data: projects } = useProjects()
+  const { data: zones, isError: zonesError } = useGeospatialZones()
+  const { data: projects, isError: projectsError } = useProjects()
 
-  // 1. Initialize Map (Strictly Once)
   useEffect(() => {
     if (map.current || !mapContainer.current) return
 
@@ -33,109 +32,113 @@ export function GeospatialMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: [121.0484, 14.6507],
-      zoom: 11,
-      antialias: true,
-      trackResize: true
+      center: [121.0484, 14.6507], // Initial fallback center
+      zoom: 11, // Start a bit wider
+      antialias: true
     })
 
     map.current.on('style.load', () => {
-      const m = map.current
-      if (!m) return
-
-      // Initialize persistent sources
-      m.addSource('risk-zones', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
-      })
-
-      m.addLayer({
-        id: 'risk-zones-fill',
-        type: 'fill',
-        source: 'risk-zones',
-        paint: {
-          'fill-color': ['get', 'color'],
-          'fill-opacity': 0.35
-        }
-      })
-
-      setIsStyleLoaded(true)
+      styleReadyRef.current = true
     })
-
-    const resizeObserver = new ResizeObserver(() => {
-      map.current?.resize()
-    })
-    resizeObserver.observe(mapContainer.current)
 
     return () => {
-      resizeObserver.disconnect()
       map.current?.remove()
       map.current = null
     }
   }, [])
 
-  // 2. Sync Data & Camera
   useEffect(() => {
-    const m = map.current
-    if (!m || !isStyleLoaded) return
+    if (!map.current || !styleReadyRef.current || (!zones && !projects)) return
 
-    // --- CAMERA FOCUS ---
-    if (projects && projects.length > 0 && !hasFocusedRef.current) {
-      const p = projects[0]
-      if (p.longitude && p.latitude) {
-        m.flyTo({
-          center: [p.longitude, p.latitude],
+    const updateLayers = () => {
+      if (!map.current) return
+
+      // Center map on the first project if available
+      if (projects && projects.length > 0 && projects[0].longitude && projects[0].latitude) {
+        map.current.flyTo({
+          center: [projects[0].longitude, projects[0].latitude],
           zoom: 14.2,
-          speed: 1.2,
+          speed: 1.5,
+          curve: 1.42,
           essential: true
         })
-        hasFocusedRef.current = true
       }
-    }
 
-    // --- MARKERS ---
-    markersRef.current.forEach(marker => marker.remove())
-    markersRef.current = []
+      // Clear existing markers
+      markersRef.current.forEach((m) => m.remove())
+      markersRef.current = []
 
-    projects?.forEach((p) => {
-      if (p.latitude && p.longitude) {
-        const marker = new mapboxgl.Marker({ color: '#346BDA' })
-          .setLngLat([p.longitude, p.latitude])
-          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
-            <div class="p-2">
-              <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Active Project</div>
-              <div class="font-koulen text-lg text-primary tracking-wide">${p.name}</div>
-            </div>
-          `))
-          .addTo(m)
-        markersRef.current.push(marker)
-      }
-    })
+      // Clear existing layers
+      addedLayersRef.current.forEach(({ sourceId, layerId }) => {
+        if (map.current?.getLayer(layerId)) map.current.removeLayer(layerId)
+        if (map.current?.getSource(sourceId)) map.current.removeSource(sourceId)
+      })
+      addedLayersRef.current = []
 
-    // --- ZONE DATA (FeatureCollection) ---
-    const source = m.getSource('risk-zones') as mapboxgl.GeoJSONSource
-    if (source) {
-      const features = (zones || [])
-        .filter(z => z.geom && (z.geom.type === 'Polygon' || z.geom.type === 'MultiPolygon'))
-        .map(z => ({
-          type: 'Feature',
-          geometry: z.geom,
-          properties: {
-            color: riskColors[z.risk_level] || '#94a3b8'
+      zones?.forEach((zone) => {
+        if (zone.geom && zone.geom.type === 'Polygon') {
+          const sourceId = `source-${zone.id}`
+          const layerId = `layer-${zone.id}`
+
+          if (!map.current!.getSource(sourceId)) {
+            map.current!.addSource(sourceId, {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: zone.geom,
+              },
+            })
+
+            map.current!.addLayer({
+              id: layerId,
+              type: 'fill',
+              source: sourceId,
+              paint: {
+                'fill-color': riskColors[zone.risk_level] || '#94a3b8',
+                'fill-opacity': 0.3,
+              },
+            })
+            addedLayersRef.current.push({ sourceId, layerId })
           }
-        }))
-      
-      source.setData({
-        type: 'FeatureCollection',
-        features: features as any
+        }
+      })
+
+      projects?.forEach((project) => {
+        if (project.latitude && project.longitude) {
+          const marker = new mapboxgl.Marker({ color: '#346BDA' })
+            .setLngLat([project.longitude, project.latitude])
+            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+              <div class="p-2">
+                <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Active Project</div>
+                <div class="font-koulen text-lg text-primary tracking-wide">${project.name}</div>
+              </div>
+            `))
+            .addTo(map.current!)
+          markersRef.current.push(marker)
+        }
       })
     }
-  }, [isStyleLoaded, projects, zones])
+
+    if (map.current.isStyleLoaded()) {
+      updateLayers()
+    } else {
+      map.current.once('idle', updateLayers)
+    }
+  }, [zones, projects])
 
   if (!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-slate-50 text-xs font-black text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 rounded-[2rem]">
         Mapbox Access Token Required
+      </div>
+    )
+  }
+
+  if (zonesError || projectsError) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-red-50 text-xs font-black text-red-400 uppercase tracking-widest rounded-[2rem]">
+        Telemetry Error: Unable to sync geospatial data
       </div>
     )
   }
