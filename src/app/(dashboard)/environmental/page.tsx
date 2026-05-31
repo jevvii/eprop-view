@@ -64,7 +64,7 @@ export default function EnvironmentalPage() {
       </div>
 
       {projectId && (
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.8fr,1fr]">
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.8fr_1fr]">
           <EnvMap
             projectId={projectId}
             center={
