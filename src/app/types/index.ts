@@ -63,6 +63,14 @@ export interface Report {
   project_name?: string
   risk_score: number
   key_findings: string
+  created_by?: string | null
+  created_by_name?: string
+  reviewed_by?: string | null
+  reviewed_by_name?: string
+  reviewed_at?: string | null
+  last_edited_by?: string | null
+  last_edited_by_name?: string
+  last_edited_at?: string | null
   created_at: string
   updated_at: string
 }

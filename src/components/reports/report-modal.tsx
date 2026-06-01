@@ -48,7 +48,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
             <div className="text-xs font-semibold text-slate-500">Project</div>
-            <div className="text-sm font-medium text-slate-900">{(report.project_name as any)?.name ?? 'Unknown'}</div>
+            <div className="text-sm font-medium text-slate-900">{report.project_name ?? 'Unknown'}</div>
             <div className="mt-2 text-xs font-semibold text-slate-500">Location</div>
             <div className="text-sm text-slate-700">{report.location}</div>
           </div>
@@ -58,7 +58,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
               {new Date(report.date).toLocaleDateString()}
             </div>
             <div className="mt-2 text-xs font-semibold text-slate-500">Lead Inspector</div>
-            <div className="text-sm text-slate-700">{(report.lead_inspector_name as any)?.full_name ?? 'Unassigned'}</div>
+            <div className="text-sm text-slate-700">{report.lead_inspector_name ?? 'Unassigned'}</div>
           </div>
           <div className="rounded-xl bg-slate-50 p-4 md:col-span-2">
             <div className="text-xs font-semibold text-slate-500">Risk Score</div>

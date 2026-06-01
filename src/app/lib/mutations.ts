@@ -42,6 +42,67 @@ export function useCreateReport() {
   })
 }
 
+export function useUpdateReport() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+      previousStatus,
+    }: {
+      id: string
+      updates: Partial<Pick<Report, 'status' | 'risk_score' | 'key_findings'>>
+      previousStatus?: Report['status']
+    }) => {
+      const { data: authData, error: authError } = await getClient().auth.getUser()
+      if (authError || !authData.user) {
+        throw authError ?? new Error('Not authenticated')
+      }
+
+      const now = new Date().toISOString()
+      const payload: Record<string, unknown> = {
+        ...updates,
+        last_edited_by: authData.user.id,
+        last_edited_at: now,
+      }
+
+      if (updates.status === 'completed' && previousStatus !== 'completed') {
+        payload.reviewed_by = authData.user.id
+        payload.reviewed_at = now
+      }
+
+      const { data, error } = await getClient()
+        .from('reports')
+        .update(payload)
+        .eq('id', id)
+        .select('id')
+        .single()
+
+      if (error && error.code === '42703') {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('Reports audit columns missing. Apply migration 002_reports_audit_trail.sql.')
+        }
+        const { data: fallbackData, error: fallbackError } = await getClient()
+          .from('reports')
+          .update(updates)
+          .eq('id', id)
+          .select('id')
+          .single()
+        if (fallbackError) throw fallbackError
+        return fallbackData
+      }
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({ queryKey: ['stats'] })
+    },
+  })
+}
+
 export function useUpdateEnvironmentalRisk() {
   const queryClient = useQueryClient()
 

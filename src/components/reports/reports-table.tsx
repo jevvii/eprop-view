@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Report } from '@/app/types'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { RiskScore } from '@/components/shared/risk-score'
 import { Button } from '@/components/ui/button'
 import { ReportModal } from './report-modal'
+import { useUpdateReport } from '@/app/lib/mutations'
 
 type ReportsTableProps = {
   reports?: Report[]
@@ -15,6 +16,8 @@ type ReportsTableProps = {
   setSelectedReport: (report: Report | null) => void
   onPrintSelected: () => void
 }
+
+const statusOptions = ['open', 'in_review', 'critical', 'completed'] as const
 
 export function ReportsTable({ 
   reports, 
@@ -26,20 +29,82 @@ export function ReportsTable({
 }: ReportsTableProps) {
   const [modalReport, setModalReport] = useState<Report | null>(null)
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list')
+  const updateReport = useUpdateReport()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editStatus, setEditStatus] = useState<(typeof statusOptions)[number]>('open')
+  const [editRiskScore, setEditRiskScore] = useState('0')
+  const [editFindings, setEditFindings] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!reports || reports.length === 0) {
       setSelectedReport(null)
       return
     }
-    if (!selectedReport && reports.length > 0) {
+    if (selectedReport) {
+      const refreshed = reports.find((report) => report.id === selectedReport.id)
+      if (refreshed && refreshed !== selectedReport) {
+        setSelectedReport(refreshed)
+        return
+      }
+    } else if (reports.length > 0) {
       setSelectedReport(reports[0])
     }
   }, [reports, selectedReport, setSelectedReport])
 
+  useEffect(() => {
+    if (!selectedReport) return
+    setIsEditing(false)
+    setEditStatus(selectedReport.status)
+    setEditRiskScore(String(selectedReport.risk_score))
+    setEditFindings(selectedReport.key_findings ?? '')
+    setEditError(null)
+  }, [selectedReport])
+
   const handleSelectReport = (report: Report) => {
     setSelectedReport(report)
     setMobileView('detail')
+  }
+
+  const auditTrail = useMemo(() => {
+    if (!selectedReport) return null
+    const submittedBy = selectedReport.created_by_name || selectedReport.lead_inspector_name || 'System'
+    const reviewedBy = selectedReport.reviewed_by_name || (selectedReport.status === 'completed' ? 'Pending' : '—')
+    const lastEditedBy = selectedReport.last_edited_by_name || submittedBy
+    return {
+      submittedBy,
+      submittedAt: selectedReport.created_at,
+      reviewedBy,
+      reviewedAt: selectedReport.reviewed_at,
+      lastEditedBy,
+      lastEditedAt: selectedReport.last_edited_at ?? selectedReport.updated_at,
+    }
+  }, [selectedReport])
+
+  const handleSave = async () => {
+    if (!selectedReport) return
+    setEditError(null)
+
+    const parsedRisk = Number(editRiskScore)
+    if (Number.isNaN(parsedRisk) || parsedRisk < 0 || parsedRisk > 10) {
+      setEditError('Risk score must be between 0 and 10.')
+      return
+    }
+
+    try {
+      await updateReport.mutateAsync({
+        id: selectedReport.id,
+        previousStatus: selectedReport.status,
+        updates: {
+          status: editStatus,
+          risk_score: parsedRisk,
+          key_findings: editFindings,
+        },
+      })
+      setIsEditing(false)
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : 'Failed to update report.')
+    }
   }
 
   if (isLoading) {
@@ -168,7 +233,21 @@ export function ReportsTable({
                 >
                   Print Manifest
                 </Button>
-                <StatusBadge status={selectedReport.status} />
+                {isEditing ? (
+                  <select
+                    value={editStatus}
+                    onChange={(event) => setEditStatus(event.target.value as (typeof statusOptions)[number])}
+                    className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-black uppercase tracking-[0.15em] bg-white"
+                  >
+                    {statusOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option.replace('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <StatusBadge status={selectedReport.status} />
+                )}
               </div>
             </div>
 
@@ -193,15 +272,97 @@ export function ReportsTable({
                 </div>
                 <div>
                   <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Intensity</div>
-                  <RiskScore score={selectedReport.risk_score} />
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={editRiskScore}
+                      onChange={(event) => setEditRiskScore(event.target.value)}
+                      className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold bg-white"
+                    />
+                  ) : (
+                    <RiskScore score={selectedReport.risk_score} />
+                  )}
                 </div>
               </div>
 
               <div className="space-y-3 px-2">
                 <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Technical Findings</div>
-                <p className="text-[11px] font-bold text-slate-600 leading-relaxed italic whitespace-pre-line border-l-2 border-primary/20 pl-4 py-1">
-                  {selectedReport.key_findings || 'No formal observations recorded for this node.'}
-                </p>
+                {isEditing ? (
+                  <textarea
+                    value={editFindings}
+                    onChange={(event) => setEditFindings(event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 min-h-[120px] focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                ) : (
+                  <p className="text-[11px] font-bold text-slate-600 leading-relaxed italic whitespace-pre-line border-l-2 border-primary/20 pl-4 py-1">
+                    {selectedReport.key_findings || 'No formal observations recorded for this node.'}
+                  </p>
+                )}
+              </div>
+
+              {auditTrail && (
+                <div className="bg-slate-50/70 border border-slate-100 rounded-3xl p-6 space-y-4">
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Audit Trail</div>
+                  <div className="grid grid-cols-1 gap-3 text-[11px] font-bold text-slate-600">
+                    <div className="flex items-center justify-between">
+                      <span className="uppercase tracking-widest text-[9px] text-slate-400">Submitted</span>
+                      <span>{auditTrail.submittedBy}</span>
+                      <span className="text-[9px] text-slate-400">
+                        {new Date(auditTrail.submittedAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="uppercase tracking-widest text-[9px] text-slate-400">Reviewed</span>
+                      <span>{auditTrail.reviewedBy}</span>
+                      <span className="text-[9px] text-slate-400">
+                        {auditTrail.reviewedAt ? new Date(auditTrail.reviewedAt).toLocaleString() : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="uppercase tracking-widest text-[9px] text-slate-400">Last Edited</span>
+                      <span>{auditTrail.lastEditedBy}</span>
+                      <span className="text-[9px] text-slate-400">
+                        {auditTrail.lastEditedAt ? new Date(auditTrail.lastEditedAt).toLocaleString() : '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {editError && (
+                <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-xs font-bold">
+                  {editError}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {isEditing ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                      disabled={updateReport.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="button" onClick={handleSave} disabled={updateReport.isPending}>
+                      {updateReport.isPending ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditing(true)}
+                    disabled={selectedReport.status === 'completed'}
+                  >
+                    {selectedReport.status === 'completed' ? 'Completed' : 'Edit Log'}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
