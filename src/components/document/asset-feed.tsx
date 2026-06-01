@@ -13,7 +13,7 @@ interface AssetFeedProps {
 
 export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
   const { data: profile } = useProfile()
-  const { data: images, isLoading } = useInspectionImages(inspectionId || undefined)
+  const { data: images, isPending, isError } = useInspectionImages(inspectionId || undefined)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
@@ -48,7 +48,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
     )
   }
 
-  if (isLoading) {
+  if (isPending && !images) {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-between px-4 animate-pulse">
@@ -85,6 +85,18 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
             </div>
           ))}
         </div>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="bg-red-50 border border-red-100 rounded-[2.5rem] p-12 text-center">
+        <div className="text-4xl mb-4 grayscale opacity-20">📡</div>
+        <h3 className="text-sm font-black text-red-600 uppercase tracking-widest mb-2">Telemetry Failure</h3>
+        <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider">
+          System was unable to synchronize with the asset vault. Ensure technical migrations 004 & 005 have been deployed.
+        </p>
       </div>
     )
   }

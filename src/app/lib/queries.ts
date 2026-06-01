@@ -204,32 +204,56 @@ export function useInspectionImages(inspectionId?: string) {
     enabled: !!inspectionId,
     queryFn: async (): Promise<InspectionImage[]> => {
       if (!inspectionId) return []
+      
+      const mapResults = async (rows: any[]) => {
+        return Promise.all(
+          rows.map(async (image) => {
+            const { data: signedData, error: signedError } = await getClient()
+              .storage
+              .from('inspection-images')
+              .createSignedUrl(image.storage_path, 60 * 60)
+            
+            return {
+              ...image,
+              uploader_name: typeof image.uploader_name === 'string' 
+                ? image.uploader_name 
+                : image.uploader_name?.full_name ?? 'System',
+              comment_count: Array.isArray(image.comment_count) ? 0 : (image.comment_count as any)?.count ?? 0,
+              signed_url: signedError ? null : signedData?.signedUrl ?? null,
+            }
+          })
+        )
+      }
+
+      // Try fetching with all audit/comment metadata
       const { data, error } = await getClient()
         .from('inspection_images')
         .select('*, uploader_name:profiles!uploader_id(full_name), comment_count:image_comments(count)')
         .eq('inspection_id', inspectionId)
         .order('uploaded_at', { ascending: false })
-      if (error) throw error
 
-      const results = await Promise.all(
-        (data || []).map(async (image) => {
-          const { data: signedData, error: signedError } = await getClient()
-            .storage
-            .from('inspection-images')
-            .createSignedUrl(image.storage_path, 60 * 60)
-          
-          return {
-            ...image,
-            uploader_name: typeof image.uploader_name === 'string' 
-              ? image.uploader_name 
-              : image.uploader_name?.full_name ?? 'System',
-            comment_count: Array.isArray(image.comment_count) ? 0 : (image.comment_count as any)?.count ?? 0,
-            signed_url: signedError ? null : signedData?.signedUrl ?? null,
+      if (error) {
+        // PGRST204 = missing table/column, PGRST200 = relation not found
+        if (error.code === 'PGRST204' || error.code === 'PGRST200' || error.message?.includes('uploader_id') || error.message?.includes('image_comments')) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('Vault audit or commenting schema missing. Apply migrations 004 and 005.')
           }
-        })
-      )
-      return results
+          // Fallback to basic image fetching
+          const { data: fallbackData, error: fallbackError } = await getClient()
+            .from('inspection_images')
+            .select('*')
+            .eq('inspection_id', inspectionId)
+            .order('uploaded_at', { ascending: false })
+          
+          if (fallbackError) throw fallbackError
+          return mapResults(fallbackData || [])
+        }
+        throw error
+      }
+
+      return mapResults(data || [])
     },
+    staleTime: 1000 * 60 * 5, // Cache signed URLs for 5 mins
   })
 }
 
