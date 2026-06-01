@@ -3,16 +3,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/app/lib/supabase/client'
-import { useInspectionImages, useInspections } from '@/app/lib/queries'
+import { useInspectionImages, useInspections, useProfile } from '@/app/lib/queries'
 import { Button } from '@/components/ui/button'
 
 export function ImageUpload() {
+  const { data: profile } = useProfile()
   const { data: inspections } = useInspections()
   const [inspectionId, setInspectionId] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { data: images, isLoading } = useInspectionImages(inspectionId || undefined)
@@ -56,6 +58,9 @@ export function ImageUpload() {
     const supabase = createClient()
 
     try {
+      const { data: authData } = await supabase.auth.getUser()
+      const uploaderId = authData.user?.id
+
       for (const file of files) {
         const safeName = file.name.replace(/\s+/g, '-')
         const path = `${inspectionId}/${Date.now()}-${safeName}`
@@ -68,6 +73,7 @@ export function ImageUpload() {
           inspection_id: inspectionId,
           storage_path: path,
           caption: file.name,
+          uploader_id: uploaderId,
         })
         if (insertError) throw insertError
       }
@@ -79,6 +85,38 @@ export function ImageUpload() {
       setError(uploadError instanceof Error ? uploadError.message : 'Upload failed.')
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleDelete = async (imageId: string, storagePath: string) => {
+    if (!window.confirm('Permanent Deletion Protocol: Are you sure you want to remove this asset?')) return
+    
+    setDeletingId(imageId)
+    setError(null)
+    const supabase = createClient()
+
+    try {
+      // 1. Delete from Storage
+      const { error: storageError } = await supabase.storage
+        .from('inspection-images')
+        .remove([storagePath])
+      
+      if (storageError) throw storageError
+
+      // 2. Delete from Database
+      const { error: dbError } = await supabase
+        .from('inspection_images')
+        .delete()
+        .eq('id', imageId)
+      
+      if (dbError) throw dbError
+
+      queryClient.invalidateQueries({ queryKey: ['inspection-images', inspectionId] })
+      setSuccess('Asset successfully purged from vault.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Deletion failed.')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -150,22 +188,47 @@ export function ImageUpload() {
             Vault Registry {selectedInspectionLabel ? `· ${selectedInspectionLabel}` : ''}
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {images.map((image) => (
-              <div key={image.id} className="rounded-2xl border border-slate-100 overflow-hidden shadow-sm group hover:shadow-md transition-all">
-                <div className="relative h-28 w-full bg-slate-100">
-                  {image.signed_url ? (
-                    <img src={image.signed_url} alt={image.caption || 'Technical photo'} className="h-full w-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" />
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                      Preview_Offline
+            {images.map((image) => {
+              const isOwner = profile?.id === image.uploader_id
+              const isAdmin = profile?.role === 'admin'
+              const canDelete = isOwner || isAdmin
+
+              return (
+                <div key={image.id} className="rounded-2xl border border-slate-100 overflow-hidden shadow-sm group hover:shadow-md transition-all bg-white">
+                  <div className="relative h-28 w-full bg-slate-100">
+                    {image.signed_url ? (
+                      <img src={image.signed_url} alt={image.caption || 'Technical photo'} className="h-full w-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" />
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        Preview_Offline
+                      </div>
+                    )}
+                    
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(image.id, image.storage_path)}
+                        disabled={deletingId === image.id}
+                        className="absolute top-2 right-2 p-2 bg-white/90 hover:bg-red-500 hover:text-white rounded-lg shadow-sm transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                        title="Purge Asset"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <div className="px-3 py-2 flex flex-col gap-0.5 bg-white">
+                    <div className="text-[9px] font-black text-slate-700 truncate uppercase tracking-tighter">
+                      {image.caption || 'UNNAMED_ASSET'}
                     </div>
-                  )}
+                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-widest flex justify-between">
+                      <span>Node: {image.uploader_name}</span>
+                      <span>{new Date(image.uploaded_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="px-3 py-2 text-[9px] font-bold text-slate-500 truncate uppercase tracking-tighter bg-white">
-                  {image.caption || 'UNNAMED_ASSET'}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

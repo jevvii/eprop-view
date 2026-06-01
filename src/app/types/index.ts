@@ -153,6 +153,8 @@ export interface InspectionImage {
   inspection_id: string
   storage_path: string
   caption: string
+  uploader_id: string | null
+  uploader_name?: string
   uploaded_at: string
   signed_url?: string | null
 }
