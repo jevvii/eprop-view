@@ -205,7 +205,7 @@ export function useInspectionImages(inspectionId?: string) {
       if (!inspectionId) return []
       const { data, error } = await getClient()
         .from('inspection_images')
-        .select('*')
+        .select('*, uploader_name:profiles!uploader_id(full_name)')
         .eq('inspection_id', inspectionId)
         .order('uploaded_at', { ascending: false })
       if (error) throw error
@@ -216,8 +216,12 @@ export function useInspectionImages(inspectionId?: string) {
             .storage
             .from('inspection-images')
             .createSignedUrl(image.storage_path, 60 * 60)
+          
           return {
             ...image,
+            uploader_name: typeof image.uploader_name === 'string' 
+              ? image.uploader_name 
+              : image.uploader_name?.full_name ?? 'System',
             signed_url: signedError ? null : signedData?.signedUrl ?? null,
           }
         })
