@@ -34,8 +34,12 @@ export function PrintReport({ reports, projectName, generatedBy, stats, selected
       {/* ── Page Header (Repeats on every page) ── */}
       <div className="border-b-4 border-black pb-6 mb-10 flex justify-between items-end">
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 bg-black flex items-center justify-center rounded-xl rotate-3 shadow-lg">
-            <span className="text-white font-koulen text-4xl pt-1">EV</span>
+          <div className="w-16 h-16 flex items-center justify-center">
+            <img
+              src="/logo-blue.png"
+              alt="EPROP View logo"
+              className="h-14 w-14 object-contain"
+            />
           </div>
           <div>
             <h1 className="text-4xl font-koulen tracking-tight leading-none text-black">EPROP VIEW</h1>

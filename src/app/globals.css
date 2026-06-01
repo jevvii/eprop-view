@@ -144,7 +144,7 @@
     size: A4 portrait;
   }
 
-  html, body {
+  html, body, main, .print-report {
     height: auto !important;
     overflow: visible !important;
     background: white !important;
@@ -181,6 +181,10 @@
   .print-report {
     display: block !important;
     width: 100% !important;
+  }
+
+  .print-report .bg-slate-50 {
+    background: white !important;
   }
 
   .avoid-break {
