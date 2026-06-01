@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/app/lib/supabase/client'
 import { useInspectionImages, useInspections, useProfile } from '@/app/lib/queries'
@@ -16,6 +16,8 @@ export function ImageUpload() {
   const [uploading, setUploading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   const { data: images, isLoading } = useInspectionImages(inspectionId || undefined)
 
@@ -34,7 +36,8 @@ export function ImageUpload() {
 
   const handleFileChange = (incomingFiles: FileList | null) => {
     if (!incomingFiles) return
-    setFiles(Array.from(incomingFiles))
+    const newFiles = Array.from(incomingFiles)
+    setFiles((prev) => [...prev, ...newFiles])
   }
 
   const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
@@ -149,26 +152,48 @@ export function ImageUpload() {
           </select>
         </div>
 
-        <label
-          className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-primary/30 transition-all group"
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={handleDrop}
-        >
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(event) => handleFileChange(event.target.files)}
-          />
-          <div className="text-4xl mb-4 group-hover:scale-110 transition-transform grayscale group-hover:grayscale-0">📸</div>
-          <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Drop technical assets here</span>
-          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2">PNG, JPG, or WEBP · Max 10MB</span>
-        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label
+            className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2rem] p-8 text-center cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-primary/30 transition-all group"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={handleDrop}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(event) => handleFileChange(event.target.files)}
+            />
+            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform grayscale group-hover:grayscale-0">📂</div>
+            <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Browse Assets</span>
+            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">Drop files here</span>
+          </label>
+
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="flex flex-col items-center justify-center border-2 border-slate-100 rounded-[2rem] p-8 text-center cursor-pointer bg-primary/[0.02] hover:bg-primary/[0.05] hover:border-primary/30 transition-all group"
+          >
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(event) => handleFileChange(event.target.files)}
+            />
+            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform grayscale group-hover:grayscale-0">📸</div>
+            <span className="text-xs font-black text-primary uppercase tracking-tight">Capture Asset</span>
+            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">Direct Field Entry</span>
+          </button>
+        </div>
 
         {files.length > 0 && (
-          <div className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/5 p-3 rounded-xl border border-primary/10">
-            Selected: {files.length} units ({files.map(f => f.name.slice(0, 10) + '...').join(', ')})
+          <div className="flex items-center justify-between text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/5 p-3 rounded-xl border border-primary/10">
+            <span className="truncate flex-1 pr-4">Selected: {files.length} units ({files.map(f => f.name.slice(0, 8) + '...').join(', ')})</span>
+            <button onClick={() => setFiles([])} className="text-slate-400 hover:text-red-500 transition-colors">CLEAR</button>
           </div>
         )}
 
