@@ -164,24 +164,18 @@
     display: none !important;
   }
 
-  /* Reset layout containers that might have overflow hidden */
-  .flex, .grid, div, section {
-    display: block !important;
-    overflow: visible !important;
-    height: auto !important;
-    position: static !important;
-    width: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Force display of our print-specific container */
-  .print-only, 
+  main > .print-only,
+  main .print-only,
+  .print-only,
   .print-only[hidden] {
     display: block !important;
     visibility: visible !important;
     position: relative !important;
     z-index: 9999 !important;
+  }
+
+  .print-only {
+    width: 100% !important;
   }
 
   .print-report {
