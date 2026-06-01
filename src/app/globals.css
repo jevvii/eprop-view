@@ -134,6 +134,10 @@
 }
 
 /* ── Print Protocols ── */
+.print-only {
+  display: none;
+}
+
 @media print {
   @page {
     margin: 1.5cm;
@@ -154,7 +158,6 @@
   header, 
   aside, 
   nav, 
-  main,
   button,
   .no-print,
   [role="dialog"] {
