@@ -13,6 +13,7 @@ type ReportsTableProps = {
   isError: boolean
   selectedReport: Report | null
   setSelectedReport: (report: Report | null) => void
+  onPrintSelected: () => void
 }
 
 export function ReportsTable({ 
@@ -20,7 +21,8 @@ export function ReportsTable({
   isLoading, 
   isError, 
   selectedReport, 
-  setSelectedReport
+  setSelectedReport,
+  onPrintSelected
 }: ReportsTableProps) {
   const [modalReport, setModalReport] = useState<Report | null>(null)
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list')
@@ -157,7 +159,17 @@ export function ReportsTable({
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{selectedReport.report_id}</p>
                 </div>
               </div>
-              <StatusBadge status={selectedReport.status} />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  disabled={!selectedReport}
+                  onClick={onPrintSelected}
+                  className="font-black uppercase tracking-[0.2em] text-[9px] px-4 h-9 border-slate-200"
+                >
+                  Print Manifest
+                </Button>
+                <StatusBadge status={selectedReport.status} />
+              </div>
             </div>
 
             <div className="flex-1 space-y-8">

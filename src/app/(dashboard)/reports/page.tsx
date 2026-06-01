@@ -41,6 +41,17 @@ export default function ReportsPage() {
   }, [reports])
 
   const selectedProjectName = projects?.find((project) => project.id === projectId)?.name
+  const hasReports = filteredReports.length > 0
+
+  const handlePrintAll = () => {
+    setPrintMode('full')
+    setTimeout(() => window.print(), 100)
+  }
+
+  const handlePrintSelected = () => {
+    setPrintMode('single')
+    setTimeout(() => window.print(), 100)
+  }
 
   if (isLoading) {
     return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
@@ -106,25 +117,11 @@ export default function ReportsPage() {
 
             <Button
               variant="outline"
-              disabled={!selectedReport}
-              onClick={() => {
-                setPrintMode('single')
-                setTimeout(() => window.print(), 100)
-              }}
+              disabled={!hasReports}
+              onClick={handlePrintAll}
               className="font-black uppercase tracking-[0.2em] text-[9px] px-4 h-10 border-slate-200"
             >
-              Print Selected
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => {
-                setPrintMode('full')
-                setTimeout(() => window.print(), 100)
-              }}
-              className="font-black uppercase tracking-[0.2em] text-[9px] px-4 h-10 border-slate-200"
-            >
-              Print Manifest
+              Print All
             </Button>
 
             <Button 
@@ -161,11 +158,12 @@ export default function ReportsPage() {
           isError={reportsError} 
           selectedReport={selectedReport}
           setSelectedReport={setSelectedReport}
+          onPrintSelected={handlePrintSelected}
         />
       </div>
 
       {/* ── Print-only content (outside space-y-10 flow) ── */}
-      <div className="hidden print:block">
+      <div className="print-only">
         <PrintReport
           reports={filteredReports}
           projectName={selectedProjectName ?? 'All Projects'}
