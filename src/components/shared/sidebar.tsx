@@ -4,23 +4,29 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
-import { useProfile } from '@/app/lib/queries'
+import { useProfile, useUnreadAssetNotifications } from '@/app/lib/queries'
 import { useNav } from './nav-wrapper'
-
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/projects', label: 'Projects', icon: '📁' },
-  { href: '/environmental', label: 'Environmental View', icon: '🌍' },
-  { href: '/reports', label: 'Reports', icon: '📋' },
-  { href: '/document', label: 'Document', icon: '📄' },
-  { href: '/settings', label: 'Settings', icon: '⚙️', adminOnly: true },
-]
 
 export function Sidebar() {
   const pathname = usePathname()
   const { data: profile } = useProfile()
+  const { data: unreadCount } = useUnreadAssetNotifications()
   const { isOpen, close } = useNav()
   const isAdmin = profile?.role === 'admin'
+
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { href: '/projects', label: 'Projects', icon: '📁' },
+    { href: '/environmental', label: 'Environmental View', icon: '🌍' },
+    { href: '/reports', label: 'Reports', icon: '📋' },
+    { 
+      href: '/document', 
+      label: 'Document', 
+      icon: '📄',
+      badge: unreadCount && unreadCount > 0 ? unreadCount : null 
+    },
+    { href: '/settings', label: 'Settings', icon: '⚙️', adminOnly: true },
+  ]
 
   return (
     <aside className={`
@@ -69,14 +75,21 @@ export function Sidebar() {
                 if (window.innerWidth < 1024) close()
               }}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-xs font-black uppercase tracking-[0.1em] transition-all duration-200 ${
+              className={`group flex items-center justify-between px-5 py-3.5 rounded-2xl text-xs font-black uppercase tracking-[0.1em] transition-all duration-200 ${
                 isActive
                   ? 'bg-slate-50 text-primary shadow-sm ring-1 ring-slate-200/50'
                   : 'text-black hover:bg-slate-50 hover:text-primary'
               }`}
             >
-              <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'grayscale opacity-70'}`} aria-hidden="true">{item.icon}</span>
-              <span>{item.label}</span>
+              <div className="flex items-center gap-4">
+                <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'grayscale opacity-70'}`} aria-hidden="true">{item.icon}</span>
+                <span>{item.label}</span>
+              </div>
+              {item.badge && (
+                <span className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full shadow-lg shadow-red-200 animate-in zoom-in duration-300">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           )
         })}

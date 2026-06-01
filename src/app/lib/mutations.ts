@@ -103,6 +103,59 @@ export function useUpdateReport() {
   })
 }
 
+export function useAddComment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      imageId,
+      content,
+    }: {
+      imageId: string
+      content: string
+    }) => {
+      const { data: authData } = await getClient().auth.getUser()
+      if (!authData.user) throw new Error('Not authenticated')
+
+      const { data, error } = await getClient()
+        .from('image_comments')
+        .insert({
+          image_id: imageId,
+          content,
+          author_id: authData.user.id,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['image-comments', variables.imageId] })
+      queryClient.invalidateQueries({ queryKey: ['inspection-images'] })
+    },
+  })
+}
+
+export function useMarkCommentsRead() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (imageId: string) => {
+      const { error } = await getClient()
+        .from('image_comments')
+        .update({ is_read: true })
+        .eq('image_id', imageId)
+        .eq('is_read', false)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['unread-asset-notifications'] })
+    },
+  })
+}
+
 export function useUpdateEnvironmentalRisk() {
   const queryClient = useQueryClient()
 
