@@ -30,8 +30,10 @@ export function ReportsTable({
       setSelectedReport(null)
       return
     }
-    setSelectedReport((current) => current ?? reports[0])
-  }, [reports])
+    if (!selectedReport && reports.length > 0) {
+      setSelectedReport(reports[0])
+    }
+  }, [reports, selectedReport, setSelectedReport])
 
   const handleSelectReport = (report: Report) => {
     setSelectedReport(report)
