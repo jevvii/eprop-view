@@ -42,11 +42,7 @@ export function useReports(projectId?: string) {
   return useQuery({
     queryKey: ['reports', projectId],
     queryFn: async (): Promise<Report[]> => {
-      let query = getClient().from('reports').select('*, project_name:projects(name), lead_inspector_name:profiles(full_name)').order('date', { ascending: false })
-      if (projectId) query = query.eq('project_id', projectId)
-      const { data, error } = await query
-      if (error) throw error
-      return (data || []).map((report) => ({
+      const baseMapper = (report: any) => ({
         ...report,
         project_name: typeof report.project_name === 'string'
           ? report.project_name
@@ -54,7 +50,54 @@ export function useReports(projectId?: string) {
         lead_inspector_name: typeof report.lead_inspector_name === 'string'
           ? report.lead_inspector_name
           : report.lead_inspector_name?.full_name ?? '',
-      }))
+        created_by_name: typeof report.created_by_name === 'string'
+          ? report.created_by_name
+          : report.created_by_name?.full_name ?? '',
+        reviewed_by_name: typeof report.reviewed_by_name === 'string'
+          ? report.reviewed_by_name
+          : report.reviewed_by_name?.full_name ?? '',
+        last_edited_by_name: typeof report.last_edited_by_name === 'string'
+          ? report.last_edited_by_name
+          : report.last_edited_by_name?.full_name ?? '',
+      })
+
+      let query = getClient()
+        .from('reports')
+        .select(`
+          *,
+          project_name:projects(name),
+          lead_inspector_name:profiles!reports_lead_inspector_id_fkey(full_name),
+          created_by_name:profiles!reports_created_by_fkey(full_name),
+          reviewed_by_name:profiles!reports_reviewed_by_fkey(full_name),
+          last_edited_by_name:profiles!reports_last_edited_by_fkey(full_name)
+        `)
+        .order('date', { ascending: false })
+      if (projectId) query = query.eq('project_id', projectId)
+      const { data, error } = await query
+
+      if (error) {
+        if (error.code === 'PGRST200' || error.message?.includes('relationship')) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('Reports audit trail relationships missing. Apply migration 002_reports_audit_trail.sql.')
+          }
+          let fallbackQuery = getClient()
+            .from('reports')
+            .select('*, project_name:projects(name), lead_inspector_name:profiles(full_name)')
+            .order('date', { ascending: false })
+          if (projectId) fallbackQuery = fallbackQuery.eq('project_id', projectId)
+          const { data: fallbackData, error: fallbackError } = await fallbackQuery
+          if (fallbackError) throw fallbackError
+          return (fallbackData || []).map((report) => ({
+            ...baseMapper(report),
+            created_by_name: '',
+            reviewed_by_name: '',
+            last_edited_by_name: '',
+          }))
+        }
+        throw error
+      }
+
+      return (data || []).map(baseMapper)
     },
   })
 }
