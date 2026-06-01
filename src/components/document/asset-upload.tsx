@@ -80,7 +80,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
         <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -101,7 +101,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
         <button
           type="button"
           onClick={() => cameraInputRef.current?.click()}
-          className="flex flex-col items-center justify-center border-2 border-slate-100 rounded-2xl p-4 bg-primary/[0.02] hover:bg-primary/[0.05] transition-all group"
+          className="md:hidden lg:hidden flex flex-col items-center justify-center border-2 border-slate-100 rounded-2xl p-4 bg-primary/[0.02] hover:bg-primary/[0.05] transition-all group"
         >
           <input
             ref={cameraInputRef}
