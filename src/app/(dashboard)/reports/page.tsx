@@ -6,6 +6,7 @@ import { PrintReport } from '@/components/reports/print-report'
 import { ReportForm } from '@/components/reports/report-form'
 import { ReportsTable } from '@/components/reports/reports-table'
 import { Button } from '@/components/ui/button'
+import type { Report } from '@/app/types'
 
 export default function ReportsPage() {
   const { data: projects, isLoading, isError } = useProjects()
