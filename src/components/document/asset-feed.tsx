@@ -49,7 +49,44 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
   }
 
   if (isLoading) {
-    return <div className="space-y-6 h-[600px] animate-pulse bg-white rounded-[2.5rem] border border-slate-100" />
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between px-4 animate-pulse">
+          <div className="h-4 w-32 bg-slate-200 rounded-full" />
+          <div className="h-6 w-20 bg-slate-100 rounded-full" />
+        </div>
+        <div className="grid grid-cols-1 gap-8">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col lg:flex-row h-[350px] animate-pulse">
+              <div className="lg:w-1/2 bg-slate-100 flex items-center justify-center relative">
+                <div className="text-4xl grayscale opacity-10">🎞️</div>
+                <div className="absolute top-4 left-4 h-6 w-24 bg-slate-200/50 rounded-xl" />
+              </div>
+              <div className="lg:w-1/2 p-8 space-y-6 flex flex-col">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2">
+                    <div className="h-2 w-16 bg-slate-100 rounded" />
+                    <div className="h-3 w-24 bg-slate-200 rounded" />
+                  </div>
+                  <div className="space-y-2 text-right">
+                    <div className="h-2 w-12 bg-slate-100 rounded ml-auto" />
+                    <div className="h-2 w-20 bg-slate-100 rounded ml-auto" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-4 pt-4 border-t border-slate-50">
+                  <div className="h-2 w-24 bg-slate-100 rounded" />
+                  <div className="space-y-3">
+                    <div className="h-10 w-full bg-slate-50 rounded-xl" />
+                    <div className="h-10 w-full bg-slate-50 rounded-xl" />
+                  </div>
+                </div>
+                <div className="h-10 w-full bg-slate-100 rounded-xl mt-auto" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
