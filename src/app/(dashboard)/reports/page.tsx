@@ -101,13 +101,29 @@ export default function ReportsPage() {
               </select>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={() => window.print()}
-              className="font-black uppercase tracking-[0.2em] text-[10px] px-6 h-12 border-slate-200"
-            >
-              Print Report
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                disabled={!selectedReport}
+                onClick={() => {
+                  setPrintMode('single')
+                  setTimeout(() => window.print(), 100)
+                }}
+                className="font-black uppercase tracking-[0.2em] text-[10px] px-6 h-12 border-slate-200"
+              >
+                Print Selected
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPrintMode('full')
+                  setTimeout(() => window.print(), 100)
+                }}
+                className="font-black uppercase tracking-[0.2em] text-[10px] px-6 h-12 border-slate-200"
+              >
+                Print Manifest
+              </Button>
+            </div>
             <Button onClick={() => setIsCreateModalOpen(true)} className="font-black uppercase tracking-[0.2em] text-[10px] px-8 h-12 shadow-lg shadow-primary/20">
               Add New Log
             </Button>
@@ -139,19 +155,11 @@ export default function ReportsPage() {
           isError={reportsError} 
           selectedReport={selectedReport}
           setSelectedReport={setSelectedReport}
-          onPrintSingle={() => {
-            setPrintMode('single')
-            setTimeout(() => window.print(), 100)
-          }}
-          onPrintFull={() => {
-            setPrintMode('full')
-            setTimeout(() => window.print(), 100)
-          }}
         />
       </div>
 
       {/* ── Print-only content (outside space-y-10 flow) ── */}
-      <div className="print-only" hidden>
+      <div className="hidden print:block">
         <PrintReport
           reports={filteredReports}
           projectName={selectedProjectName ?? 'All Projects'}
