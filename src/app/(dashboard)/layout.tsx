@@ -17,9 +17,9 @@ export default function DashboardLayout({
   return (
     <NavWrapper>
       <Header />
-      <div className={`flex-1 flex flex-col min-h-0 relative ${isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+      <div className={`flex-1 flex flex-col min-h-0 relative ${isDashboard ? 'overflow-hidden' : 'overflow-y-auto print:overflow-visible'}`}>
         <RealtimeSync />
-        <main className={isDashboard ? 'h-full' : 'p-4 lg:p-8 space-y-6'}>
+        <main className={`print:overflow-visible print:h-auto ${isDashboard ? 'h-full' : 'p-4 lg:p-8 space-y-6'}`}>
           {children}
         </main>
       </div>

@@ -65,20 +65,22 @@ export default function ReportsPage() {
     <>
       {/* ── Screen UI ── */}
       <div className="space-y-10 no-print">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-2">
+        <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between px-2">
           <div>
             <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Inspection Reports</h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
               {selectedProjectName ? `Reports Archive · ${selectedProjectName}` : 'Generate and review technical inspection logs.'}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Filter Site</label>
+          
+          {/* Actions Container - Single Line on Desktop */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-sm">
+              <label className="hidden sm:block text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2">Site</label>
               <select
                 value={projectId}
                 onChange={(event) => setProjectId(event.target.value)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all max-w-[150px] truncate"
               >
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>{project.name}</option>
@@ -86,45 +88,48 @@ export default function ReportsPage() {
               </select>
             </div>
 
-            <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Status</label>
+            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-sm">
+              <label className="hidden sm:block text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2">Status</label>
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               >
-                <option value="all">ALL_STATUS</option>
+                <option value="all">ALL</option>
                 <option value="open">OPEN</option>
-                <option value="in_review">IN_REVIEW</option>
+                <option value="in_review">REVIEW</option>
                 <option value="critical">CRITICAL</option>
-                <option value="completed">COMPLETED</option>
+                <option value="completed">DONE</option>
               </select>
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                disabled={!selectedReport}
-                onClick={() => {
-                  setPrintMode('single')
-                  setTimeout(() => window.print(), 100)
-                }}
-                className="font-black uppercase tracking-[0.2em] text-[10px] px-6 h-12 border-slate-200"
-              >
-                Print Selected
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setPrintMode('full')
-                  setTimeout(() => window.print(), 100)
-                }}
-                className="font-black uppercase tracking-[0.2em] text-[10px] px-6 h-12 border-slate-200"
-              >
-                Print Manifest
-              </Button>
-            </div>
-            <Button onClick={() => setIsCreateModalOpen(true)} className="font-black uppercase tracking-[0.2em] text-[10px] px-8 h-12 shadow-lg shadow-primary/20">
+            <Button
+              variant="outline"
+              disabled={!selectedReport}
+              onClick={() => {
+                setPrintMode('single')
+                setTimeout(() => window.print(), 100)
+              }}
+              className="font-black uppercase tracking-[0.2em] text-[9px] px-4 h-10 border-slate-200"
+            >
+              Print Selected
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPrintMode('full')
+                setTimeout(() => window.print(), 100)
+              }}
+              className="font-black uppercase tracking-[0.2em] text-[9px] px-4 h-10 border-slate-200"
+            >
+              Print Manifest
+            </Button>
+
+            <Button 
+              onClick={() => setIsCreateModalOpen(true)} 
+              className="font-black uppercase tracking-[0.2em] text-[9px] px-6 h-10 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white"
+            >
               Add New Log
             </Button>
           </div>
