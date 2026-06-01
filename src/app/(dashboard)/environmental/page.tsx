@@ -1,15 +1,19 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useProjects, useRiskHotspots } from '@/app/lib/queries'
 import { EnvMap } from '@/components/environmental/env-map'
 import { AnalysisPanel } from '@/components/environmental/analysis-panel'
 import { StatusBadge } from '@/components/shared/status-badge'
+import { Button } from '@/components/ui/button'
 
 export default function EnvironmentalPage() {
+  const queryClient = useQueryClient()
   const { data: projects, isLoading, isError } = useProjects()
   const [projectId, setProjectId] = useState('')
   const { data: hotspots } = useRiskHotspots(projectId || undefined)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
     if (!projectId && projects && projects.length > 0) {
@@ -21,6 +25,21 @@ export default function EnvironmentalPage() {
     () => projects?.find((project) => project.id === projectId),
     [projects, projectId]
   )
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['projects'] }),
+        queryClient.invalidateQueries({ queryKey: ['risk-hotspots', projectId] }),
+        queryClient.invalidateQueries({ queryKey: ['environmental-risk', projectId] }),
+        queryClient.invalidateQueries({ queryKey: ['geospatial-zones', projectId] }),
+      ])
+    } finally {
+      // Small delay for visual feedback
+      setTimeout(() => setIsRefreshing(false), 500)
+    }
+  }
 
   if (isLoading) {
     return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
@@ -49,17 +68,38 @@ export default function EnvironmentalPage() {
           <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Environmental Risk Assessment</h2>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Analyze hazard zones and update site suitability scores.</p>
         </div>
-        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Current Project</label>
-          <select
-            value={projectId}
-            onChange={(event) => setProjectId(event.target.value)}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Current Project</label>
+            <select
+              value={projectId}
+              onChange={(event) => setProjectId(event.target.value)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            >
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="font-black uppercase tracking-[0.2em] text-[10px] px-6 h-12 border-slate-200"
           >
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>{project.name}</option>
-            ))}
-          </select>
+            {isRefreshing ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Syncing
+              </span>
+            ) : (
+              'Refresh Data'
+            )}
+          </Button>
         </div>
       </div>
 
