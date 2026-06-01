@@ -307,24 +307,24 @@ export function ReportsTable({
                 <div className="bg-slate-50/70 border border-slate-100 rounded-3xl p-6 space-y-4">
                   <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Audit Trail</div>
                   <div className="grid grid-cols-1 gap-3 text-[11px] font-bold text-slate-600">
-                    <div className="flex items-center justify-between">
+                    <div className="grid grid-cols-[minmax(90px,140px)_1fr_minmax(120px,180px)] items-center gap-2">
                       <span className="uppercase tracking-widest text-[9px] text-slate-400">Submitted</span>
-                      <span>{auditTrail.submittedBy}</span>
-                      <span className="text-[9px] text-slate-400">
+                      <span className="text-center">{auditTrail.submittedBy}</span>
+                      <span className="text-[9px] text-slate-400 text-right">
                         {new Date(auditTrail.submittedAt).toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="grid grid-cols-[minmax(90px,140px)_1fr_minmax(120px,180px)] items-center gap-2">
                       <span className="uppercase tracking-widest text-[9px] text-slate-400">Reviewed</span>
-                      <span>{auditTrail.reviewedBy}</span>
-                      <span className="text-[9px] text-slate-400">
+                      <span className="text-center">{auditTrail.reviewedBy}</span>
+                      <span className="text-[9px] text-slate-400 text-right">
                         {auditTrail.reviewedAt ? new Date(auditTrail.reviewedAt).toLocaleString() : '—'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="grid grid-cols-[minmax(90px,140px)_1fr_minmax(120px,180px)] items-center gap-2">
                       <span className="uppercase tracking-widest text-[9px] text-slate-400">Last Edited</span>
-                      <span>{auditTrail.lastEditedBy}</span>
-                      <span className="text-[9px] text-slate-400">
+                      <span className="text-center">{auditTrail.lastEditedBy}</span>
+                      <span className="text-[9px] text-slate-400 text-right">
                         {auditTrail.lastEditedAt ? new Date(auditTrail.lastEditedAt).toLocaleString() : '—'}
                       </span>
                     </div>
