@@ -7,9 +7,12 @@ import { createClient } from '@/app/lib/supabase/client'
 export function RealtimeSync() {
   const queryClient = useQueryClient()
   const supabase = useMemo(() => (typeof window !== 'undefined' ? createClient() : null), [])
+  const hasRealtimeConfig = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
 
   useEffect(() => {
-    if (!supabase) return
+    if (!supabase || !hasRealtimeConfig) return
 
     const channel = supabase
       .channel('dashboard-sync')
@@ -26,17 +29,20 @@ export function RealtimeSync() {
         queryClient.invalidateQueries({ queryKey: ['stats'] })
       })
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.error('Realtime sync channel error')
-        } else if (status === 'TIMED_OUT') {
-          console.warn('Realtime sync connection timed out')
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn(
+              'Realtime sync unavailable. Check Supabase realtime settings, table publication, and RLS policies.'
+            )
+          }
+          supabase.removeChannel(channel)
         }
       })
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [queryClient, supabase])
+  }, [queryClient, supabase, hasRealtimeConfig])
 
   return null
 }
