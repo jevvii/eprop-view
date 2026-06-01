@@ -88,7 +88,7 @@ export function Sidebar() {
           onClick={() => logout()}
           className="w-full py-4 bg-primary text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:translate-y-[-1px] transition-all active:scale-[0.98] shadow-xl shadow-primary/20"
         >
-          Deauthorize
+          Logout
         </button>
       </div>
     </aside>
