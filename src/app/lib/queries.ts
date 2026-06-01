@@ -14,6 +14,7 @@ import type {
   DamageTrend,
   GeospatialZone,
   InspectionImage,
+  ImageComment,
   Profile,
 } from '@/app/types'
 
@@ -205,7 +206,7 @@ export function useInspectionImages(inspectionId?: string) {
       if (!inspectionId) return []
       const { data, error } = await getClient()
         .from('inspection_images')
-        .select('*, uploader_name:profiles!uploader_id(full_name)')
+        .select('*, uploader_name:profiles!uploader_id(full_name), comment_count:image_comments(count)')
         .eq('inspection_id', inspectionId)
         .order('uploaded_at', { ascending: false })
       if (error) throw error
@@ -222,12 +223,50 @@ export function useInspectionImages(inspectionId?: string) {
             uploader_name: typeof image.uploader_name === 'string' 
               ? image.uploader_name 
               : image.uploader_name?.full_name ?? 'System',
+            comment_count: Array.isArray(image.comment_count) ? 0 : (image.comment_count as any)?.count ?? 0,
             signed_url: signedError ? null : signedData?.signedUrl ?? null,
           }
         })
       )
       return results
     },
+  })
+}
+
+export function useImageComments(imageId: string) {
+  return useQuery({
+    queryKey: ['image-comments', imageId],
+    enabled: !!imageId,
+    queryFn: async (): Promise<ImageComment[]> => {
+      const { data, error } = await getClient()
+        .from('image_comments')
+        .select('*, author_name:profiles!author_id(full_name, role)')
+        .eq('image_id', imageId)
+        .order('created_at', { ascending: true })
+      
+      if (error) throw error
+      
+      return (data || []).map((c: any) => ({
+        ...c,
+        author_name: c.author_name?.full_name ?? 'Node',
+        author_role: c.author_name?.role ?? 'viewer',
+      }))
+    },
+  })
+}
+
+export function useUnreadAssetNotifications() {
+  return useQuery({
+    queryKey: ['unread-asset-notifications'],
+    queryFn: async (): Promise<number> => {
+      const { data, error } = await getClient().rpc('get_unread_image_comment_count')
+      if (error) {
+        if (error.code === 'PGRST202') return 0 // Function missing
+        throw error
+      }
+      return Number(data || 0)
+    },
+    refetchInterval: 15000, // Poll every 15s for "real-time" notifications
   })
 }
 

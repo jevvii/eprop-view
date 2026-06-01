@@ -28,6 +28,14 @@ export function RealtimeSync() {
         queryClient.invalidateQueries({ queryKey: ['maintenance'] })
         queryClient.invalidateQueries({ queryKey: ['stats'] })
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'image_comments' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['image-comments'] })
+        queryClient.invalidateQueries({ queryKey: ['unread-asset-notifications'] })
+        queryClient.invalidateQueries({ queryKey: ['inspection-images'] })
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'inspection_images' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['inspection-images'] })
+      })
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           if (process.env.NODE_ENV !== 'production') {

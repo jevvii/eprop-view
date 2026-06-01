@@ -157,4 +157,16 @@ export interface InspectionImage {
   uploader_name?: string
   uploaded_at: string
   signed_url?: string | null
+  comment_count?: number
+}
+
+export interface ImageComment {
+  id: string
+  image_id: string
+  author_id: string
+  author_name?: string
+  author_role?: Role
+  content: string
+  is_read: boolean
+  created_at: string
 }
