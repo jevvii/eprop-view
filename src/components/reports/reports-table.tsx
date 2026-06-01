@@ -13,8 +13,6 @@ type ReportsTableProps = {
   isError: boolean
   selectedReport: Report | null
   setSelectedReport: (report: Report | null) => void
-  onPrintSingle: () => void
-  onPrintFull: () => void
 }
 
 export function ReportsTable({ 
@@ -22,9 +20,7 @@ export function ReportsTable({
   isLoading, 
   isError, 
   selectedReport, 
-  setSelectedReport,
-  onPrintSingle,
-  onPrintFull
+  setSelectedReport
 }: ReportsTableProps) {
   const [modalReport, setModalReport] = useState<Report | null>(null)
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list')
@@ -193,15 +189,6 @@ export function ReportsTable({
                   {selectedReport.key_findings || 'No formal observations recorded for this node.'}
                 </p>
               </div>
-            </div>
-
-            <div className="pt-8 border-t border-slate-100 flex flex-col gap-3">
-              <Button onClick={onPrintSingle} variant="outline" className="w-full py-4 font-black uppercase tracking-[0.2em] text-[10px] h-auto border-slate-200">
-                Print Report
-              </Button>
-              <Button onClick={onPrintFull} className="w-full py-4 font-black uppercase tracking-[0.2em] text-[10px] h-auto shadow-lg shadow-primary/10">
-                Generate Full Manifest
-              </Button>
             </div>
           </div>
         ) : (
