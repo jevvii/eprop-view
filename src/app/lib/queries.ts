@@ -315,6 +315,9 @@ export function useProfile() {
         email: authData.user.email ?? '',
       }
     },
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   })
 }
 

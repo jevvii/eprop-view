@@ -1,11 +1,18 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { login } from '@/app/actions/auth'
 
 export function LoginForm() {
+  const queryClient = useQueryClient()
   const [state, action, pending] = useActionState(login, undefined)
   const [showPassword, setShowPassword] = useState(false)
+
+  // Wipe stale React Query caches whenever landing on the login form
+  useEffect(() => {
+    queryClient.clear()
+  }, [queryClient])
 
   const hasError = !!state?.error
 

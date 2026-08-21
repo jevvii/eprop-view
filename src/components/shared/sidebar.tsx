@@ -1,18 +1,38 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { logout } from '@/app/actions/auth'
+import { createClient } from '@/app/lib/supabase/client'
 import { useProfile, useUnreadAssetNotifications } from '@/app/lib/queries'
 import { useNav } from './nav-wrapper'
 
 export function Sidebar() {
   const pathname = usePathname()
+  const queryClient = useQueryClient()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { data: profile } = useProfile()
   const { data: unreadCount } = useUnreadAssetNotifications()
   const { isOpen, close } = useNav()
   const isAdmin = profile?.role === 'admin'
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+    try {
+      queryClient.clear()
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      await logout()
+    } catch (err) {
+      console.error('Logout error:', err)
+    } finally {
+      window.location.href = '/'
+    }
+  }
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -98,10 +118,11 @@ export function Sidebar() {
       <div className="pt-6 border-t border-slate-100">
         <button
           type="button"
-          onClick={() => logout()}
-          className="w-full py-4 bg-primary text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:translate-y-[-1px] transition-all active:scale-[0.98] shadow-xl shadow-primary/20"
+          disabled={isLoggingOut}
+          onClick={handleLogout}
+          className="w-full py-4 bg-primary text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:translate-y-[-1px] transition-all active:scale-[0.98] shadow-xl shadow-primary/20 disabled:opacity-50"
         >
-          Logout
+          {isLoggingOut ? 'Logging out...' : 'Logout'}
         </button>
       </div>
     </aside>

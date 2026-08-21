@@ -11,7 +11,13 @@ export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
 
   const path = request.nextUrl.pathname
-  const isProtectedRoute = path.startsWith('/dashboard')
+  const isProtectedRoute =
+    path.startsWith('/dashboard') ||
+    path.startsWith('/projects') ||
+    path.startsWith('/environmental') ||
+    path.startsWith('/reports') ||
+    path.startsWith('/document') ||
+    path.startsWith('/settings')
   const isAuthRoute = path === '/' || path === '/login' || path === '/signup'
 
   // Redirect unauthenticated users from protected routes to login
