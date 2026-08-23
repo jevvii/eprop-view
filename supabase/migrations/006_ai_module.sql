@@ -67,20 +67,29 @@ ALTER TABLE ai_analysis_jobs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "ai_models_select_all" ON ai_models FOR SELECT TO authenticated USING (true);
 CREATE POLICY "ai_models_admin_all" ON ai_models FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
+-- Inspectors and admins can create/verify detections; everyone authenticated can read
 CREATE POLICY "ai_detections_select_all" ON ai_damage_detections FOR SELECT TO authenticated USING (true);
+CREATE POLICY "ai_detections_inspector_all" ON ai_damage_detections FOR ALL TO authenticated
+  USING (get_my_role() IN ('admin', 'inspector'))
+  WITH CHECK (get_my_role() IN ('admin', 'inspector'));
 CREATE POLICY "ai_detections_admin_all" ON ai_damage_detections FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
+-- Inspectors and admins can create/update jobs; everyone authenticated can read
 CREATE POLICY "ai_jobs_select_all" ON ai_analysis_jobs FOR SELECT TO authenticated USING (true);
+CREATE POLICY "ai_jobs_inspector_all" ON ai_analysis_jobs FOR ALL TO authenticated
+  USING (get_my_role() IN ('admin', 'inspector'))
+  WITH CHECK (get_my_role() IN ('admin', 'inspector'));
 CREATE POLICY "ai_jobs_admin_all" ON ai_analysis_jobs FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 -- Seed a mock/demo model so the UI and data flow can be demonstrated
--- without a trained checkpoint.
+-- without a trained checkpoint. Idempotent: only insert if no mock model exists.
 INSERT INTO ai_models (name, version, task, format, labels)
-VALUES (
+SELECT
   'EPROPVIEW Mock Damage Classifier',
   '0.1.0-prototype',
   'classification',
   'mock',
   ARRAY['crack', 'corrosion', 'spalling', 'deformation', 'leakage', 'none']
-)
-ON CONFLICT DO NOTHING;
+WHERE NOT EXISTS (
+  SELECT 1 FROM ai_models WHERE format = 'mock'
+);

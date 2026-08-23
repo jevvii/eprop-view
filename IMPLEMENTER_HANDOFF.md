@@ -1,8 +1,9 @@
 # EPROPVIEW AI + AR Modules — Implementer Agent Handoff
 
 **Date:** 2026-08-23  
-**Status:** Capstone prototype code is implemented and buildable. No commits have been made.  
-**Full plan:** `AI_AR_MODULE_IMPLEMENTATION_PLAN.md`
+**Status:** Capstone prototype code is implemented and buildable. Critical review fixes applied (RLS, idempotent seed, WebXR notice). No commits have been made.  
+**Full plan:** `AI_AR_MODULE_IMPLEMENTATION_PLAN.md`  
+**Follow-up review spec:** `AI_AR_MODULE_FOLLOWUP_SPEC.md`
 
 ---
 
@@ -35,10 +36,11 @@
 ## Instructions for the Implementer Agent
 
 1. Review the full implementation plan in `AI_AR_MODULE_IMPLEMENTATION_PLAN.md`.
-2. Optionally complete any remaining Phase 5 / Phase 6 polish (real model wiring, report/dashboard integration).
-3. Run `npm run build` and confirm it still passes.
-4. Do **not** run Playwright.
-5. Branch, commit, and push:
+2. **Read `AI_AR_MODULE_FOLLOWUP_SPEC.md`** for the list of issues found during review and the required fixes before the feature is considered complete.
+3. Apply the follow-up fixes (RLS is already fixed; focus on AR rendering pipeline, final damage score, maintenance prioritization, report/dashboard integration, and mock determinism).
+4. Run `npm run build` and confirm it still passes.
+5. Do **not** run Playwright.
+6. Branch, commit, and push:
 
 ```bash
 git checkout -b feat/ai-ar-modules
@@ -56,14 +58,14 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 git push -u origin feat/ai-ar-modules
 ```
 
-6. Rebuild the handover archive from the project root:
+7. Rebuild the handover archive from the project root:
 
 ```bash
 zip -r eprop-view-handover.zip . \
   -x "node_modules/*" ".next/*" ".git/*" "*.zip" "docs/*.bak" "docs/*.docx.bak" "docs/.~lock.*"
 ```
 
-7. Confirm `eprop-view-handover.zip` exists in the project root.
+8. Confirm `eprop-view-handover.zip` exists in the project root.
 
 ---
 
@@ -72,6 +74,7 @@ zip -r eprop-view-handover.zip . \
 | Path | Status | Purpose |
 | --- | --- | --- |
 | `AI_AR_MODULE_IMPLEMENTATION_PLAN.md` | New | Full implementation plan + dataset research + caveats. |
+| `AI_AR_MODULE_FOLLOWUP_SPEC.md` | New | Review findings, fixes applied, and remaining action items. |
 | `IMPLEMENTER_HANDOFF.md` | New | This handoff checklist. |
 | `supabase/migrations/006_ai_module.sql` | New | AI tables, indexes, RLS, mock model seed. |
 | `supabase/migrations/007_ar_module.sql` | New | AR tables, indexes, RLS. |

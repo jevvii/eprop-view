@@ -45,8 +45,16 @@ CREATE INDEX ar_anchors_inspection_id_idx ON ar_anchors(inspection_id);
 ALTER TABLE ar_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ar_anchors ENABLE ROW LEVEL SECURITY;
 
+-- Inspectors and admins can manage AR sessions; everyone authenticated can read
 CREATE POLICY "ar_sessions_select_all" ON ar_sessions FOR SELECT TO authenticated USING (true);
+CREATE POLICY "ar_sessions_inspector_all" ON ar_sessions FOR ALL TO authenticated
+  USING (get_my_role() IN ('admin', 'inspector'))
+  WITH CHECK (get_my_role() IN ('admin', 'inspector'));
 CREATE POLICY "ar_sessions_admin_all" ON ar_sessions FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
+-- Inspectors and admins can manage AR anchors; everyone authenticated can read
 CREATE POLICY "ar_anchors_select_all" ON ar_anchors FOR SELECT TO authenticated USING (true);
+CREATE POLICY "ar_anchors_inspector_all" ON ar_anchors FOR ALL TO authenticated
+  USING (get_my_role() IN ('admin', 'inspector'))
+  WITH CHECK (get_my_role() IN ('admin', 'inspector'));
 CREATE POLICY "ar_anchors_admin_all" ON ar_anchors FOR ALL TO authenticated USING (get_my_role() = 'admin');

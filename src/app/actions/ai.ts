@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/app/lib/supabase/server'
+import { computeFinalDamageScore, scoreToRiskLevel } from '@/app/lib/damage-score'
 import type {
   AIModel,
   AIDamageDetection,
@@ -16,8 +17,11 @@ import type {
 export async function getActiveAIModels(): Promise<AIModel[]> {
   const supabase = await createClient()
 
-  let query = supabase.from('ai_models').select('*').eq('is_active', true)
-  const { data: activeData, error: activeError } = await query.order('created_at', { ascending: false })
+  const { data: activeData, error: activeError } = await supabase
+    .from('ai_models')
+    .select('*')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
 
   if (activeError) throw activeError
 
@@ -61,54 +65,92 @@ export async function getAnalysisJobsForImage(imageId: string): Promise<AIAnalys
 }
 
 /**
- * Deterministic mock inference used by the capstone prototype when no real
- * model has been trained. Returns a small set of plausible detections so the
- * data flow and UI can be demonstrated end-to-end.
+ * Deterministic mock inference used by the capstone prototype.
+ * Guarantees at least 1–2 high-fidelity detections with bounding boxes.
  */
 function mockInference(): Pick<
   AIDamageDetection,
   'damage_type' | 'severity' | 'severity_score' | 'confidence' | 'bbox'
 >[] {
-  const damageTypes: DamageType[] = ['crack', 'corrosion', 'spalling', 'leakage', 'none']
-  const severities: SeverityLevel[] = ['low', 'medium', 'high', 'critical']
-
-  const resultCount = Math.floor(Math.random() * 3) + 1 // 1–3 detections
-  const results: Pick<
-    AIDamageDetection,
-    'damage_type' | 'severity' | 'severity_score' | 'confidence' | 'bbox'
-  >[] = []
-
-  for (let i = 0; i < resultCount; i++) {
-    const damageType = damageTypes[Math.floor(Math.random() * damageTypes.length)]
-    if (damageType === 'none') continue
-
-    const severity = severities[Math.floor(Math.random() * severities.length)]
-    const severityScore =
-      severity === 'low' ? 25 : severity === 'medium' ? 50 : severity === 'high' ? 75 : 95
-    const confidence = 0.6 + Math.random() * 0.35
-
-    results.push({
-      damage_type: damageType,
-      severity,
-      severity_score: severityScore,
-      confidence: Number(confidence.toFixed(4)),
+  return [
+    {
+      damage_type: 'crack',
+      severity: 'high',
+      severity_score: 75,
+      confidence: 0.92,
       bbox: {
-        x: 0.1 + Math.random() * 0.5,
-        y: 0.1 + Math.random() * 0.5,
-        width: 0.1 + Math.random() * 0.25,
-        height: 0.1 + Math.random() * 0.25,
+        x: 0.22,
+        y: 0.32,
+        width: 0.36,
+        height: 0.14,
       },
-    })
-  }
-
-  return results
+    },
+    {
+      damage_type: 'spalling',
+      severity: 'medium',
+      severity_score: 50,
+      confidence: 0.85,
+      bbox: {
+        x: 0.62,
+        y: 0.46,
+        width: 0.25,
+        height: 0.22,
+      },
+    },
+  ]
 }
 
 /**
- * Run AI analysis on an inspection image. For the prototype this uses mock
- * inference when the selected model format is 'mock'; real ONNX/TF.js inference
- * should be added here or in a dedicated service once a trained model is
- * available.
+ * Recalculate parent inspection risk score and risk level from AI detections.
+ */
+async function updateInspectionRiskFromAI(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  imageId: string
+) {
+  try {
+    const { data: img } = await supabase
+      .from('inspection_images')
+      .select('inspection_id')
+      .eq('id', imageId)
+      .single()
+
+    if (!img?.inspection_id) return
+
+    const { data: siblingImages } = await supabase
+      .from('inspection_images')
+      .select('id')
+      .eq('inspection_id', img.inspection_id)
+
+    if (!siblingImages || siblingImages.length === 0) return
+    const imageIds = siblingImages.map((s) => s.id)
+
+    const { data: detections } = await supabase
+      .from('ai_damage_detections')
+      .select('severity_score, severity')
+      .in('image_id', imageIds)
+
+    if (detections && detections.length > 0) {
+      const maxScore = Math.max(...detections.map((d) => d.severity_score))
+      const finalScore = computeFinalDamageScore(maxScore, 1.2, 1.0, 1.0)
+      const riskLevel = scoreToRiskLevel(finalScore)
+
+      await supabase
+        .from('inspections')
+        .update({
+          risk_score: finalScore,
+          risk_level: riskLevel,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', img.inspection_id)
+    }
+  } catch (err) {
+    console.warn('Failed to update inspection risk score from AI:', err)
+  }
+}
+
+/**
+ * Run AI analysis on an inspection image. Validates model, cleans up previous
+ * detections on re-runs, persists new detections, and updates parent inspection risk.
  */
 export async function runAIAnalysis(
   imageId: string,
@@ -116,19 +158,34 @@ export async function runAIAnalysis(
 ): Promise<{ job: AIAnalysisJob; detections: AIDamageDetection[] }> {
   const supabase = await createClient()
 
-  // Resolve model
-  let resolvedModelId = modelId
-  if (!resolvedModelId) {
-    const { data: models } = await supabase
+  // 1. Validate requested or fallback model
+  let resolvedModelId: string | null = null
+  if (modelId) {
+    const { data: specifiedModel, error: modelError } = await supabase
+      .from('ai_models')
+      .select('id, is_active')
+      .eq('id', modelId)
+      .single()
+
+    if (modelError || !specifiedModel) {
+      throw new Error(`Requested AI Model '${modelId}' not found.`)
+    }
+    if (!specifiedModel.is_active) {
+      throw new Error(`Requested AI Model '${modelId}' is inactive.`)
+    }
+    resolvedModelId = specifiedModel.id
+  } else {
+    const { data: activeModels } = await supabase
       .from('ai_models')
       .select('id')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(1)
-    resolvedModelId = models?.[0]?.id ?? null
+
+    resolvedModelId = activeModels?.[0]?.id ?? null
   }
 
-  // Create job row
+  // 2. Create job row
   const { data: job, error: jobError } = await supabase
     .from('ai_analysis_jobs')
     .insert({
@@ -145,6 +202,13 @@ export async function runAIAnalysis(
   }
 
   try {
+    // 3. Clear existing detections for this image to prevent duplicate bounding boxes
+    await supabase
+      .from('ai_damage_detections')
+      .delete()
+      .eq('image_id', imageId)
+
+    // 4. Generate deterministic inference results
     const mockResults = mockInference()
 
     const rows = mockResults.map((result) => ({
@@ -160,6 +224,7 @@ export async function runAIAnalysis(
 
     if (insertError) throw insertError
 
+    // 5. Mark job completed
     const { data: completedJob, error: updateError } = await supabase
       .from('ai_analysis_jobs')
       .update({
@@ -173,6 +238,9 @@ export async function runAIAnalysis(
     if (updateError || !completedJob) {
       throw updateError ?? new Error('Failed to complete AI analysis job')
     }
+
+    // 6. Update parent inspection risk score
+    await updateInspectionRiskFromAI(supabase, imageId)
 
     return {
       job: completedJob as AIAnalysisJob,
@@ -193,8 +261,8 @@ export async function runAIAnalysis(
 }
 
 /**
- * Verify or override an AI detection. Inspectors can confirm/reject results
- * and add notes.
+ * Verify or override an AI detection. If verified with high or critical severity,
+ * auto-creates a maintenance_priorities ticket for engineering attention.
  */
 export async function verifyDetection(
   detectionId: string,
@@ -220,15 +288,48 @@ export async function verifyDetection(
     updates.verified_at = null
   }
 
-  const { data, error } = await supabase
+  const { data: updatedDetection, error } = await supabase
     .from('ai_damage_detections')
     .update(updates)
     .eq('id', detectionId)
     .select()
     .single()
 
-  if (error) throw error
-  return data as AIDamageDetection
+  if (error || !updatedDetection) throw error ?? new Error('Failed to update detection')
+
+  // Auto-generate Maintenance Priority for verified high / critical defects
+  if (approved && (updatedDetection.severity === 'critical' || updatedDetection.severity === 'high')) {
+    try {
+      // Find parent project and inspection
+      const { data: img } = await supabase
+        .from('inspection_images')
+        .select('caption, inspection_id, inspections(project_id, location)')
+        .eq('id', updatedDetection.image_id)
+        .single()
+
+      const inspection = img?.inspections as { project_id?: string; location?: string } | null
+      const projectId = inspection?.project_id
+
+      if (projectId) {
+        const daysUntilDue = updatedDetection.severity === 'critical' ? 7 : 14
+        const dueDate = new Date(Date.now() + daysUntilDue * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+        await supabase.from('maintenance_priorities').insert({
+          project_id: projectId,
+          title: `AI Defect: ${updatedDetection.damage_type.toUpperCase()} (${updatedDetection.severity.toUpperCase()})`,
+          location: inspection?.location || img?.caption || 'Structural Asset',
+          risk_score: Math.min(10, Math.max(1, Number((updatedDetection.severity_score / 10).toFixed(1)))),
+          status: 'pending',
+          due_date: dueDate,
+          notes: `Automated priority from verified AI detection (${detectionId}). ${notes || ''}`,
+        })
+      }
+    } catch (maintErr) {
+      console.warn('Auto-create maintenance priority error:', maintErr)
+    }
+  }
+
+  return updatedDetection as AIDamageDetection
 }
 
 /**
@@ -297,4 +398,3 @@ export async function getAllAIDetections(projectId?: string): Promise<AIDamageDe
   if (error) throw error
   return (data || []) as AIDamageDetection[]
 }
-

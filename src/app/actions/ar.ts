@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/app/lib/supabase/server'
+import { computeFinalDamageScore, scoreToRiskLevel, severityToScore } from '@/app/lib/damage-score'
 import type { ARSession, ARAnchor, ARPose, Vector3, DamageType, SeverityLevel } from '@/app/types'
 
 /**
@@ -98,7 +99,7 @@ interface CreateARAnchorInput {
 }
 
 /**
- * Persist a new AR anchor.
+ * Persist a new AR anchor and update parent inspection damage telemetry.
  */
 export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnchor> {
   const supabase = await createClient()
@@ -120,7 +121,25 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
     .select()
     .single()
 
-  if (error) throw error
+  if (error || !data) throw error ?? new Error('Failed to create AR anchor')
+
+  if (input.severity) {
+    try {
+      const score = computeFinalDamageScore(severityToScore(input.severity), 1.2, 1.0, 1.0)
+      const riskLevel = scoreToRiskLevel(score)
+      await supabase
+        .from('inspections')
+        .update({
+          risk_score: score,
+          risk_level: riskLevel,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.inspectionId)
+    } catch (e) {
+      console.warn('AR anchor inspection risk update failed:', e)
+    }
+  }
+
   return data as ARAnchor
 }
 
@@ -158,4 +177,3 @@ export async function getAllARAnchors(projectId?: string): Promise<ARAnchor[]> {
   if (error) throw error
   return (data || []) as ARAnchor[]
 }
-

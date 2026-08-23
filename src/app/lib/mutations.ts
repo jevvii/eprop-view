@@ -237,7 +237,11 @@ export function useRunAIAnalysis() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['ai-detections', variables.imageId] })
+      queryClient.invalidateQueries({ queryKey: ['ai-detections-inspection'] })
+      queryClient.invalidateQueries({ queryKey: ['all-ai-detections'] })
       queryClient.invalidateQueries({ queryKey: ['ai-jobs', variables.imageId] })
+      queryClient.invalidateQueries({ queryKey: ['inspections'] })
+      queryClient.invalidateQueries({ queryKey: ['inspection'] })
     },
   })
 }
@@ -259,6 +263,10 @@ export function useVerifyDetection() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['ai-detections', data.image_id] })
+      queryClient.invalidateQueries({ queryKey: ['ai-detections-inspection'] })
+      queryClient.invalidateQueries({ queryKey: ['all-ai-detections'] })
+      queryClient.invalidateQueries({ queryKey: ['maintenance'] })
+      queryClient.invalidateQueries({ queryKey: ['inspections'] })
     },
   })
 }
@@ -338,6 +346,9 @@ export function useCreateARAnchor() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['ar-anchors', variables.inspectionId] })
+      queryClient.invalidateQueries({ queryKey: ['all-ar-anchors'] })
+      queryClient.invalidateQueries({ queryKey: ['inspections'] })
     },
   })
 }
+
