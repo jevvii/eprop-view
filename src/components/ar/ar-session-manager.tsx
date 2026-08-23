@@ -95,10 +95,9 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     }
 
     try {
-      let canvas = canvasRef.current
+      const canvas = canvasRef.current
       if (!canvas) {
-        canvas = document.createElement('canvas')
-        canvasRef.current = canvas
+        throw new Error('AR canvas is not mounted. Ensure ARCameraView is rendered before starting the session.')
       }
 
       // Initialize WebGL context with XR compatibility

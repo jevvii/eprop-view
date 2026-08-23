@@ -66,38 +66,66 @@ export async function getAnalysisJobsForImage(imageId: string): Promise<AIAnalys
 
 /**
  * Deterministic mock inference used by the capstone prototype.
- * Guarantees at least 1–2 high-fidelity detections with bounding boxes.
+ * Uses a deterministic hash of imageId to pick 1–2 defects from a realistic catalog.
  */
-function mockInference(): Pick<
+function mockInference(imageId?: string): Pick<
   AIDamageDetection,
   'damage_type' | 'severity' | 'severity_score' | 'confidence' | 'bbox'
 >[] {
-  return [
+  const catalog: Pick<
+    AIDamageDetection,
+    'damage_type' | 'severity' | 'severity_score' | 'confidence' | 'bbox'
+  >[] = [
     {
       damage_type: 'crack',
       severity: 'high',
       severity_score: 75,
       confidence: 0.92,
-      bbox: {
-        x: 0.22,
-        y: 0.32,
-        width: 0.36,
-        height: 0.14,
-      },
+      bbox: { x: 0.22, y: 0.32, width: 0.36, height: 0.14 },
     },
     {
       damage_type: 'spalling',
+      severity: 'critical',
+      severity_score: 95,
+      confidence: 0.88,
+      bbox: { x: 0.58, y: 0.44, width: 0.28, height: 0.25 },
+    },
+    {
+      damage_type: 'corrosion',
       severity: 'medium',
-      severity_score: 50,
-      confidence: 0.85,
-      bbox: {
-        x: 0.62,
-        y: 0.46,
-        width: 0.25,
-        height: 0.22,
-      },
+      severity_score: 52,
+      confidence: 0.82,
+      bbox: { x: 0.15, y: 0.55, width: 0.32, height: 0.22 },
+    },
+    {
+      damage_type: 'leakage',
+      severity: 'medium',
+      severity_score: 48,
+      confidence: 0.79,
+      bbox: { x: 0.45, y: 0.25, width: 0.26, height: 0.35 },
+    },
+    {
+      damage_type: 'deformation',
+      severity: 'low',
+      severity_score: 28,
+      confidence: 0.74,
+      bbox: { x: 0.30, y: 0.60, width: 0.40, height: 0.18 },
     },
   ]
+
+  if (!imageId) {
+    return [catalog[0], catalog[1]]
+  }
+
+  // Deterministic seed from imageId characters
+  const hash = imageId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const firstIndex = hash % catalog.length
+  const secondIndex = (hash + 2) % catalog.length
+
+  const first = catalog[firstIndex]
+  const second = catalog[secondIndex]
+
+  return firstIndex === secondIndex ? [first] : [first, second]
 }
 
 /**
@@ -209,7 +237,7 @@ export async function runAIAnalysis(
       .eq('image_id', imageId)
 
     // 4. Generate deterministic inference results
-    const mockResults = mockInference()
+    const mockResults = mockInference(imageId)
 
     const rows = mockResults.map((result) => ({
       image_id: imageId,

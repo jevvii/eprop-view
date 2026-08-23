@@ -8,7 +8,7 @@ import { ARCameraView } from '@/components/ar/ar-camera-view'
 import { AROverlay } from '@/components/ar/ar-overlay'
 import { ARAnchorForm } from '@/components/ar/ar-anchor-form'
 import { useARAnchors } from '@/app/lib/queries'
-import { useStartARSession, useEndARSession } from '@/app/lib/mutations'
+import { useStartARSession, useEndARSession, useCreateARAnchor } from '@/app/lib/mutations'
 import { Button } from '@/components/ui/button'
 
 function ARPageContent() {
@@ -18,21 +18,33 @@ function ARPageContent() {
   const { data: anchors = [] } = useARAnchors(inspectionId || undefined)
   const startARSession = useStartARSession()
   const endARSession = useEndARSession()
+  const createARAnchor = useCreateARAnchor()
   const [dbSessionId, setDbSessionId] = useState<string | null>(null)
 
   const handleStart = useCallback(async () => {
     if (!inspectionId) return
+    let createdSessionId: string | null = null
     try {
       // 1. Create DB session row first
       const created = await startARSession.mutateAsync({ inspectionId })
+      createdSessionId = created.id
       setDbSessionId(created.id)
 
       // 2. Request WebXR immersive AR session
       await startWebXR()
     } catch (err) {
       console.error('AR session start failure:', err)
+      // Cleanup orphaned DB session if WebXR start fails
+      if (createdSessionId) {
+        setDbSessionId(null)
+        try {
+          await endARSession.mutateAsync({ sessionId: createdSessionId, inspectionId })
+        } catch (cleanupErr) {
+          console.warn('Failed to cleanup orphaned AR session:', cleanupErr)
+        }
+      }
     }
-  }, [inspectionId, startARSession, startWebXR])
+  }, [inspectionId, startARSession, startWebXR, endARSession])
 
   const handleEnd = useCallback(async () => {
     if (dbSessionId) {
@@ -46,6 +58,28 @@ function ARPageContent() {
     }
     await endWebXR()
   }, [dbSessionId, endARSession, endWebXR, inspectionId])
+
+  const handleTapToAnchor = useCallback(async () => {
+    if (!session || !dbSessionId || !inspectionId) return
+    if (!hitPose) {
+      console.warn('Cannot place anchor: scanning surface...')
+      return
+    }
+
+    try {
+      await createARAnchor.mutateAsync({
+        sessionId: dbSessionId,
+        inspectionId,
+        label: `Quick Marker ${anchors.length + 1}`,
+        pose: hitPose,
+        damageType: 'crack',
+        severity: 'medium',
+        notes: 'Placed via direct reticle tap in AR mode.',
+      })
+    } catch (err) {
+      console.error('Failed to quick-place anchor:', err)
+    }
+  }, [session, dbSessionId, inspectionId, hitPose, anchors.length, createARAnchor])
 
   if (supported === false) {
     return <ARUnsupportedNotice />
@@ -92,7 +126,7 @@ function ARPageContent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
         <div className="relative h-[500px] lg:h-[calc(100vh-240px)] rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 bg-slate-950">
-          <ARCameraView />
+          <ARCameraView onTapToAnchor={handleTapToAnchor} />
           <AROverlay anchors={anchors} />
         </div>
 

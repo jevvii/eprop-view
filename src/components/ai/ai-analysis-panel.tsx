@@ -94,18 +94,23 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
           </Button>
 
           {damageScore !== null && (
-            <div className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Impact Score:</span>
-              <span className="text-xs font-black text-black">{damageScore.toFixed(1)}/10</span>
-              {riskLevel && (
-                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${
-                  riskLevel === 'critical' ? 'bg-red-100 text-red-700' :
-                  riskLevel === 'high' ? 'bg-orange-100 text-orange-700' :
-                  riskLevel === 'moderate' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                }`}>
-                  {riskLevel}
-                </span>
-              )}
+            <div className="flex flex-col gap-1">
+              <div className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Impact Score:</span>
+                <span className="text-xs font-black text-black">{damageScore.toFixed(1)}/10</span>
+                {riskLevel && (
+                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${
+                    riskLevel === 'critical' ? 'bg-red-100 text-red-700' :
+                    riskLevel === 'high' ? 'bg-orange-100 text-orange-700' :
+                    riskLevel === 'moderate' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {riskLevel}
+                  </span>
+                )}
+              </div>
+              <p className="text-[8px] text-slate-400 font-medium italic">
+                Score uses default structural (1.2×), exposure (1.0×), and location factors. Configurable weighting is a production follow-up.
+              </p>
             </div>
           )}
         </div>
