@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useInspections, useProjects } from '@/app/lib/queries'
+import { useInspections, useProjects, useAIDetectionsForInspection, useARAnchors } from '@/app/lib/queries'
 import { useCreateReport } from '@/app/lib/mutations'
 import { reportFormSchema } from '@/app/lib/validators'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,8 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
 
   const [title, setTitle] = useState('')
   const [inspectionId, setInspectionId] = useState('')
+  const { data: aiDetections = [] } = useAIDetectionsForInspection(inspectionId || undefined)
+  const { data: arAnchors = [] } = useARAnchors(inspectionId || undefined)
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [location, setLocation] = useState('')
   const [status, setStatus] = useState<(typeof statusOptions)[number]>('open')
@@ -55,6 +57,73 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
     if (!inspections) return []
     return inspections.slice(0, 20)
   }, [inspections])
+
+  const aiSummary = useMemo(() => {
+    if (!aiDetections || aiDetections.length === 0) return null
+    const countsByType: Record<string, number> = {}
+    const countsBySeverity: Record<string, number> = { low: 0, medium: 0, high: 0, critical: 0 }
+    let maxSeverityScore = 0
+
+    aiDetections.forEach((d) => {
+      countsByType[d.damage_type] = (countsByType[d.damage_type] || 0) + 1
+      if (d.severity in countsBySeverity) {
+        countsBySeverity[d.severity] += 1
+      }
+      if (d.severity_score > maxSeverityScore) {
+        maxSeverityScore = d.severity_score
+      }
+    })
+
+    return {
+      total: aiDetections.length,
+      countsByType,
+      countsBySeverity,
+      maxSeverityScore,
+    }
+  }, [aiDetections])
+
+  const handleApplyAISuggestions = () => {
+    if (!aiSummary && arAnchors.length === 0) return
+
+    const findingsParts: string[] = []
+
+    if (aiSummary && aiSummary.total > 0) {
+      const typeSummary = Object.entries(aiSummary.countsByType)
+        .map(([type, count]) => `${count} ${type}`)
+        .join(', ')
+      const severitySummary = Object.entries(aiSummary.countsBySeverity)
+        .filter(([_, count]) => count > 0)
+        .map(([sev, count]) => `${count} ${sev}`)
+        .join(', ')
+      findingsParts.push(
+        `[AI Structural Intelligence]\n• Total Detections: ${aiSummary.total} (${typeSummary})\n• Severity Distribution: ${severitySummary}\n• Automated scan detected surface defects requiring engineering review.`
+      )
+    }
+
+    if (arAnchors && arAnchors.length > 0) {
+      const anchorLabels = arAnchors
+        .map((a) => `${a.label} (${a.damage_type ?? 'structural'} - ${a.severity ?? 'unspecified'})`)
+        .join('; ')
+      findingsParts.push(
+        `[AR Spatial Telemetry]\n• Registered ${arAnchors.length} AR Spatial Anchors: ${anchorLabels}`
+      )
+    }
+
+    if (findingsParts.length > 0) {
+      const combined = findingsParts.join('\n\n')
+      setKeyFindings((prev) => (prev ? `${prev}\n\n${combined}` : combined))
+    }
+
+    if (aiSummary) {
+      const calculatedRisk = Math.min(10, Math.max(1, aiSummary.maxSeverityScore / 10)).toFixed(1)
+      setRiskScore(calculatedRisk)
+      if (aiSummary.countsBySeverity.critical > 0) {
+        setStatus('critical')
+      } else if (aiSummary.countsBySeverity.high > 0) {
+        setStatus('in_review')
+      }
+    }
+  }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -187,6 +256,84 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           />
         </div>
       </div>
+
+      {inspectionId && (
+        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50/40 p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                AI & AR Intelligence Feed
+              </span>
+            </div>
+            {(aiSummary || arAnchors.length > 0) && (
+              <button
+                type="button"
+                onClick={handleApplyAISuggestions}
+                className="text-[10px] font-black uppercase tracking-wider text-blue-600 hover:text-blue-700 bg-blue-100/60 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors self-start sm:self-auto"
+              >
+                Auto-Populate Findings & Score 🪄
+              </button>
+            )}
+          </div>
+
+          {aiSummary || arAnchors.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              {aiSummary && (
+                <div className="bg-white/80 rounded-xl p-3 border border-slate-100 space-y-1.5">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">AI Detections ({aiSummary.total})</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(aiSummary.countsByType).map(([type, count]) => (
+                      <span key={type} className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px] uppercase">
+                        {count} {type}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 text-[9px] font-black uppercase tracking-wider text-slate-500 pt-1">
+                    {aiSummary.countsBySeverity.critical > 0 && (
+                      <span className="text-red-600">{aiSummary.countsBySeverity.critical} Critical</span>
+                    )}
+                    {aiSummary.countsBySeverity.high > 0 && (
+                      <span className="text-orange-600">{aiSummary.countsBySeverity.high} High</span>
+                    )}
+                    {aiSummary.countsBySeverity.medium > 0 && (
+                      <span className="text-amber-600">{aiSummary.countsBySeverity.medium} Med</span>
+                    )}
+                    {aiSummary.countsBySeverity.low > 0 && (
+                      <span className="text-emerald-600">{aiSummary.countsBySeverity.low} Low</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {arAnchors.length > 0 ? (
+                <div className="bg-white/80 rounded-xl p-3 border border-slate-100 space-y-1.5">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">AR Spatial Anchors ({arAnchors.length})</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {arAnchors.slice(0, 3).map((anchor) => (
+                      <span key={anchor.id} className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 font-bold text-[10px] uppercase">
+                        📍 {anchor.label}
+                      </span>
+                    ))}
+                    {arAnchors.length > 3 && (
+                      <span className="text-[10px] font-bold text-slate-400 self-center">+{arAnchors.length - 3} more</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white/50 rounded-xl p-3 border border-dashed border-slate-200 flex items-center text-[10px] font-bold text-slate-400 uppercase">
+                  No AR anchors placed for this inspection.
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              No AI detections or AR anchors yet for this inspection. Run AI analysis in the Asset Vault or drop anchors in AR Mode.
+            </p>
+          )}
+        </div>
+      )}
+
       <div>
         <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Key Findings</label>
         <textarea

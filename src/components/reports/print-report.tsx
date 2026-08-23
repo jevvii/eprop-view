@@ -2,6 +2,7 @@
 
 import type { Report } from '@/app/types'
 import { RiskScore } from '@/components/shared/risk-score'
+import { useAIDetectionsForInspection, useARAnchors } from '@/app/lib/queries'
 
 interface PrintReportProps {
   reports: Report[]
@@ -14,6 +15,85 @@ interface PrintReportProps {
     completed: number
   }
   selectedReport?: Report | null
+}
+
+function ReportAIDetails({ inspectionId }: { inspectionId: string }) {
+  const { data: detections = [] } = useAIDetectionsForInspection(inspectionId)
+  const { data: anchors = [] } = useARAnchors(inspectionId)
+
+  if (detections.length === 0 && anchors.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="space-y-4 mb-6">
+      {detections.length > 0 && (
+        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+              Automated AI Structural Damage Diagnostics
+            </div>
+            <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+              {detections.length} Detections Logged
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {detections.map((det) => (
+              <div key={det.id} className="bg-white p-3 rounded-xl border border-slate-100 flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-tight text-black flex items-center gap-1.5">
+                    <span>{det.damage_type}</span>
+                    <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                      det.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                      det.severity === 'high' ? 'bg-orange-100 text-orange-700' :
+                      det.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
+                      'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {det.severity}
+                    </span>
+                  </div>
+                  <div className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">
+                    Score: {det.severity_score.toFixed(0)}/100 · Conf: {(det.confidence * 100).toFixed(1)}%
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className={`text-[7px] font-black uppercase px-2 py-1 rounded-md ${
+                    det.verified_by ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-50 text-slate-400'
+                  }`}>
+                    {det.verified_by ? 'Verified' : 'Unverified'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {anchors.length > 0 && (
+        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+          <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-600" />
+            AR Spatial Anchors & Telemetry ({anchors.length})
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {anchors.map((anchor) => (
+              <div key={anchor.id} className="bg-white p-3 rounded-xl border border-slate-100">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-black uppercase text-black">📍 {anchor.label}</span>
+                  <span className="text-[8px] font-bold text-slate-500 uppercase">{anchor.damage_type ?? 'structural'}</span>
+                </div>
+                <div className="text-[8px] font-mono text-slate-400">
+                  Pose: [{anchor.pose.position.x.toFixed(2)}, {anchor.pose.position.y.toFixed(2)}, {anchor.pose.position.z.toFixed(2)}]
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function PrintReport({ reports, projectName, generatedBy, stats, selectedReport }: PrintReportProps) {
@@ -140,6 +220,7 @@ export function PrintReport({ reports, projectName, generatedBy, stats, selected
                     {report.key_findings || 'No formal observations recorded for this node.'}
                   </p>
                 </div>
+                {report.inspection_id && <ReportAIDetails inspectionId={report.inspection_id} />}
               </div>
 
               <div className="space-y-6">

@@ -39,12 +39,13 @@ export function Sidebar() {
     { href: '/projects', label: 'Projects', icon: '📁' },
     { href: '/environmental', label: 'Environmental View', icon: '🌍' },
     { href: '/reports', label: 'Reports', icon: '📋' },
-    { 
-      href: '/document', 
-      label: 'Document', 
+    {
+      href: '/document',
+      label: 'Document',
       icon: '📄',
-      badge: unreadCount && unreadCount > 0 ? unreadCount : null 
+      badge: unreadCount && unreadCount > 0 ? unreadCount : null
     },
+    { href: '/ar', label: 'AR Mode', icon: '🥽' },
     { href: '/settings', label: 'Settings', icon: '⚙️', adminOnly: true },
   ]
 

@@ -2,7 +2,18 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
-import type { Report, Inspection, EnvironmentalRisk, Profile } from '@/app/types'
+import { runAIAnalysis, verifyDetection } from '@/app/actions/ai'
+import { startARSession, endARSession, createARAnchor } from '@/app/actions/ar'
+import type {
+  Report,
+  Inspection,
+  EnvironmentalRisk,
+  Profile,
+  ARPose,
+  Vector3,
+  DamageType,
+  SeverityLevel,
+} from '@/app/types'
 
 let client: ReturnType<typeof createClient> | null = null
 function getClient() {
@@ -212,6 +223,121 @@ export function useUpdateProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
+  })
+}
+
+// AI Module mutations
+export function useRunAIAnalysis() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ imageId, modelId }: { imageId: string; modelId?: string }) => {
+      return runAIAnalysis(imageId, modelId)
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ai-detections', variables.imageId] })
+      queryClient.invalidateQueries({ queryKey: ['ai-jobs', variables.imageId] })
+    },
+  })
+}
+
+export function useVerifyDetection() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      detectionId,
+      approved,
+      notes,
+    }: {
+      detectionId: string
+      approved: boolean
+      notes?: string
+    }) => {
+      return verifyDetection(detectionId, approved, notes)
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['ai-detections', data.image_id] })
+    },
+  })
+}
+
+// AR Module mutations
+export function useStartARSession() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      inspectionId,
+      deviceInfo,
+    }: {
+      inspectionId: string
+      deviceInfo?: Record<string, unknown>
+    }) => {
+      return startARSession(inspectionId, deviceInfo)
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ar-session', variables.inspectionId] })
+    },
+  })
+}
+
+export function useEndARSession() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ sessionId, inspectionId }: { sessionId: string; inspectionId: string }) => {
+      return endARSession(sessionId)
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ar-session', variables.inspectionId] })
+    },
+  })
+}
+
+export function useCreateARAnchor() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      inspectionId,
+      label,
+      pose,
+      worldPosition,
+      damageType,
+      severity,
+      detectionId,
+      notes,
+      snapshotPath,
+    }: {
+      sessionId: string
+      inspectionId: string
+      label: string
+      pose: ARPose
+      worldPosition?: Vector3
+      damageType?: DamageType
+      severity?: SeverityLevel
+      detectionId?: string
+      notes?: string
+      snapshotPath?: string
+    }) => {
+      return createARAnchor({
+        sessionId,
+        inspectionId,
+        label,
+        pose,
+        worldPosition,
+        damageType,
+        severity,
+        detectionId,
+        notes,
+        snapshotPath,
+      })
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ar-anchors', variables.inspectionId] })
     },
   })
 }

@@ -3,6 +3,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
 import { getAllProfilesWithEmails } from '@/app/actions/admin'
+import {
+  getActiveAIModels,
+  getDetectionsForImage,
+  getAnalysisJobsForImage,
+  getDetectionsForInspection,
+  getAllAIDetections,
+} from '@/app/actions/ai'
+import {
+  getActiveARSession,
+  getARAnchorsForInspection,
+  getAllARAnchors,
+} from '@/app/actions/ar'
 import type {
   Project,
   Report,
@@ -16,6 +28,11 @@ import type {
   InspectionImage,
   ImageComment,
   Profile,
+  AIModel,
+  AIDamageDetection,
+  AIAnalysisJob,
+  ARSession,
+  ARAnchor,
 } from '@/app/types'
 
 let client: ReturnType<typeof createClient> | null = null
@@ -329,3 +346,88 @@ export function useAllProfiles() {
     },
   })
 }
+
+// AI Module hooks
+export function useAIModels() {
+  return useQuery({
+    queryKey: ['ai-models'],
+    queryFn: async (): Promise<AIModel[]> => {
+      return getActiveAIModels()
+    },
+  })
+}
+
+export function useAIDetections(imageId?: string) {
+  return useQuery({
+    queryKey: ['ai-detections', imageId],
+    enabled: !!imageId,
+    queryFn: async (): Promise<AIDamageDetection[]> => {
+      if (!imageId) return []
+      return getDetectionsForImage(imageId)
+    },
+  })
+}
+
+export function useAIDetectionsForInspection(inspectionId?: string) {
+  return useQuery({
+    queryKey: ['ai-detections-inspection', inspectionId],
+    enabled: !!inspectionId,
+    queryFn: async (): Promise<AIDamageDetection[]> => {
+      if (!inspectionId) return []
+      return getDetectionsForInspection(inspectionId)
+    },
+  })
+}
+
+export function useAllAIDetections(projectId?: string) {
+  return useQuery({
+    queryKey: ['all-ai-detections', projectId],
+    queryFn: async (): Promise<AIDamageDetection[]> => {
+      return getAllAIDetections(projectId)
+    },
+  })
+}
+
+export function useAIAnalysisJobs(imageId?: string) {
+  return useQuery({
+    queryKey: ['ai-jobs', imageId],
+    enabled: !!imageId,
+    queryFn: async (): Promise<AIAnalysisJob[]> => {
+      if (!imageId) return []
+      return getAnalysisJobsForImage(imageId)
+    },
+  })
+}
+
+// AR Module hooks
+export function useARSession(inspectionId?: string) {
+  return useQuery({
+    queryKey: ['ar-session', inspectionId],
+    enabled: !!inspectionId,
+    queryFn: async (): Promise<ARSession | null> => {
+      if (!inspectionId) return null
+      return getActiveARSession(inspectionId)
+    },
+  })
+}
+
+export function useARAnchors(inspectionId?: string) {
+  return useQuery({
+    queryKey: ['ar-anchors', inspectionId],
+    enabled: !!inspectionId,
+    queryFn: async (): Promise<ARAnchor[]> => {
+      if (!inspectionId) return []
+      return getARAnchorsForInspection(inspectionId)
+    },
+  })
+}
+
+export function useAllARAnchors(projectId?: string) {
+  return useQuery({
+    queryKey: ['all-ar-anchors', projectId],
+    queryFn: async (): Promise<ARAnchor[]> => {
+      return getAllARAnchors(projectId)
+    },
+  })
+}
+
