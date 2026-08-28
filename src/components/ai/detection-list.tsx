@@ -1,16 +1,52 @@
 'use client'
 
-import type { AIDamageDetection } from '@/app/types'
+import { useState } from 'react'
+import type { AIDamageDetection, DamageType, SeverityLevel } from '@/app/types'
 import { SeverityBadge } from './severity-badge'
-import { useVerifyDetection } from '@/app/lib/mutations'
+import { useVerifyDetection, useUpdateAIDetection } from '@/app/lib/mutations'
 import { Button } from '@/components/ui/button'
 
 interface DetectionListProps {
   detections: AIDamageDetection[]
 }
 
+const damageTypeOptions: DamageType[] = ['crack', 'corrosion', 'spalling', 'deformation', 'leakage', 'none']
+const severityOptions: SeverityLevel[] = ['low', 'medium', 'high', 'critical']
+
 export function DetectionList({ detections }: DetectionListProps) {
   const verify = useVerifyDetection()
+  const updateDetection = useUpdateAIDetection()
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDamageType, setEditDamageType] = useState<DamageType>('crack')
+  const [editSeverity, setEditSeverity] = useState<SeverityLevel>('medium')
+  const [editScore, setEditScore] = useState<number>(50)
+  const [editNotes, setEditNotes] = useState<string>('')
+
+  const startEdit = (detection: AIDamageDetection) => {
+    setEditingId(detection.id)
+    setEditDamageType(detection.damage_type)
+    setEditSeverity(detection.severity)
+    setEditScore(detection.severity_score)
+    setEditNotes(detection.notes || '')
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const saveEdit = async (detectionId: string) => {
+    await updateDetection.mutateAsync({
+      detectionId,
+      params: {
+        damage_type: editDamageType,
+        severity: editSeverity,
+        severity_score: editScore,
+        notes: editNotes,
+      },
+    })
+    setEditingId(null)
+  }
 
   if (detections.length === 0) {
     return (
@@ -28,6 +64,113 @@ export function DetectionList({ detections }: DetectionListProps) {
           detection.notes?.toLowerCase().includes('reject') ||
           detection.notes?.toLowerCase().includes('false positive')
         )
+        const isEditing = editingId === detection.id
+
+        if (isEditing) {
+          return (
+            <div
+              key={detection.id}
+              className="border border-primary/30 rounded-2xl p-4 bg-primary/5 space-y-3 animate-in fade-in"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-wider text-primary">
+                  Validate & Adjust Detection
+                </span>
+                <button
+                  onClick={cancelEdit}
+                  className="text-[10px] font-bold text-slate-400 hover:text-slate-700"
+                >
+                  ✕ Cancel
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                    Damage Type
+                  </label>
+                  <select
+                    value={editDamageType}
+                    onChange={(e) => setEditDamageType(e.target.value as DamageType)}
+                    className="w-full text-xs font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none"
+                  >
+                    {damageTypeOptions.map((t) => (
+                      <option key={t} value={t}>{t.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                    Severity
+                  </label>
+                  <select
+                    value={editSeverity}
+                    onChange={(e) => {
+                      const sev = e.target.value as SeverityLevel
+                      setEditSeverity(sev)
+                      if (sev === 'critical') setEditScore(90)
+                      else if (sev === 'high') setEditScore(75)
+                      else if (sev === 'medium') setEditScore(50)
+                      else setEditScore(25)
+                    }}
+                    className="w-full text-xs font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none"
+                  >
+                    {severityOptions.map((s) => (
+                      <option key={s} value={s}>{s.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                    Score (0-100)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editScore}
+                    onChange={(e) => setEditScore(Number(e.target.value))}
+                    className="w-full text-xs font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                  Validator / Engineering Notes
+                </label>
+                <input
+                  type="text"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="e.g. Adjusted crack width and severity rating per on-site verification."
+                  className="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={cancelEdit}
+                  className="text-[9px] font-bold uppercase tracking-wider py-1 px-3"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={updateDetection.isPending}
+                  onClick={() => saveEdit(detection.id)}
+                  className="text-[9px] font-black uppercase tracking-wider py-1 px-4 bg-primary text-white"
+                >
+                  {updateDetection.isPending ? 'Saving...' : 'Apply Adjustments'}
+                </Button>
+              </div>
+            </div>
+          )
+        }
 
         return (
           <div
@@ -57,7 +200,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                   </span>
                 )}
               </div>
-              <div className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-2">
+              <div className="text-[9px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-2 flex-wrap">
                 <span>Confidence {(detection.confidence * 100).toFixed(1)}%</span>
                 <span>·</span>
                 <span>Score {detection.severity_score}/100</span>
@@ -70,7 +213,16 @@ export function DetectionList({ detections }: DetectionListProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-auto">
+            <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => startEdit(detection)}
+                className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 transition-colors"
+              >
+                Adjust
+              </Button>
+
               {!isVerified && (
                 <Button
                   variant="outline"
@@ -80,7 +232,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                     verify.mutate({
                       detectionId: detection.id,
                       approved: true,
-                      notes: 'Verified by inspector.',
+                      notes: 'Verified by structural engineer.',
                     })
                   }
                   className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors"
@@ -98,7 +250,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                     verify.mutate({
                       detectionId: detection.id,
                       approved: false,
-                      notes: 'Rejected: Marked as false positive by inspector.',
+                      notes: 'Rejected: Marked as false positive.',
                     })
                   }
                   className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"

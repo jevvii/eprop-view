@@ -361,6 +361,60 @@ export async function verifyDetection(
 }
 
 /**
+ * Adjust or edit AI detection parameters (Inspector Confirm/Edit & Engineer Validate/Adjust).
+ * Updates damage type, severity, score, bbox, and notes, and recalculates parent inspection risk.
+ */
+export async function updateAIDetection(
+  detectionId: string,
+  params: {
+    damage_type?: DamageType
+    severity?: SeverityLevel
+    severity_score?: number
+    confidence?: number
+    notes?: string
+    approved?: boolean
+  }
+): Promise<AIDamageDetection> {
+  const supabase = await createClient()
+
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData.user) {
+    throw authError ?? new Error('Not authenticated')
+  }
+
+  const updates: Record<string, unknown> = {}
+  if (params.damage_type !== undefined) updates.damage_type = params.damage_type
+  if (params.severity !== undefined) updates.severity = params.severity
+  if (params.severity_score !== undefined) updates.severity_score = params.severity_score
+  if (params.confidence !== undefined) updates.confidence = params.confidence
+  if (params.notes !== undefined) updates.notes = params.notes
+  
+  if (params.approved === true) {
+    updates.verified_by = authData.user.id
+    updates.verified_at = new Date().toISOString()
+  } else if (params.approved === false) {
+    updates.verified_by = null
+    updates.verified_at = null
+  }
+
+  const { data: updatedDetection, error } = await supabase
+    .from('ai_damage_detections')
+    .update(updates)
+    .eq('id', detectionId)
+    .select()
+    .single()
+
+  if (error || !updatedDetection) throw error ?? new Error('Failed to update AI detection')
+
+  // Recalculate inspection risk score
+  if (updatedDetection.image_id) {
+    await updateInspectionRiskFromAI(supabase, updatedDetection.image_id)
+  }
+
+  return updatedDetection as AIDamageDetection
+}
+
+/**
  * Return all AI detections for all images linked to an inspection.
  */
 export async function getDetectionsForInspection(inspectionId: string): Promise<AIDamageDetection[]> {

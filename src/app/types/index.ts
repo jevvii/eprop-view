@@ -1,4 +1,15 @@
-export type Role = 'admin' | 'inspector' | 'viewer'
+export type Role = 'admin' | 'engineer' | 'inspector' | 'viewer'
+
+export type StructuralElement =
+  | 'beam'
+  | 'column'
+  | 'slab'
+  | 'wall'
+  | 'foundation'
+  | 'facade'
+  | 'roof'
+  | 'general'
+  | 'other'
 
 export type ProjectStatus = 'active' | 'completed' | 'on_hold' | 'cancelled'
 export type InspectionStatus = 'pending' | 'in_progress' | 'completed' | 'requires_followup'
@@ -39,11 +50,14 @@ export interface Inspection {
   id: string
   project_id: string
   lead_inspector_id: string | null
+  lead_inspector_name?: string
   inspection_date: string
   status: InspectionStatus
   risk_score: number
   risk_level: RiskLevel
   location: string
+  floor?: string
+  structural_element?: StructuralElement | string
   notes: string
   created_at: string
   updated_at: string

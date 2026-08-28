@@ -357,6 +357,32 @@ export function useAIModels() {
   })
 }
 
+export function useAdminAIModels() {
+  return useQuery({
+    queryKey: ['admin-ai-models'],
+    queryFn: async (): Promise<AIModel[]> => {
+      const { getAdminAIModels } = await import('@/app/actions/admin')
+      return getAdminAIModels()
+    },
+  })
+}
+
+export function useStaffProfiles() {
+  return useQuery({
+    queryKey: ['staff-profiles'],
+    queryFn: async (): Promise<Profile[]> => {
+      const { data, error } = await getClient()
+        .from('profiles')
+        .select('*')
+        .in('role', ['admin', 'engineer', 'inspector'])
+        .eq('is_active', true)
+        .order('full_name', { ascending: true })
+      if (error) throw error
+      return (data || []) as Profile[]
+    },
+  })
+}
+
 export function useAIDetections(imageId?: string) {
   return useQuery({
     queryKey: ['ai-detections', imageId],
