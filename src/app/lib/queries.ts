@@ -320,16 +320,21 @@ export function useProfile() {
         throw authError ?? new Error('Not authenticated')
       }
 
-      const { data, error } = await getClient()
+      const { data } = await getClient()
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
-        .single()
-      if (error) throw error
+        .maybeSingle()
 
       return {
-        ...data,
+        id: authData.user.id,
+        role: (data?.role || authData.user.user_metadata?.role || 'viewer') as Role,
+        full_name: data?.full_name || authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'User',
+        phone: data?.phone || '',
+        department: data?.department || authData.user.user_metadata?.department || 'Engineering & Inspection',
+        created_at: data?.created_at || authData.user.created_at || new Date().toISOString(),
         email: authData.user.email ?? '',
+        is_active: data?.is_active !== false,
       }
     },
     staleTime: 0,
@@ -371,14 +376,12 @@ export function useStaffProfiles() {
   return useQuery({
     queryKey: ['staff-profiles'],
     queryFn: async (): Promise<Profile[]> => {
-      const { data, error } = await getClient()
-        .from('profiles')
-        .select('*')
-        .in('role', ['admin', 'engineer', 'inspector'])
-        .eq('is_active', true)
-        .order('full_name', { ascending: true })
-      if (error) throw error
-      return (data || []) as Profile[]
+      const all = await getAllProfilesWithEmails()
+      return (all || []).filter(
+        (p) =>
+          (p.role === 'admin' || p.role === 'engineer' || p.role === 'inspector') &&
+          p.is_active !== false
+      )
     },
   })
 }
