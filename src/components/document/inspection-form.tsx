@@ -5,8 +5,33 @@ import { useProjects } from '@/app/lib/queries'
 import { useCreateInspection } from '@/app/lib/mutations'
 import { inspectionFormSchema } from '@/app/lib/validators'
 import { Button } from '@/components/ui/button'
+import type { StructuralElement } from '@/app/types'
 
 const statusOptions = ['pending', 'in_progress', 'completed', 'requires_followup'] as const
+
+const structuralElementOptions: { value: StructuralElement; label: string }[] = [
+  { value: 'beam', label: 'BEAM (STRUCTURAL)' },
+  { value: 'column', label: 'COLUMN (LOAD BEARING)' },
+  { value: 'slab', label: 'SLAB / DECK' },
+  { value: 'wall', label: 'SHEAR / RETAINING WALL' },
+  { value: 'foundation', label: 'FOUNDATION / PIER' },
+  { value: 'facade', label: 'FAÇADE / EXTERIOR' },
+  { value: 'roof', label: 'ROOF / TRUSS' },
+  { value: 'general', label: 'GENERAL STRUCTURE' },
+  { value: 'other', label: 'OTHER MEMBER' },
+]
+
+const floorOptions = [
+  'Basement 2 (B2)',
+  'Basement 1 (B1)',
+  'Ground Floor (GF)',
+  'Level 1',
+  'Level 2',
+  'Level 3',
+  'Level 4+',
+  'Roof Deck / Mezzanine',
+  'Exterior / Perimeter',
+]
 
 export function InspectionForm() {
   const { data: projects } = useProjects()
@@ -15,6 +40,8 @@ export function InspectionForm() {
   const [projectId, setProjectId] = useState('')
   const [inspectionDate, setInspectionDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [location, setLocation] = useState('')
+  const [floor, setFloor] = useState('Ground Floor (GF)')
+  const [structuralElement, setStructuralElement] = useState<StructuralElement>('column')
   const [riskScore, setRiskScore] = useState('4.5')
   const [status, setStatus] = useState<(typeof statusOptions)[number]>('pending')
   const [notes, setNotes] = useState('')
@@ -44,6 +71,8 @@ export function InspectionForm() {
       project_id: projectId,
       inspection_date: inspectionDate,
       location,
+      floor,
+      structural_element: structuralElement,
       risk_score: riskScore,
       status,
       notes,
@@ -61,7 +90,7 @@ export function InspectionForm() {
       setRiskScore('4.5')
       setStatus('pending')
       setNotes('')
-      setSuccess('Inspection entry saved.')
+      setSuccess('Inspection entry saved with structural element metadata.')
     } catch (mutationError) {
       setError(mutationError instanceof Error ? mutationError.message : 'Failed to create inspection.')
     }
@@ -71,8 +100,8 @@ export function InspectionForm() {
     <form onSubmit={handleSubmit} className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-8 flex flex-col h-full">
       <div className="flex items-center justify-between border-b border-slate-100 pb-6 px-2">
         <div>
-          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Incident Registry</h3>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Log formal inspection findings.</p>
+          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Field Inspection Registry</h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Select Building, Floor, and Structural Element.</p>
         </div>
         {createInspection.isPending && (
           <span className="text-[9px] font-black text-primary animate-pulse uppercase tracking-[0.2em]">Syncing...</span>
@@ -81,19 +110,46 @@ export function InspectionForm() {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 flex-1">
         <div className="md:col-span-2">
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Assigned Project</label>
+          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Building / Project</label>
           <select
             value={projectId}
             onChange={(event) => setProjectId(event.target.value)}
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
             required
           >
-            <option value="" disabled>SELECT_PROJECT</option>
+            <option value="" disabled>SELECT_BUILDING_PROJECT</option>
             {projects?.map((project) => (
               <option key={project.id} value={project.id}>{project.name}</option>
             ))}
           </select>
         </div>
+
+        <div>
+          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Floor Level</label>
+          <select
+            value={floor}
+            onChange={(event) => setFloor(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+          >
+            {floorOptions.map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Structural Element</label>
+          <select
+            value={structuralElement}
+            onChange={(event) => setStructuralElement(event.target.value as StructuralElement)}
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+          >
+            {structuralElementOptions.map((elem) => (
+              <option key={elem.value} value={elem.value}>{elem.label}</option>
+            ))}
+          </select>
+        </div>
+
         <div>
           <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Operation Date</label>
           <input
@@ -104,18 +160,20 @@ export function InspectionForm() {
             required
           />
         </div>
+
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Precise Location</label>
+          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Precise Zone / Pin</label>
           <input
             value={location}
             onChange={(event) => setLocation(event.target.value)}
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-            placeholder="ZONE_ALPHA / BUILDING_B"
+            placeholder="GRID_C4 / COLUMN_NORTH"
             required
           />
         </div>
+
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Assessment Score</label>
+          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Initial Risk Score (0-10)</label>
           <input
             type="number"
             min="0"
@@ -127,6 +185,7 @@ export function InspectionForm() {
             required
           />
         </div>
+
         <div>
           <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Status Protocol</label>
           <select
@@ -148,8 +207,8 @@ export function InspectionForm() {
         <textarea
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-4 py-3 text-[10px] font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[100px] resize-none"
-          placeholder="ENTER_OBSERVATIONS..."
+          className="w-full rounded-xl border border-slate-200 px-4 py-3 text-[10px] font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[90px] resize-none"
+          placeholder="ENTER_FIELD_OBSERVATIONS..."
         />
       </div>
 
@@ -158,7 +217,7 @@ export function InspectionForm() {
 
       <div className="flex justify-end pt-4 border-t border-slate-100">
         <Button type="submit" disabled={createInspection.isPending} className="font-black uppercase tracking-[0.2em] text-[10px] px-10 py-5 h-auto shadow-lg shadow-primary/20">
-          {createInspection.isPending ? 'Syncing...' : 'Register Entry'}
+          {createInspection.isPending ? 'Syncing...' : 'Register Inspection'}
         </Button>
       </div>
     </form>

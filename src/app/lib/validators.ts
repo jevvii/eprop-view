@@ -4,6 +4,8 @@ export const inspectionFormSchema = z.object({
   project_id: z.string().uuid('Select a valid project'),
   inspection_date: z.string().refine((d) => !isNaN(Date.parse(d)), { message: 'Invalid date' }),
   location: z.string().min(1, 'Location is required').trim().max(200),
+  floor: z.string().max(100).optional().default('Ground Floor'),
+  structural_element: z.enum(['beam', 'column', 'slab', 'wall', 'foundation', 'facade', 'roof', 'general', 'other']).optional().default('general'),
   risk_score: z.coerce.number().min(0).max(10, 'Risk score must be between 0 and 10'),
   status: z.enum(['pending', 'in_progress', 'completed', 'requires_followup']),
   notes: z.string().max(2000).default(''),

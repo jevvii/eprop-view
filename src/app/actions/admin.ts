@@ -3,14 +3,17 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/app/lib/supabase/server'
 import { z } from 'zod'
+import type { Role, AIModel, AIModelFormat, AIModelTask } from '@/app/types'
 
-const createInspectorSchema = z.object({
+const createUserSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   fullName: z.string().min(2, 'Full name is required'),
+  role: z.enum(['admin', 'engineer', 'inspector', 'viewer']).default('inspector'),
+  department: z.string().optional().default('Engineering & Inspection'),
 })
 
-export async function createInspector(prevState: unknown, formData: FormData) {
+export async function createUser(prevState: unknown, formData: FormData) {
   const supabase = await createClient()
 
   // 1. Verify Admin Role
@@ -26,10 +29,12 @@ export async function createInspector(prevState: unknown, formData: FormData) {
   if (profile?.role !== 'admin') return { error: 'Admin access required' }
 
   // 2. Validate Input
-  const validated = createInspectorSchema.safeParse({
+  const validated = createUserSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
     fullName: formData.get('fullName'),
+    role: formData.get('role') || 'inspector',
+    department: formData.get('department') || 'Engineering & Inspection',
   })
 
   if (!validated.success) {
@@ -38,12 +43,9 @@ export async function createInspector(prevState: unknown, formData: FormData) {
     return { error: firstError ?? 'Invalid form data' }
   }
 
-  // 3. Create User with Admin Client (requires Service Role)
-  // Note: createClient() for server usually uses anon key. 
-  // We need a specific admin client for creating users without email confirmation if desired,
-  // or we can use the regular sign up if we don't have a service role client ready.
-  // Actually, for admin creating users, we SHOULD use the service role key.
-  
+  const { email, password, fullName, role, department } = validated.data
+
+  // 3. Create User with Admin Client
   const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
   const supabaseAdmin = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,30 +54,84 @@ export async function createInspector(prevState: unknown, formData: FormData) {
   )
 
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email: validated.data.email,
-    password: validated.data.password,
+    email,
+    password,
     email_confirm: true,
     user_metadata: { 
-      role: 'inspector',
-      full_name: validated.data.fullName
+      role,
+      full_name: fullName
     },
   })
 
   if (error) return { error: error.message }
 
   if (data?.user) {
-    const { error: insertError } = await supabaseAdmin.from('profiles').insert({
+    const { error: insertError } = await supabaseAdmin.from('profiles').upsert({
       id: data.user.id,
-      role: 'inspector',
-      full_name: validated.data.fullName
+      role,
+      full_name: fullName,
+      department,
+      is_active: true
     })
     if (insertError) {
-      return { error: 'User created but profile setup failed.' }
+      return { error: 'User created in auth but profile setup failed: ' + insertError.message }
     }
   }
 
   revalidatePath('/settings')
-  return { success: true, message: `Inspector account created for ${validated.data.email}` }
+  return { success: true, message: `${role.toUpperCase()} account created for ${email}` }
+}
+
+// Backward-compatible wrapper
+export async function createInspector(prevState: unknown, formData: FormData) {
+  return createUser(prevState, formData)
+}
+
+export async function updateUserRole(userId: string, newRole: Role) {
+  const supabase = await createClient()
+
+  // 1. Verify Admin Role
+  const { data: { user: adminUser }, error: authError } = await supabase.auth.getUser()
+  if (authError || !adminUser) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', adminUser.id)
+    .single()
+
+  if (profile?.role !== 'admin') return { error: 'Admin access required' }
+
+  // Prevent admin from accidentally demoting themselves if they are the only admin
+  if (userId === adminUser.id && newRole !== 'admin') {
+    return { error: 'Cannot remove admin role from your own active session.' }
+  }
+
+  // Update in profiles table
+  const { error } = await supabase
+    .from('profiles')
+    .update({ role: newRole })
+    .eq('id', userId)
+
+  if (error) return { error: error.message }
+
+  // Sync to auth user_metadata
+  try {
+    const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    await supabaseAdmin.auth.admin.updateUserById(userId, {
+      user_metadata: { role: newRole }
+    })
+  } catch (syncErr) {
+    console.warn('Metadata sync warning:', syncErr)
+  }
+
+  revalidatePath('/settings')
+  return { success: true }
 }
 
 export async function toggleUserStatus(userId: string, currentStatus: boolean) {
@@ -92,6 +148,10 @@ export async function toggleUserStatus(userId: string, currentStatus: boolean) {
     .single()
 
   if (profile?.role !== 'admin') return { error: 'Admin access required' }
+
+  if (userId === adminUser.id && currentStatus) {
+    return { error: 'Cannot deactivate your own active session.' }
+  }
 
   // 2. Update Status
   const { error } = await supabase
@@ -141,4 +201,74 @@ export async function getAllProfilesWithEmails() {
     ...p,
     email: users.find(u => u.id === p.id)?.email ?? '',
   }))
+}
+
+// AI Model Management (Admin)
+export async function getAdminAIModels(): Promise<AIModel[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('ai_models')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []) as AIModel[]
+}
+
+export async function toggleAIModelStatus(modelId: string, currentStatus: boolean) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') return { error: 'Admin access required' }
+
+  const { error } = await supabase
+    .from('ai_models')
+    .update({ is_active: !currentStatus })
+    .eq('id', modelId)
+
+  if (error) return { error: error.message }
+  revalidatePath('/settings')
+  return { success: true }
+}
+
+export async function registerAIModel(modelData: {
+  name: string
+  version: string
+  task: AIModelTask
+  format: AIModelFormat
+  labels: string[]
+  is_active?: boolean
+}) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') return { error: 'Admin access required' }
+
+  const { data, error } = await supabase
+    .from('ai_models')
+    .insert({
+      ...modelData,
+      is_active: modelData.is_active ?? true,
+    })
+    .select()
+    .single()
+
+  if (error) return { error: error.message }
+  revalidatePath('/settings')
+  return { success: true, model: data as AIModel }
 }

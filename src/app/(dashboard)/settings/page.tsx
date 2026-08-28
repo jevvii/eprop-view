@@ -21,7 +21,7 @@ export default function SettingsPage() {
         </div>
         {isAdmin && (
           <Button onClick={() => setIsCreateModalOpen(true)}>
-            Add New Inspector
+            + Provision New User
           </Button>
         )}
       </div>

@@ -1,28 +1,34 @@
 'use client'
 
-import { useRiskHotspots } from '@/app/lib/queries'
+import { useRiskHotspots, useAllARAnchors, useAllAIDetections } from '@/app/lib/queries'
 import { useRef, useState } from 'react'
 
 const severityStyles: Record<string, string> = {
   critical: 'bg-red-500',
   high: 'bg-orange-500',
   moderate: 'bg-amber-400',
+  medium: 'bg-amber-400',
   low: 'bg-emerald-500',
 }
 
 export function RiskHotspots() {
-  const { data: hotspots, isLoading, isError } = useRiskHotspots()
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; title: string; description: string } | null>(null)
+  const { data: hotspots = [], isLoading, isError } = useRiskHotspots()
+  const { data: arAnchors = [] } = useAllARAnchors()
+  const { data: aiDetections = [] } = useAllAIDetections()
 
-  const handleMouseMove = (event: React.MouseEvent, hotspot: any) => {
+  const [activeTab, setActiveTab] = useState<'all' | 'hotspots' | 'ar' | 'ai'>('all')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; title: string; subtitle?: string; description: string } | null>(null)
+
+  const handleMouseMove = (event: React.MouseEvent, item: { title: string; subtitle?: string; description: string }) => {
     const rect = containerRef.current?.getBoundingClientRect()
     if (!rect) return
     setTooltip({
       x: event.clientX - rect.left + 10,
       y: event.clientY - rect.top + 10,
-      title: hotspot.title,
-      description: hotspot.description || 'No description.',
+      title: item.title,
+      subtitle: item.subtitle,
+      description: item.description,
     })
   }
 
@@ -40,19 +46,97 @@ export function RiskHotspots() {
     )
   }
 
-  const sortedHotspots = hotspots?.sort((a, b) => {
-    const order: Record<string, number> = { critical: 0, high: 1, moderate: 2, low: 3 }
-    return (order[a.severity] ?? 99) - (order[b.severity] ?? 99)
-  }) || []
+  // Derive AR anchors with normalized grid positions
+  const mappedARAnchors = arAnchors.map((anchor, idx) => {
+    const seed = anchor.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + (idx * 17)
+    const posX = ((seed * 23) % 76) + 12
+    const posY = ((seed * 37) % 74) + 14
+    return {
+      id: `ar-${anchor.id}`,
+      type: 'ar' as const,
+      title: `AR Anchor: ${anchor.label}`,
+      subtitle: `${anchor.damage_type ?? 'structural'} · ${anchor.severity ?? 'unspecified'}`,
+      description: anchor.notes || `Spatial 3D: [${anchor.pose.position.x.toFixed(1)}, ${anchor.pose.position.y.toFixed(1)}, ${anchor.pose.position.z.toFixed(1)}]`,
+      severity: anchor.severity ?? 'moderate',
+      position_x: posX,
+      position_y: posY,
+    }
+  })
+
+  // Derive AI detections with normalized grid positions
+  const mappedAIDetections = aiDetections.map((detection, idx) => {
+    const posX = detection.bbox ? (detection.bbox.x * 75 + 12) : (((idx * 29 + 11) % 76) + 12)
+    const posY = detection.bbox ? (detection.bbox.y * 70 + 15) : (((idx * 43 + 19) % 70) + 15)
+    return {
+      id: `ai-${detection.id}`,
+      type: 'ai' as const,
+      title: `AI Detection: ${detection.damage_type.toUpperCase()}`,
+      subtitle: `${detection.severity.toUpperCase()} · ${(detection.confidence * 100).toFixed(0)}% Conf`,
+      description: `Severity: ${detection.severity_score.toFixed(0)}/100 · ${detection.notes || 'Automated defect detection'}`,
+      severity: detection.severity,
+      position_x: posX,
+      position_y: posY,
+    }
+  })
+
+  const mappedHotspots = hotspots.map((h) => ({
+    id: `hotspot-${h.id}`,
+    type: 'hotspot' as const,
+    title: h.title,
+    subtitle: `Sector Hotspot · ${h.severity}`,
+    description: h.description || 'No description recorded.',
+    severity: h.severity,
+    position_x: h.position_x,
+    position_y: h.position_y,
+  }))
+
+  const visibleItems = [
+    ...(activeTab === 'all' || activeTab === 'hotspots' ? mappedHotspots : []),
+    ...(activeTab === 'all' || activeTab === 'ar' ? mappedARAnchors : []),
+    ...(activeTab === 'all' || activeTab === 'ai' ? mappedAIDetections : []),
+  ]
 
   return (
     <div className="flex flex-col space-y-4">
-      <div className="flex items-center justify-between px-2">
-        <h3 className="text-[0.65rem] font-black text-slate-400 tracking-[0.15em] uppercase">Sector Hotspots</h3>
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+      <div className="flex flex-wrap items-center justify-between gap-2 px-2">
+        <h3 className="text-[0.65rem] font-black text-slate-400 tracking-[0.15em] uppercase">Sector Hotspots & Telemetry</h3>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('all')}
+            className={`text-[8px] font-black uppercase px-2 py-0.5 rounded transition-colors ${
+              activeTab === 'all' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            All ({mappedHotspots.length + mappedARAnchors.length + mappedAIDetections.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('hotspots')}
+            className={`text-[8px] font-black uppercase px-2 py-0.5 rounded transition-colors ${
+              activeTab === 'hotspots' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Hotspots ({mappedHotspots.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('ar')}
+            className={`text-[8px] font-black uppercase px-2 py-0.5 rounded transition-colors ${
+              activeTab === 'ar' ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:text-indigo-700'
+            }`}
+          >
+            AR ({mappedARAnchors.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('ai')}
+            className={`text-[8px] font-black uppercase px-2 py-0.5 rounded transition-colors ${
+              activeTab === 'ai' ? 'bg-blue-600 text-white' : 'text-blue-500 hover:text-blue-700'
+            }`}
+          >
+            AI ({mappedAIDetections.length})
+          </button>
         </div>
       </div>
 
@@ -62,34 +146,50 @@ export function RiskHotspots() {
       >
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.1)_1px,transparent_1px)] bg-[size:24px_24px]" />
         
-        {sortedHotspots.length === 0 ? (
+        {visibleItems.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-300 uppercase tracking-widest">
-            Scanning for Hotspots...
+            Scanning for Telemetry...
           </div>
         ) : (
-          sortedHotspots.map((hotspot) => (
-            <button
-              key={hotspot.id}
-              type="button"
-              className={`absolute h-2.5 w-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] ring-2 ring-white/50 ${severityStyles[hotspot.severity]}`}
-              style={{
-                top: `${hotspot.position_y}%`,
-                left: `${hotspot.position_x}%`,
-                transform: 'translate(-50%, -50%)',
-              }}
-              onMouseMove={(event) => handleMouseMove(event, hotspot)}
-              onMouseLeave={handleMouseLeave}
-            />
-          ))
+          visibleItems.map((item) => {
+            const isAR = item.type === 'ar'
+            const isAI = item.type === 'ai'
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`absolute transition-transform hover:scale-150 ${
+                  isAR
+                    ? 'h-3 w-3 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] ring-2 ring-indigo-200'
+                    : isAI
+                    ? 'h-3 w-3 rounded-sm bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] ring-2 ring-blue-200'
+                    : `h-2.5 w-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] ring-2 ring-white/50 ${
+                        severityStyles[item.severity] ?? 'bg-amber-400'
+                      }`
+                }`}
+                style={{
+                  top: `${item.position_y}%`,
+                  left: `${item.position_x}%`,
+                  transform: isAR ? 'translate(-50%, -50%) rotate(45deg)' : 'translate(-50%, -50%)',
+                }}
+                onMouseMove={(event) => handleMouseMove(event, item)}
+                onMouseLeave={handleMouseLeave}
+              />
+            )
+          })
         )}
 
         {tooltip && (
           <div
-            className="absolute z-10 max-w-[180px] rounded-xl bg-black/90 px-3 py-2 text-[10px] text-white shadow-2xl backdrop-blur-sm"
+            className="absolute z-10 max-w-[200px] rounded-xl bg-black/90 px-3 py-2 text-[10px] text-white shadow-2xl backdrop-blur-sm pointer-events-none"
             style={{ left: tooltip.x, top: tooltip.y }}
           >
-            <div className="font-black uppercase tracking-tight mb-0.5">{tooltip.title}</div>
-            <div className="text-slate-300 font-medium leading-tight">{tooltip.description}</div>
+            <div className="font-black uppercase tracking-tight mb-0.5 text-white">{tooltip.title}</div>
+            {tooltip.subtitle && (
+              <div className="text-[9px] font-bold text-blue-300 uppercase tracking-wider mb-0.5">{tooltip.subtitle}</div>
+            )}
+            <div className="text-slate-300 font-medium leading-tight text-[9px]">{tooltip.description}</div>
           </div>
         )}
       </div>

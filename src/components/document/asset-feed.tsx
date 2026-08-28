@@ -2,6 +2,8 @@
 
 import { useInspectionImages, useProfile } from '@/app/lib/queries'
 import { CommentThread } from './comment-thread'
+import { AIAnalysisPanel } from '@/components/ai/ai-analysis-panel'
+import { DamageOverlay } from '@/components/ai/damage-overlay'
 import { useState } from 'react'
 import { createClient } from '@/app/lib/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
@@ -125,17 +127,20 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
                   {/* Image Section */}
                   <div className="lg:w-1/2 relative h-[350px] bg-slate-100 overflow-hidden">
                     {image.signed_url ? (
-                      <img 
-                        src={image.signed_url} 
-                        alt={image.caption} 
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                      />
+                      <div className="relative h-full w-full">
+                        <img
+                          src={image.signed_url}
+                          alt={image.caption}
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                        <DamageOverlay imageId={image.id} />
+                      </div>
                     ) : (
                       <div className="h-full flex items-center justify-center text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 italic">
                         Preview_Unavailable
                       </div>
                     )}
-                    
+
                     <div className="absolute top-4 left-4">
                       <div className="bg-black/80 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/10">
                         {image.caption || 'TECHNICAL_ASSET'}
@@ -155,9 +160,9 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
                     )}
                   </div>
 
-                  {/* Thread Section */}
-                  <div className="lg:w-1/2 p-8 flex flex-col h-[350px] lg:h-auto">
-                    <div className="flex items-center justify-between mb-4">
+                  {/* Thread + AI Section */}
+                  <div className="lg:w-1/2 p-8 flex flex-col gap-6 h-auto">
+                    <div className="flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className="text-[10px] font-black text-primary uppercase tracking-widest">Lead Node</span>
                         <span className="text-xs font-bold text-black">{image.uploader_name}</span>
@@ -168,9 +173,11 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-hidden flex flex-col">
+                    <div className="flex-1 overflow-hidden flex flex-col min-h-[200px]">
                       <CommentThread imageId={image.id} />
                     </div>
+
+                    <AIAnalysisPanel imageId={image.id} />
                   </div>
                 </div>
               </div>

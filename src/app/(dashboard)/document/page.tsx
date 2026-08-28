@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { InspectionForm } from '@/components/document/inspection-form'
 import { AssetFeed } from '@/components/document/asset-feed'
 import { AssetUpload } from '@/components/document/asset-upload'
@@ -37,20 +38,31 @@ export default function DocumentPage() {
           </p>
         </div>
         
-        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Filter Entry</label>
-          <select
-            value={inspectionId}
-            onChange={(event) => setInspectionId(event.target.value)}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px]"
-          >
-            <option value="">SELECT_INSPECTION</option>
-            {inspections?.map((inspection) => (
-              <option key={inspection.id} value={inspection.id}>
-                {new Date(inspection.inspection_date).toLocaleDateString()} · {inspection.location}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Filter Entry</label>
+            <select
+              value={inspectionId}
+              onChange={(event) => setInspectionId(event.target.value)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px]"
+            >
+              <option value="">SELECT_INSPECTION</option>
+              {inspections?.map((inspection) => (
+                <option key={inspection.id} value={inspection.id}>
+                  {new Date(inspection.inspection_date).toLocaleDateString()} · {inspection.location}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {inspectionId && (
+            <Link
+              href={`/ar?inspectionId=${encodeURIComponent(inspectionId)}`}
+              className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm text-[10px] font-black text-primary uppercase tracking-widest hover:bg-slate-50 transition-all"
+            >
+              🥽 AR Mode
+            </Link>
+          )}
         </div>
       </div>
 

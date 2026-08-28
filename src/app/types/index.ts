@@ -1,4 +1,15 @@
-export type Role = 'admin' | 'inspector' | 'viewer'
+export type Role = 'admin' | 'engineer' | 'inspector' | 'viewer'
+
+export type StructuralElement =
+  | 'beam'
+  | 'column'
+  | 'slab'
+  | 'wall'
+  | 'foundation'
+  | 'facade'
+  | 'roof'
+  | 'general'
+  | 'other'
 
 export type ProjectStatus = 'active' | 'completed' | 'on_hold' | 'cancelled'
 export type InspectionStatus = 'pending' | 'in_progress' | 'completed' | 'requires_followup'
@@ -39,11 +50,14 @@ export interface Inspection {
   id: string
   project_id: string
   lead_inspector_id: string | null
+  lead_inspector_name?: string
   inspection_date: string
   status: InspectionStatus
   risk_score: number
   risk_level: RiskLevel
   location: string
+  floor?: string
+  structural_element?: StructuralElement | string
   notes: string
   created_at: string
   updated_at: string
@@ -168,5 +182,104 @@ export interface ImageComment {
   author_role?: Role
   content: string
   is_read: boolean
+  created_at: string
+}
+
+// AI Module types
+export type DamageType = 'crack' | 'corrosion' | 'spalling' | 'deformation' | 'leakage' | 'none'
+export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical'
+export type AIModelTask = 'classification' | 'detection' | 'segmentation'
+export type AIModelFormat = 'tfjs' | 'onnx' | 'mock'
+export type AIJobStatus = 'pending' | 'running' | 'completed' | 'failed'
+
+export interface BoundingBox {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface AIModel {
+  id: string
+  name: string
+  version: string
+  task: AIModelTask
+  format: AIModelFormat
+  storage_path: string | null
+  labels: string[]
+  is_active: boolean
+  created_at: string
+}
+
+export interface AIDamageDetection {
+  id: string
+  image_id: string
+  model_id: string | null
+  damage_type: DamageType
+  severity: SeverityLevel
+  severity_score: number
+  confidence: number
+  bbox: BoundingBox | null
+  mask_url: string | null
+  verified_by: string | null
+  verified_at: string | null
+  notes: string
+  created_at: string
+}
+
+export interface AIAnalysisJob {
+  id: string
+  image_id: string
+  model_id: string | null
+  status: AIJobStatus
+  error_message: string
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+}
+
+// AR Module types
+export type ARSessionStatus = 'active' | 'paused' | 'completed'
+
+export interface Vector3 {
+  x: number
+  y: number
+  z: number
+}
+
+export interface Quaternion {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+
+export interface ARPose {
+  position: Vector3
+  quaternion: Quaternion
+}
+
+export interface ARSession {
+  id: string
+  inspection_id: string
+  started_by: string | null
+  status: ARSessionStatus
+  started_at: string
+  ended_at: string | null
+  device_info: Record<string, unknown>
+}
+
+export interface ARAnchor {
+  id: string
+  session_id: string
+  inspection_id: string
+  detection_id: string | null
+  label: string
+  damage_type: DamageType | null
+  severity: SeverityLevel | null
+  pose: ARPose
+  world_position: Vector3 | null
+  notes: string
+  snapshot_path: string | null
   created_at: string
 }
