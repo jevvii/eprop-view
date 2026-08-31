@@ -343,13 +343,24 @@ export async function runMigration(): Promise<MigrationResult> {
 
         if (userId) {
           createdUserMap[u.email] = userId
-          await supabase.from('profiles').upsert({
+          const { error: pError } = await supabase.from('profiles').upsert({
             id: userId,
             role: u.role,
             full_name: u.fullName,
             department: u.department,
             is_active: true,
           })
+
+          if (pError && pError.code === '23514') {
+            // DB constraint does not yet include 'engineer', fall back to 'inspector' in profiles table
+            await supabase.from('profiles').upsert({
+              id: userId,
+              role: 'inspector',
+              full_name: u.fullName,
+              department: u.department,
+              is_active: true,
+            })
+          }
           usersMigrated++
         }
       }

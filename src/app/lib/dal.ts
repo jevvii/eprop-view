@@ -19,9 +19,9 @@ export const verifySession = cache(async () => {
     .from('profiles')
     .select('role, full_name')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
-  const resolvedRole = (profile?.role || user.user_metadata?.role || user.app_metadata?.role || 'viewer') as import('@/app/types').Role
+  const resolvedRole = (user.user_metadata?.role || profile?.role || user.app_metadata?.role || 'viewer') as import('@/app/types').Role
 
   return {
     userId: user.id,

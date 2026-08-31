@@ -336,9 +336,10 @@ export function useProfile() {
         .eq('id', authData.user.id)
         .maybeSingle()
 
+      const resolvedRole = (authData.user.user_metadata?.role || data?.role || 'viewer') as Role
       return {
         id: authData.user.id,
-        role: (data?.role || authData.user.user_metadata?.role || 'viewer') as Role,
+        role: resolvedRole,
         full_name: data?.full_name || authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'User',
         phone: data?.phone || '',
         department: data?.department || authData.user.user_metadata?.department || 'Engineering & Inspection',
@@ -398,16 +399,19 @@ export function useStaffProfiles() {
         return []
       }
 
-      return (data || []).map((p) => ({
-        id: p.id,
-        role: p.role as any,
-        full_name: p.full_name || 'Staff Member',
-        phone: p.phone || '',
-        department: p.department || 'Engineering & Inspection',
-        created_at: p.created_at,
-        email: '',
-        is_active: p.is_active !== false,
-      }))
+      return (data || []).map((p) => {
+        const isEng = p.role === 'engineer' || (p.department && p.department.toLowerCase().includes('engineer'))
+        return {
+          id: p.id,
+          role: (isEng ? 'engineer' : p.role) as Role,
+          full_name: p.full_name || 'Staff Member',
+          phone: p.phone || '',
+          department: p.department || 'Engineering & Inspection',
+          created_at: p.created_at,
+          email: '',
+          is_active: p.is_active !== false,
+        }
+      })
     },
   })
 }
