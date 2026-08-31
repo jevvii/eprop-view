@@ -28,6 +28,7 @@ import type {
   InspectionImage,
   ImageComment,
   Profile,
+  Role,
   AIModel,
   AIDamageDetection,
   AIAnalysisJob,
@@ -320,16 +321,21 @@ export function useProfile() {
         throw authError ?? new Error('Not authenticated')
       }
 
-      const { data, error } = await getClient()
+      const { data } = await getClient()
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
-        .single()
-      if (error) throw error
+        .maybeSingle()
 
       return {
-        ...data,
+        id: authData.user.id,
+        role: (data?.role || authData.user.user_metadata?.role || 'viewer') as Role,
+        full_name: data?.full_name || authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'User',
+        phone: data?.phone || '',
+        department: data?.department || authData.user.user_metadata?.department || 'Engineering & Inspection',
+        created_at: data?.created_at || authData.user.created_at || new Date().toISOString(),
         email: authData.user.email ?? '',
+        is_active: data?.is_active !== false,
       }
     },
     staleTime: 0,
@@ -377,8 +383,22 @@ export function useStaffProfiles() {
         .in('role', ['admin', 'engineer', 'inspector'])
         .eq('is_active', true)
         .order('full_name', { ascending: true })
-      if (error) throw error
-      return (data || []) as Profile[]
+
+      if (error) {
+        console.warn('Error fetching staff profiles:', error)
+        return []
+      }
+
+      return (data || []).map((p) => ({
+        id: p.id,
+        role: p.role as any,
+        full_name: p.full_name || 'Staff Member',
+        phone: p.phone || '',
+        department: p.department || 'Engineering & Inspection',
+        created_at: p.created_at,
+        email: '',
+        is_active: p.is_active !== false,
+      }))
     },
   })
 }

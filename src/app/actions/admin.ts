@@ -188,19 +188,29 @@ export async function getAllProfilesWithEmails() {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  const { data: profiles, error: pError } = await supabaseAdmin
+  const { data: profiles } = await supabaseAdmin
     .from('profiles')
     .select('*')
     .order('created_at', { ascending: false })
-  if (pError) throw pError
 
   const { data: { users }, error: uError } = await supabaseAdmin.auth.admin.listUsers()
   if (uError) throw uError
 
-  return (profiles || []).map((p) => ({
-    ...p,
-    email: users.find(u => u.id === p.id)?.email ?? '',
-  }))
+  const profileMap = new Map((profiles || []).map((p) => [p.id, p]))
+
+  return (users || []).map((u) => {
+    const p = profileMap.get(u.id)
+    return {
+      id: u.id,
+      email: u.email ?? '',
+      full_name: p?.full_name || u.user_metadata?.full_name || u.email?.split('@')[0] || 'User',
+      role: (p?.role || u.user_metadata?.role || 'viewer') as Role,
+      department: p?.department || u.user_metadata?.department || 'Engineering & Inspection',
+      phone: p?.phone || '',
+      is_active: p?.is_active !== false,
+      created_at: p?.created_at || u.created_at || new Date().toISOString(),
+    }
+  })
 }
 
 // AI Model Management (Admin)

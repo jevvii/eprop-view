@@ -21,9 +21,11 @@ export const verifySession = cache(async () => {
     .eq('id', user.id)
     .single()
 
+  const resolvedRole = (profile?.role || user.user_metadata?.role || user.app_metadata?.role || 'viewer') as import('@/app/types').Role
+
   return {
     userId: user.id,
-    role: profile?.role ?? 'viewer',
+    role: resolvedRole,
     email: user.email ?? '',
   }
 })

@@ -47,33 +47,42 @@ export function RiskHotspots() {
   }
 
   // Derive AR anchors with normalized grid positions
-  const mappedARAnchors = arAnchors.map((anchor, idx) => {
-    const seed = anchor.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + (idx * 17)
+  const mappedARAnchors = (arAnchors || []).map((anchor, idx) => {
+    const seed = (anchor?.id || `${idx}`).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + (idx * 17)
     const posX = ((seed * 23) % 76) + 12
     const posY = ((seed * 37) % 74) + 14
+    const poseX = anchor?.pose?.position?.x != null ? Number(anchor.pose.position.x).toFixed(1) : '0.0'
+    const poseY = anchor?.pose?.position?.y != null ? Number(anchor.pose.position.y).toFixed(1) : '0.0'
+    const poseZ = anchor?.pose?.position?.z != null ? Number(anchor.pose.position.z).toFixed(1) : '0.0'
+
     return {
-      id: `ar-${anchor.id}`,
+      id: `ar-${anchor?.id || idx}`,
       type: 'ar' as const,
-      title: `AR Anchor: ${anchor.label}`,
-      subtitle: `${anchor.damage_type ?? 'structural'} · ${anchor.severity ?? 'unspecified'}`,
-      description: anchor.notes || `Spatial 3D: [${anchor.pose.position.x.toFixed(1)}, ${anchor.pose.position.y.toFixed(1)}, ${anchor.pose.position.z.toFixed(1)}]`,
-      severity: anchor.severity ?? 'moderate',
+      title: `AR Anchor: ${anchor?.label || 'Marker'}`,
+      subtitle: `${anchor?.damage_type ?? 'structural'} · ${anchor?.severity ?? 'unspecified'}`,
+      description: anchor?.notes || `Spatial 3D: [${poseX}, ${poseY}, ${poseZ}]`,
+      severity: anchor?.severity ?? 'moderate',
       position_x: posX,
       position_y: posY,
     }
   })
 
   // Derive AI detections with normalized grid positions
-  const mappedAIDetections = aiDetections.map((detection, idx) => {
-    const posX = detection.bbox ? (detection.bbox.x * 75 + 12) : (((idx * 29 + 11) % 76) + 12)
-    const posY = detection.bbox ? (detection.bbox.y * 70 + 15) : (((idx * 43 + 19) % 70) + 15)
+  const mappedAIDetections = (aiDetections || []).map((detection, idx) => {
+    const posX = detection?.bbox ? (Number(detection.bbox.x) * 75 + 12) : (((idx * 29 + 11) % 76) + 12)
+    const posY = detection?.bbox ? (Number(detection.bbox.y) * 70 + 15) : (((idx * 43 + 19) % 70) + 15)
+    const damageType = String(detection?.damage_type || 'defect').toUpperCase()
+    const severity = String(detection?.severity || 'moderate').toUpperCase()
+    const conf = detection?.confidence != null ? (Number(detection.confidence) * 100).toFixed(0) : '85'
+    const score = detection?.severity_score != null ? Number(detection.severity_score).toFixed(0) : '50'
+
     return {
-      id: `ai-${detection.id}`,
+      id: `ai-${detection?.id || idx}`,
       type: 'ai' as const,
-      title: `AI Detection: ${detection.damage_type.toUpperCase()}`,
-      subtitle: `${detection.severity.toUpperCase()} · ${(detection.confidence * 100).toFixed(0)}% Conf`,
-      description: `Severity: ${detection.severity_score.toFixed(0)}/100 · ${detection.notes || 'Automated defect detection'}`,
-      severity: detection.severity,
+      title: `AI Detection: ${damageType}`,
+      subtitle: `${severity} · ${conf}% Conf`,
+      description: `Severity: ${score}/100 · ${detection?.notes || 'Automated defect detection'}`,
+      severity: detection?.severity ?? 'moderate',
       position_x: posX,
       position_y: posY,
     }

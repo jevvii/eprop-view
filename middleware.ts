@@ -17,6 +17,7 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/environmental') ||
     path.startsWith('/reports') ||
     path.startsWith('/document') ||
+    path.startsWith('/ar') ||
     path.startsWith('/settings')
   const isAuthRoute = path === '/' || path === '/login' || path === '/signup'
 

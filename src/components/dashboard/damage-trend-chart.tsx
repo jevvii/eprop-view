@@ -44,12 +44,12 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
       high: 0,
       medium: 0,
       low: 0,
-    }
-    aiDetections.forEach((d) => {
-      if (d.damage_type in counts) {
+    };
+    (aiDetections || []).forEach((d) => {
+      if (d?.damage_type && d.damage_type in counts) {
         counts[d.damage_type as keyof typeof counts] += 1
       }
-      if (d.severity in counts) {
+      if (d?.severity && d.severity in counts) {
         counts[d.severity as keyof typeof counts] += 1
       }
     })
