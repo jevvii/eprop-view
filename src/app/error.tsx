@@ -28,10 +28,10 @@ export default function GlobalError({
           </p>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full pt-2">
           <Button
             onClick={() => reset()}
-            className="w-full text-[9px] font-black uppercase tracking-[0.2em] py-3.5 h-auto"
+            className="w-full text-[9px] font-black uppercase tracking-[0.15em] py-3.5 h-auto truncate"
           >
             Retry Connection
           </Button>
@@ -40,7 +40,7 @@ export default function GlobalError({
             onClick={() => {
               window.location.replace('/')
             }}
-            className="w-full text-[9px] font-black uppercase tracking-[0.2em] py-3.5 h-auto"
+            className="w-full text-[9px] font-black uppercase tracking-[0.15em] py-3.5 h-auto truncate"
           >
             Return to Login
           </Button>

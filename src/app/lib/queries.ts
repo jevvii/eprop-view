@@ -178,11 +178,20 @@ export function useMaintenancePriorities(projectId?: string) {
   return useQuery({
     queryKey: ['maintenance', projectId],
     queryFn: async (): Promise<MaintenancePriority[]> => {
-      let query = getClient().from('maintenance_priorities').select('*, assigned_to_name:profiles(full_name)').order('risk_score', { ascending: false })
+      let query = getClient()
+        .from('maintenance_priorities')
+        .select('*, assigned_to_name:profiles(full_name)')
+        .order('risk_score', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
       const { data, error } = await query
       if (error) throw error
-      return data || []
+      return (data || []).map((m: any) => ({
+        ...m,
+        assigned_to_name:
+          typeof m.assigned_to_name === 'string'
+            ? m.assigned_to_name
+            : m.assigned_to_name?.full_name ?? '',
+      }))
     },
   })
 }

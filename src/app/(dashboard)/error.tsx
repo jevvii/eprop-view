@@ -37,17 +37,17 @@ export default function DashboardErrorBoundary({
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full pt-2">
           <Button
             onClick={() => reset()}
-            className="w-full text-[9px] font-black uppercase tracking-[0.2em] py-3 h-auto"
+            className="w-full text-[9px] font-black uppercase tracking-[0.15em] py-3.5 h-auto truncate"
           >
             Reload Component
           </Button>
           <Button
             variant="outline"
             onClick={handleReturnToLogin}
-            className="w-full text-[9px] font-black uppercase tracking-[0.2em] py-3 h-auto"
+            className="w-full text-[9px] font-black uppercase tracking-[0.15em] py-3.5 h-auto truncate"
           >
             Re-Authenticate
           </Button>

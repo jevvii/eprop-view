@@ -155,7 +155,14 @@ export function MaintenanceTable() {
 
             {(item.assigned_to_name || item.due_date) && (
               <div className="mt-2.5 pt-2 border-t border-slate-50 flex items-center justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider">
-                <span>Assignee: <strong className="text-slate-600 font-black">{item.assigned_to_name || 'Unassigned'}</strong></span>
+                <span>
+                  Assignee:{' '}
+                  <strong className="text-slate-600 font-black">
+                    {typeof item.assigned_to_name === 'object' && item.assigned_to_name !== null
+                      ? (item.assigned_to_name as any).full_name
+                      : item.assigned_to_name || 'Unassigned'}
+                  </strong>
+                </span>
                 {item.due_date && <span>Due: {item.due_date}</span>}
               </div>
             )}
