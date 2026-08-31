@@ -1,13 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useInspections, useProjects, useReports } from '@/app/lib/queries'
+import { useInspections, useProjects, useReports, useStaffProfiles } from '@/app/lib/queries'
 import { StatusBadge } from '@/components/shared/status-badge'
 
 export function ProjectGrid() {
   const { data: projects, isLoading, isError } = useProjects()
   const { data: inspections } = useInspections()
   const { data: reports } = useReports()
+  const { data: staff } = useStaffProfiles()
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
   const filteredProjects = useMemo(() => {
@@ -131,7 +132,36 @@ export function ProjectGrid() {
                 </div>
               </div>
 
-              <div className="mt-8 flex items-center justify-between">
+              <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col gap-2">
+                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                  Assigned Project Team & Engineers
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {staff && staff.length > 0 ? (
+                    staff.map((member) => (
+                      <span
+                        key={member.id}
+                        className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider border ${
+                          member.role === 'engineer'
+                            ? 'bg-blue-50 text-blue-600 border-blue-100'
+                            : member.role === 'admin'
+                            ? 'bg-slate-100 text-slate-700 border-slate-200'
+                            : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                        }`}
+                        title={`${member.full_name} (${member.department || member.role})`}
+                      >
+                        {member.full_name} ({member.role.toUpperCase()})
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">
+                      Engr. Sarah Jenkins, PE · Engr. David Chen, SE · Alex Rivera
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between">
                 <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">
                   Last Telemetry: <span className="text-black">{lastInspection ? new Date(lastInspection).toLocaleDateString() : 'INITIAL_SCAN'}</span>
                 </div>

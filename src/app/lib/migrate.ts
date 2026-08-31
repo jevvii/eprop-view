@@ -292,19 +292,45 @@ export async function runMigration(): Promise<MigrationResult> {
 
       // 2. Seed baseline accounts if none exist
       const defaultUsers = [
-        { email: 'admin@eprop.local', role: 'admin', fullName: 'System Administrator' },
-        { email: 'engineer@eprop.local', role: 'engineer', fullName: 'Lead Structural Engineer' },
-        { email: 'inspector@eprop.local', role: 'inspector', fullName: 'Field Operations Inspector' },
+        {
+          email: 'admin@eprop.local',
+          password: 'AdminPassword123!',
+          role: 'admin',
+          fullName: 'System Administrator',
+          department: 'Platform Governance & IT Operations',
+        },
+        {
+          email: 'engineer@eprop.local',
+          password: 'EngineerPassword123!',
+          role: 'engineer',
+          fullName: 'Engr. Sarah Jenkins, PE',
+          department: 'Lead Structural Risk Assessment & Maintenance QA',
+        },
+        {
+          email: 'reviewer.engineer@eprop.local',
+          password: 'EngineerPassword123!',
+          role: 'engineer',
+          fullName: 'Engr. David Chen, SE',
+          department: 'Engineering Validation, Review & Report Certification',
+        },
+        {
+          email: 'inspector@eprop.local',
+          password: 'InspectorPassword123!',
+          role: 'inspector',
+          fullName: 'Alex Rivera',
+          department: 'Field Operations & AR Spatial Inspection',
+        },
       ]
 
       const { data: { users: authUsers } } = await supabase.auth.admin.listUsers()
+      const createdUserMap: Record<string, string> = {}
 
       for (const u of defaultUsers) {
         let userId = authUsers?.find((au) => au.email === u.email)?.id
         if (!userId) {
           const { data: newAuth, error: createError } = await supabase.auth.admin.createUser({
             email: u.email,
-            password: 'Password123!',
+            password: u.password,
             email_confirm: true,
             user_metadata: { role: u.role, full_name: u.fullName },
           })
@@ -316,15 +342,44 @@ export async function runMigration(): Promise<MigrationResult> {
         }
 
         if (userId) {
+          createdUserMap[u.email] = userId
           await supabase.from('profiles').upsert({
             id: userId,
             role: u.role,
             full_name: u.fullName,
-            department: 'Structural Engineering & Field Inspection',
+            department: u.department,
             is_active: true,
           })
           usersMigrated++
         }
+      }
+
+      // 3. Assign newly added engineers to active project maintenance priorities
+      try {
+        const sarahId = createdUserMap['engineer@eprop.local'] || authUsers?.find(u => u.email === 'engineer@eprop.local')?.id
+        const davidId = createdUserMap['reviewer.engineer@eprop.local'] || authUsers?.find(u => u.email === 'reviewer.engineer@eprop.local')?.id
+
+        if (sarahId || davidId) {
+          const { data: unassignedTasks } = await supabase
+            .from('maintenance_priorities')
+            .select('id')
+            .is('assigned_to', null)
+            .limit(10)
+
+          if (unassignedTasks && unassignedTasks.length > 0) {
+            for (let i = 0; i < unassignedTasks.length; i++) {
+              const assignee = i % 2 === 0 ? (sarahId || davidId) : (davidId || sarahId)
+              if (assignee) {
+                await supabase
+                  .from('maintenance_priorities')
+                  .update({ assigned_to: assignee })
+                  .eq('id', unassignedTasks[i].id)
+              }
+            }
+          }
+        }
+      } catch (assignErr) {
+        console.warn('Task assignment notice:', assignErr)
       }
     } catch (seedErr) {
       errors.push(`Baseline initialization: ${String(seedErr)}`)
