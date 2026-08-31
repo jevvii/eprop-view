@@ -29,7 +29,7 @@ export async function login(prevState: unknown, formData: FormData) {
     return { error: firstError ?? 'Invalid form data' }
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: authData, error } = await supabase.auth.signInWithPassword({
     email: validated.data.email,
     password: validated.data.password,
   })
@@ -38,15 +38,18 @@ export async function login(prevState: unknown, formData: FormData) {
     return { error: error.message }
   }
 
-  // Check if account is active
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_active')
-    .single()
+  if (authData?.user) {
+    // Check if account is active for this user
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_active')
+      .eq('id', authData.user.id)
+      .maybeSingle()
 
-  if (profile && profile.is_active === false) {
-    await supabase.auth.signOut()
-    return { error: 'Your account has been deactivated. Please contact an administrator.' }
+    if (profile && profile.is_active === false) {
+      await supabase.auth.signOut()
+      return { error: 'Your account has been deactivated. Please contact an administrator.' }
+    }
   }
 
   revalidatePath('/', 'layout')

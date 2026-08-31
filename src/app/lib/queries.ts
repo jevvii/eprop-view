@@ -28,6 +28,7 @@ import type {
   InspectionImage,
   ImageComment,
   Profile,
+  Role,
   AIModel,
   AIDamageDetection,
   AIAnalysisJob,
@@ -376,12 +377,28 @@ export function useStaffProfiles() {
   return useQuery({
     queryKey: ['staff-profiles'],
     queryFn: async (): Promise<Profile[]> => {
-      const all = await getAllProfilesWithEmails()
-      return (all || []).filter(
-        (p) =>
-          (p.role === 'admin' || p.role === 'engineer' || p.role === 'inspector') &&
-          p.is_active !== false
-      )
+      const { data, error } = await getClient()
+        .from('profiles')
+        .select('*')
+        .in('role', ['admin', 'engineer', 'inspector'])
+        .eq('is_active', true)
+        .order('full_name', { ascending: true })
+
+      if (error) {
+        console.warn('Error fetching staff profiles:', error)
+        return []
+      }
+
+      return (data || []).map((p) => ({
+        id: p.id,
+        role: p.role as any,
+        full_name: p.full_name || 'Staff Member',
+        phone: p.phone || '',
+        department: p.department || 'Engineering & Inspection',
+        created_at: p.created_at,
+        email: '',
+        is_active: p.is_active !== false,
+      }))
     },
   })
 }

@@ -26,11 +26,10 @@ export function Sidebar() {
       queryClient.clear()
       const supabase = createClient()
       await supabase.auth.signOut()
-      await logout()
     } catch (err) {
       console.error('Logout error:', err)
     } finally {
-      window.location.href = '/'
+      window.location.replace('/')
     }
   }
 
