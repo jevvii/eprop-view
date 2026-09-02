@@ -46,6 +46,16 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
         ])
     }
 
+    private func dispatchBridgeEvent(_ type: String, payload: [String: Any]) {
+        // 1. Emit wrapped arBridgeEvent for web listener contract
+        self.notifyListeners("arBridgeEvent", data: [
+            "type": type,
+            "payload": payload
+        ])
+        // 2. Also emit top-level event for direct listeners
+        self.notifyListeners(type, data: payload)
+    }
+
     @objc func startSession(_ call: CAPPluginCall) {
         guard ARWorldTrackingConfiguration.isSupported else {
             call.reject("ARKit is not supported on this Apple device.")
@@ -66,7 +76,7 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
             self.arView?.session.run(config, options: [.resetTracking, .removeExistingAnchors])
             self.isSessionRunning = true
 
-            self.notifyListeners("trackingChanged", data: [
+            self.dispatchBridgeEvent("trackingChanged", payload: [
                 "status": "normal",
                 "reason": "ARKit world tracking initialised"
             ])
@@ -101,7 +111,7 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
         arView.session.add(anchor: anchor)
 
         let nativeId = "arkit_\(anchor.identifier.uuidString)"
-        self.notifyListeners("anchorPlaced", data: [
+        self.dispatchBridgeEvent("anchorPlaced", payload: [
             "nativeId": nativeId,
             "position": ["x": x, "y": y, "z": z]
         ])
@@ -133,7 +143,7 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
         DispatchQueue.main.async {
             self.arView?.session.pause()
             self.isSessionRunning = false
-            self.notifyListeners("sessionEnded", data: [
+            self.dispatchBridgeEvent("sessionEnded", payload: [
                 "timestamp": ISO8601DateFormatter().string(from: Date())
             ])
             call.resolve(["success": true])
@@ -143,7 +153,7 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
     // ARSCNViewDelegate Plane Detection
     public func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         if let planeAnchor = anchor as? ARPlaneAnchor {
-            self.notifyListeners("planeDetected", data: [
+            self.dispatchBridgeEvent("planeDetected", payload: [
                 "id": planeAnchor.identifier.uuidString,
                 "alignment": planeAnchor.alignment == .horizontal ? "horizontal" : "vertical",
                 "center": [

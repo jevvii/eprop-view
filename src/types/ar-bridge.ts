@@ -5,6 +5,7 @@ export type ARBridgeEventType =
   | 'anchorPlaced'
   | 'anchorUpdated'
   | 'sessionEnded'
+  | 'trackingChanged'
   | 'error'
 
 export interface ARBridgeEvent {
@@ -53,7 +54,7 @@ export interface ARBridgePluginInterface {
   stopSession: () => Promise<{ status: 'stopped' }>
   captureSnapshot: () => Promise<{ dataUrl: string }>
   addListener: (
-    eventName: 'arBridgeEvent',
-    listenerFunc: (event: ARBridgeEvent) => void
+    eventName: string,
+    listenerFunc: (event: any) => void
   ) => Promise<{ remove: () => void }>
 }

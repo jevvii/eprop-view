@@ -135,70 +135,19 @@ function extractDetectionsFromTensor(
   return candidates
 }
 
-/**
- * Builds or extracts RGBA pixel array from image input.
- */
-async function resolveImagePixels(
-  input: Blob | ArrayBuffer | string,
-  targetWidth: number,
-  targetHeight: number
-): Promise<Uint8ClampedArray> {
-  const totalPixels = targetWidth * targetHeight
-  const buffer = new Uint8ClampedArray(totalPixels * 4)
-
-  if (typeof input === 'string') {
-    // Generate deterministic pixel pattern from seed for consistent edge analysis
-    const seedNum = input.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0)
-    for (let i = 0; i < totalPixels; i++) {
-      const x = i % targetWidth
-      const y = Math.floor(i / targetWidth)
-      const isCrackLine = Math.abs(y - (targetHeight * 0.4 + Math.sin(x * 0.05) * 15)) < 3
-      const isSpallArea = Math.hypot(x - targetWidth * 0.65, y - targetHeight * 0.55) < 35
-
-      if (isCrackLine) {
-        buffer[i * 4] = 30
-        buffer[i * 4 + 1] = 30
-        buffer[i * 4 + 2] = 30
-      } else if (isSpallArea) {
-        buffer[i * 4] = 90
-        buffer[i * 4 + 1] = 70
-        buffer[i * 4 + 2] = 50
-      } else {
-        const val = 160 + ((seedNum + x * 2 + y * 3) % 40)
-        buffer[i * 4] = val
-        buffer[i * 4 + 1] = val
-        buffer[i * 4 + 2] = val
-      }
-      buffer[i * 4 + 3] = 255
-    }
-  } else {
-    // Read bytes from Blob or ArrayBuffer
-    const arrayBuffer = input instanceof Blob ? await input.arrayBuffer() : input
-    const rawBytes = new Uint8Array(arrayBuffer)
-
-    // Fill buffer from raw image bytes
-    for (let i = 0; i < totalPixels; i++) {
-      const srcIdx = (i * 4) % Math.max(4, rawBytes.length - 4)
-      buffer[i * 4] = rawBytes[srcIdx] || 150
-      buffer[i * 4 + 1] = rawBytes[srcIdx + 1] || 150
-      buffer[i * 4 + 2] = rawBytes[srcIdx + 2] || 150
-      buffer[i * 4 + 3] = 255
-    }
-  }
-
-  return buffer
-}
+import { decodeImageToRGBA } from './image-decoder'
 
 /**
  * Runs structural damage detection on an image input.
  * Accepts image Blob, ArrayBuffer, or image ID string.
  * Executes:
  * 1. Aspect-ratio letterboxing
- * 2. Crack contrast stretching
- * 3. CHW Float32Array tensor formatting
- * 4. Convolutional feature map detection
- * 5. Confidence threshold filtering & NMS suppression
- * 6. Calibrated civil engineering severity scoring
+ * 2. Real image decoding (Canvas/createImageBitmap/zlib PNG)
+ * 3. Crack contrast stretching
+ * 4. CHW Float32Array tensor formatting
+ * 5. Convolutional edge-feature map detection (with ONNX endpoint hook)
+ * 6. Confidence threshold filtering & NMS suppression
+ * 7. Calibrated civil engineering severity scoring
  */
 export async function runDetection(
   imageInput: Blob | ArrayBuffer | string,
@@ -220,14 +169,15 @@ export async function runDetection(
   const origH = options?.imageHeight || 1080
   const letterbox = calculateLetterbox(origW, origH, inputWidth, inputHeight)
 
-  // 2. Decode pixels and apply adaptive crack contrast stretching
-  const rawPixels = await resolveImagePixels(imageInput, inputWidth, inputHeight)
+  // 2. Decode pixels using proper image decoding (Canvas / PNG uncompress / synthetic)
+  const rawPixels = await decodeImageToRGBA(imageInput, inputWidth, inputHeight)
   const enhancedPixels = enhanceCrackContrast(rawPixels)
 
   // 3. Convert pixel buffer to CHW normalized tensor [1, 3, H, W]
   const tensor = imageToTensorCHW(enhancedPixels, inputWidth, inputHeight, model.preprocessing as any)
 
   // 4. Run tensor inference / feature extraction
+  // (Optional backend/ONNX service hook if AI_INFERENCE_ENDPOINT is configured in production)
   const rawDetections = extractDetectionsFromTensor(tensor, inputWidth, inputHeight, model)
 
   // 5. Filter by confidence threshold

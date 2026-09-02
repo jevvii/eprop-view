@@ -72,4 +72,20 @@ describe('Phase B: Native ARKit / ARCore Bridge Tests', () => {
 
     unsubscribe()
   })
+
+  test('onARBridgeEvent receives and normalizes structured bridge event payloads', (t, done) => {
+    const unsubscribe = onARBridgeEvent((event) => {
+      assert.equal(event.type, 'planeDetected')
+      assert.ok(event.payload !== undefined)
+      unsubscribe()
+      done()
+    })
+
+    // Simulate event delivery
+    const { emitEvent } = require('./ar/native-bridge')
+    emitEvent({
+      type: 'planeDetected',
+      payload: { id: 'plane_mock_99', alignment: 'horizontal' },
+    })
+  })
 })
