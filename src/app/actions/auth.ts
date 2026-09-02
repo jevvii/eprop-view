@@ -42,7 +42,7 @@ export async function login(prevState: unknown, formData: FormData) {
     // Check if account is active for this user
     const { data: profile } = await supabase
       .from('profiles')
-      .select('is_active')
+      .select('is_active, role')
       .eq('id', authData.user.id)
       .maybeSingle()
 
@@ -50,6 +50,13 @@ export async function login(prevState: unknown, formData: FormData) {
       await supabase.auth.signOut()
       return { error: 'Your account has been deactivated. Please contact an administrator.' }
     }
+
+    const role = (authData.user.user_metadata?.role || profile?.role || authData.user.app_metadata?.role || 'viewer') as string
+    revalidatePath('/', 'layout')
+    if (role === 'inspector') {
+      redirect('/document')
+    }
+    redirect('/dashboard')
   }
 
   revalidatePath('/', 'layout')

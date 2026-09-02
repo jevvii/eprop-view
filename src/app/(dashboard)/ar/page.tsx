@@ -7,11 +7,14 @@ import { ARUnsupportedNotice } from '@/components/ar/ar-unsupported-notice'
 import { ARCameraView } from '@/components/ar/ar-camera-view'
 import { AROverlay } from '@/components/ar/ar-overlay'
 import { ARAnchorForm } from '@/components/ar/ar-anchor-form'
-import { useARAnchors } from '@/app/lib/queries'
+import { useARAnchors, useProfile } from '@/app/lib/queries'
+import { hasCapability } from '@/app/lib/role-utils'
+import { AccessDenied } from '@/components/shared/require-role'
 import { useStartARSession, useEndARSession, useCreateARAnchor } from '@/app/lib/mutations'
 import { Button } from '@/components/ui/button'
 
 function ARPageContent() {
+  const { data: profile, isLoading: profileLoading } = useProfile()
   const searchParams = useSearchParams()
   const inspectionId = searchParams.get('inspectionId') || ''
   const { supported, session, error, hitPose, startSession: startWebXR, endSession: endWebXR } = useARSessionContext()
@@ -20,6 +23,23 @@ function ARPageContent() {
   const endARSession = useEndARSession()
   const createARAnchor = useCreateARAnchor()
   const [dbSessionId, setDbSessionId] = useState<string | null>(null)
+
+  const canUseAR = hasCapability(profile?.role, 'ar:use')
+
+  if (profileLoading) {
+    return <div className="bg-white p-10 rounded-[2.5rem] shadow-xl h-80 animate-pulse border border-slate-100 mx-2" />
+  }
+
+  if (profile && !canUseAR) {
+    return (
+      <AccessDenied
+        title="AR Inspection Restricted"
+        message="Augmented Reality (AR) field capture is restricted to certified Field Inspectors. Engineering reviewers and administrators can inspect submitted visual evidence and spatial anchors in the Document Vault."
+        returnHref="/document"
+        returnLabel="View Document Vault"
+      />
+    )
+  }
 
   const handleStart = useCallback(async () => {
     if (!inspectionId) return

@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useEnvironmentalRisk } from '@/app/lib/queries'
+import { useEnvironmentalRisk, useProfile } from '@/app/lib/queries'
 import { useUpsertEnvironmentalRisk } from '@/app/lib/mutations'
+import { hasCapability } from '@/app/lib/role-utils'
 import { environmentalRiskSchema } from '@/app/lib/validators'
 import { RiskScore } from '@/components/shared/risk-score'
 import { Button } from '@/components/ui/button'
@@ -16,8 +17,11 @@ const liquefactionOptions = ['none', 'zone_a', 'zone_b', 'zone_c'] as const
 const erosionOptions = ['negligible', 'low', 'moderate', 'severe'] as const
 
 export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
+  const { data: profile } = useProfile()
   const { data: risk, isLoading, isError } = useEnvironmentalRisk(projectId)
   const upsertRisk = useUpsertEnvironmentalRisk()
+
+  const canAssess = hasCapability(profile?.role, 'envrisk:assess')
 
   const [faultLine, setFaultLine] = useState<(typeof faultLineOptions)[number]>('none')
   const [liquefaction, setLiquefaction] = useState<(typeof liquefactionOptions)[number]>('zone_c')
@@ -38,6 +42,10 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (!canAssess) {
+      setError('Engineering or Admin authorization required to modify geohazard risk assessment.')
+      return
+    }
     setError(null)
     setSuccess(null)
 
@@ -50,19 +58,23 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
     })
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Please check the form inputs.')
+      setError(parsed.error.issues[0]?.message ?? 'INVALID_INPUT')
       return
     }
 
     try {
       await upsertRisk.mutateAsync({
         project_id: projectId,
-        ...parsed.data,
-        assessed_date: new Date().toISOString().slice(0, 10),
+        fault_line_proximity: parsed.data.fault_line_proximity,
+        soil_liquefaction_risk: parsed.data.soil_liquefaction_risk,
+        erosion_potential: parsed.data.erosion_potential,
+        overall_risk_score: parsed.data.overall_risk_score,
+        additional_analysis: parsed.data.additional_analysis,
+        assessed_date: new Date().toISOString(),
       })
-      setSuccess('Environmental risk profile updated.')
-    } catch (mutationError) {
-      setError(mutationError instanceof Error ? mutationError.message : 'Failed to update risk profile.')
+      setSuccess('SYNC_COMPLETE')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'SYNC_FAILED')
     }
   }
 
@@ -96,8 +108,9 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Fault Proximity</label>
             <select
               value={faultLine}
+              disabled={!canAssess}
               onChange={(event) => setFaultLine(event.target.value as (typeof faultLineOptions)[number])}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {faultLineOptions.map((option) => (
                 <option key={option} value={option}>
@@ -110,8 +123,9 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Liquefaction Risk</label>
             <select
               value={liquefaction}
+              disabled={!canAssess}
               onChange={(event) => setLiquefaction(event.target.value as (typeof liquefactionOptions)[number])}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {liquefactionOptions.map((option) => (
                 <option key={option} value={option}>
@@ -124,8 +138,9 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Erosion Potential</label>
             <select
               value={erosion}
+              disabled={!canAssess}
               onChange={(event) => setErosion(event.target.value as (typeof erosionOptions)[number])}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {erosionOptions.map((option) => (
                 <option key={option} value={option}>
@@ -141,9 +156,10 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
               min="0"
               max="10"
               step="0.1"
+              disabled={!canAssess}
               value={overallScore}
               onChange={(event) => setOverallScore(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-black bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-black bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -152,8 +168,9 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
           <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Detailed Analysis</label>
           <textarea
             value={analysis}
+            disabled={!canAssess}
             onChange={(event) => setAnalysis(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-[10px] font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 min-h-[120px] resize-none"
+            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-[10px] font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 min-h-[120px] resize-none disabled:opacity-60 disabled:cursor-not-allowed"
             placeholder="SYSTEM_ALERT: Provide geohazard risk mitigation notes..."
           />
         </div>
@@ -163,9 +180,15 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
       {success && <p className="text-[10px] font-bold text-emerald-600 bg-emerald-50 p-3 rounded-lg border border-emerald-100">{success}</p>}
 
       <div className="flex justify-end pt-4 border-t border-slate-100">
-        <Button type="submit" disabled={upsertRisk.isPending} className="font-black uppercase tracking-[0.2em] text-[10px] px-10 py-5 h-auto">
-          {upsertRisk.isPending ? 'Syncing...' : 'Sync Assessment'}
-        </Button>
+        {canAssess ? (
+          <Button type="submit" disabled={upsertRisk.isPending} className="font-black uppercase tracking-[0.2em] text-[10px] px-10 py-5 h-auto">
+            {upsertRisk.isPending ? 'Syncing...' : 'Sync Assessment'}
+          </Button>
+        ) : (
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest py-3">
+            Read-Only Geohazard Telemetry (Engineering Required to Edit)
+          </span>
+        )}
       </div>
     </form>
   )

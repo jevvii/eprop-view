@@ -55,6 +55,27 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
       .catch(() => setSupported(false))
   }, [])
 
+  // Robust session and resource cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animFrameIdRef.current && session) {
+        try {
+          session.cancelAnimationFrame(animFrameIdRef.current)
+        } catch {}
+      }
+      if (hitTestSourceRef.current) {
+        try {
+          hitTestSourceRef.current.cancel()
+        } catch {}
+      }
+      if (session) {
+        try {
+          session.end()
+        } catch {}
+      }
+    }
+  }, [session])
+
   const captureCurrentFrame = useCallback((): string | null => {
     const canvas = canvasRef.current
     if (!canvas) return null

@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useProjects, useReports, useProfile } from '@/app/lib/queries'
+import { hasCapability } from '@/app/lib/role-utils'
+import { AccessDenied } from '@/components/shared/require-role'
 import { PrintReport } from '@/components/reports/print-report'
 import { ReportForm } from '@/components/reports/report-form'
 import { ReportsTable } from '@/components/reports/reports-table'
@@ -9,14 +11,18 @@ import { Button } from '@/components/ui/button'
 import type { Report } from '@/app/types'
 
 export default function ReportsPage() {
+  const { data: profile, isLoading: profileLoading } = useProfile()
   const { data: projects, isLoading, isError } = useProjects()
   const [projectId, setProjectId] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [printMode, setPrintMode] = useState<'single' | 'full'>('single')
-  const { data: profile } = useProfile()
   const { data: reports, isLoading: reportsLoading, isError: reportsError } = useReports(projectId || undefined)
+
+  const canViewReports = hasCapability(profile?.role, 'report:view')
+  const canCreateReport = hasCapability(profile?.role, 'report:create')
+  const canExportReport = hasCapability(profile?.role, 'report:export')
 
   const filteredReports = useMemo(() => {
     if (!reports) return []
@@ -53,8 +59,19 @@ export default function ReportsPage() {
     setTimeout(() => window.print(), 100)
   }
 
-  if (isLoading) {
+  if (isLoading || profileLoading) {
     return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
+  }
+
+  if (profile && !canViewReports) {
+    return (
+      <AccessDenied
+        title="Inspection Reports Restricted"
+        message="Engineering reports and audit logs are restricted to Structural Engineers and System Administrators. Field Inspectors can submit observations and assets via the Document Vault."
+        returnHref="/document"
+        returnLabel="Go to Document Vault"
+      />
+    )
   }
 
   if (isError) {
@@ -115,21 +132,25 @@ export default function ReportsPage() {
               </select>
             </div>
 
-            <Button
-              variant="outline"
-              disabled={!hasReports}
-              onClick={handlePrintAll}
-              className="font-black uppercase tracking-[0.2em] text-[9px] px-4 h-10 border-slate-200"
-            >
-              Print All
-            </Button>
+            {canExportReport && (
+              <Button
+                variant="outline"
+                disabled={!hasReports}
+                onClick={handlePrintAll}
+                className="font-black uppercase tracking-[0.2em] text-[9px] px-4 h-10 border-slate-200"
+              >
+                Print All
+              </Button>
+            )}
 
-            <Button 
-              onClick={() => setIsCreateModalOpen(true)} 
-              className="font-black uppercase tracking-[0.2em] text-[9px] px-6 h-10 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white"
-            >
-              Add New Log
-            </Button>
+            {canCreateReport && (
+              <Button 
+                onClick={() => setIsCreateModalOpen(true)} 
+                className="font-black uppercase tracking-[0.2em] text-[9px] px-6 h-10 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white"
+              >
+                Add New Log
+              </Button>
+            )}
           </div>
         </div>
 

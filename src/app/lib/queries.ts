@@ -121,12 +121,40 @@ export function useReports(projectId?: string) {
   })
 }
 
-export function useInspections(projectId?: string) {
+export function useMyInspections(projectId?: string) {
   return useQuery({
-    queryKey: ['inspections', projectId],
+    queryKey: ['my-inspections', projectId],
+    queryFn: async (): Promise<Inspection[]> => {
+      const { data: authData } = await getClient().auth.getUser()
+      if (!authData?.user) return []
+
+      let query = getClient()
+        .from('inspections')
+        .select('*')
+        .eq('lead_inspector_id', authData.user.id)
+        .order('inspection_date', { ascending: false })
+
+      if (projectId) query = query.eq('project_id', projectId)
+      const { data, error } = await query
+      if (error) throw error
+      return data || []
+    },
+  })
+}
+
+export function useInspections(projectId?: string) {
+  const { data: profile } = useProfile()
+  const isInspector = profile?.role === 'inspector'
+  const userId = profile?.id
+
+  return useQuery({
+    queryKey: ['inspections', projectId, isInspector ? userId : 'all'],
     queryFn: async (): Promise<Inspection[]> => {
       let query = getClient().from('inspections').select('*').order('inspection_date', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
+      if (isInspector && userId) {
+        query = query.eq('lead_inspector_id', userId)
+      }
       const { data, error } = await query
       if (error) throw error
       return data || []

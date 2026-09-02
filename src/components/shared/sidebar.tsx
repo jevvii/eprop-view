@@ -33,20 +33,25 @@ export function Sidebar() {
     }
   }
 
+  const userRole = profile?.role || 'viewer'
+
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { href: '/projects', label: 'Projects', icon: '📁' },
-    { href: '/environmental', label: 'Environmental View', icon: '🌍' },
-    { href: '/reports', label: 'Reports', icon: '📋' },
+    { href: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['admin', 'engineer'] },
+    { href: '/projects', label: 'Projects', icon: '📁', roles: ['admin', 'engineer', 'inspector'] },
+    { href: '/environmental', label: 'Environmental View', icon: '🌍', roles: ['admin', 'engineer'] },
+    { href: '/reports', label: 'Reports', icon: '📋', roles: ['admin', 'engineer'] },
     {
       href: '/document',
       label: 'Document',
       icon: '📄',
-      badge: unreadCount && unreadCount > 0 ? unreadCount : null
+      badge: unreadCount && unreadCount > 0 ? unreadCount : null,
+      roles: ['admin', 'engineer', 'inspector'],
     },
-    { href: '/ar', label: 'AR Mode', icon: '🥽' },
-    { href: '/settings', label: 'Settings', icon: '⚙️', adminOnly: true },
+    { href: '/ar', label: 'AR Mode', icon: '🥽', roles: ['inspector', 'admin'] },
+    { href: '/settings', label: 'Settings', icon: '⚙️', roles: ['admin'] },
   ]
+
+  const visibleNavItems = navItems.filter((item) => item.roles.includes(userRole))
 
   return (
     <aside className={`
@@ -83,9 +88,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 flex flex-col gap-2">
-        {navItems.map((item) => {
-          if (item.adminOnly && !isAdmin) return null
-          
+        {visibleNavItems.map((item) => {
           const isActive = pathname === item.href
           return (
             <Link

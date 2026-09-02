@@ -43,7 +43,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
       setDamageType(chosen.type)
       setSeverity(chosen.sev)
       setLabel(chosen.label)
-      setNotes(`AI Optical Scan: 94.2% confidence classification on target plane.`)
+      setNotes(`Demo AI Suggestion: simulated optical classification on target plane.`)
     } finally {
       setIsScanningAI(false)
     }
@@ -78,7 +78,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
           disabled={isScanningAI}
           className="text-[8px] font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg uppercase tracking-wider transition-colors"
         >
-          {isScanningAI ? 'Analyzing Frame…' : 'AI Auto-Detect 🪄'}
+          {isScanningAI ? 'Analyzing Frame…' : 'Demo AI Suggestion 🪄'}
         </button>
       </div>
 

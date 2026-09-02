@@ -5,11 +5,17 @@ import Link from 'next/link'
 import { InspectionForm } from '@/components/document/inspection-form'
 import { AssetFeed } from '@/components/document/asset-feed'
 import { AssetUpload } from '@/components/document/asset-upload'
-import { useInspections } from '@/app/lib/queries'
+import { useInspections, useProfile } from '@/app/lib/queries'
+import { hasCapability } from '@/app/lib/role-utils'
 
 export default function DocumentPage() {
+  const { data: profile } = useProfile()
   const { data: inspections, isLoading } = useInspections()
   const [inspectionId, setInspectionId] = useState('')
+
+  const canCreateInspection = hasCapability(profile?.role, 'inspection:create')
+  const canUpload = hasCapability(profile?.role, 'image:upload')
+  const canUseAR = hasCapability(profile?.role, 'ar:use')
 
   useEffect(() => {
     if (!inspectionId && inspections && inspections.length > 0) {
@@ -55,7 +61,7 @@ export default function DocumentPage() {
             </select>
           </div>
 
-          {inspectionId && (
+          {canUseAR && inspectionId && (
             <Link
               href={`/ar?inspectionId=${encodeURIComponent(inspectionId)}`}
               className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm text-[10px] font-black text-primary uppercase tracking-widest hover:bg-slate-50 transition-all"
@@ -74,10 +80,26 @@ export default function DocumentPage() {
 
         {/* Right Column: Controls & Forms (Supporting) */}
         <div className="space-y-8 order-1 lg:order-2">
-          <AssetUpload inspectionId={inspectionId} />
-          <div className="opacity-80 hover:opacity-100 transition-opacity">
-            <InspectionForm />
-          </div>
+          {canUpload && <AssetUpload inspectionId={inspectionId} />}
+          {canCreateInspection && (
+            <div className="opacity-80 hover:opacity-100 transition-opacity">
+              <InspectionForm />
+            </div>
+          )}
+          {!canUpload && !canCreateInspection && (
+            <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 space-y-4">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🧑‍🔬</span>
+                <div>
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Engineering Review Mode</h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Inspection Vault Read-Only</p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                As an engineer, you have full authority to inspect site imagery, validate AI defect detections, adjust severities, and assign maintenance priorities. Field photo injection and inspection creation are restricted to field inspectors.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

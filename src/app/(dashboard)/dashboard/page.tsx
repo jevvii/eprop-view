@@ -1,6 +1,8 @@
 'use client'
 
-import { useDashboardStats } from '@/app/lib/queries'
+import { useDashboardStats, useProfile } from '@/app/lib/queries'
+import { hasCapability } from '@/app/lib/role-utils'
+import { AccessDenied } from '@/components/shared/require-role'
 import { StatCard } from '@/components/dashboard/stats-cards'
 import { DamageTrendChart } from '@/components/dashboard/damage-trend-chart'
 import { GeospatialMap } from '@/components/dashboard/geospatial-map'
@@ -8,7 +10,25 @@ import { MaintenanceTable } from '@/components/dashboard/maintenance-table'
 import { RiskHotspots } from '@/components/dashboard/risk-hotspots'
 
 export default function DashboardPage() {
+  const { data: profile, isLoading: profileLoading } = useProfile()
   const { data: stats } = useDashboardStats()
+
+  const canViewDashboard = hasCapability(profile?.role, 'dashboard:view')
+
+  if (profileLoading) {
+    return <div className="bg-white p-10 rounded-[2.5rem] shadow-xl h-80 animate-pulse border border-slate-100 mx-2" />
+  }
+
+  if (profile && !canViewDashboard) {
+    return (
+      <AccessDenied
+        title="Dashboard Access Restricted"
+        message="The executive health overview and geospatial dashboard is restricted to Structural Engineers and System Administrators. Inspectors can access the Document Vault to submit inspection findings."
+        returnHref="/document"
+        returnLabel="Go to Document Vault"
+      />
+    )
+  }
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-73px)] lg:h-[calc(100vh-81px)] w-full overflow-hidden bg-brand-gray">

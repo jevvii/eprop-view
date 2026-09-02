@@ -2,18 +2,38 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useProjects, useRiskHotspots } from '@/app/lib/queries'
+import { useProjects, useRiskHotspots, useProfile } from '@/app/lib/queries'
+import { hasCapability } from '@/app/lib/role-utils'
+import { AccessDenied } from '@/components/shared/require-role'
 import { EnvMap } from '@/components/environmental/env-map'
 import { AnalysisPanel } from '@/components/environmental/analysis-panel'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Button } from '@/components/ui/button'
 
 export default function EnvironmentalPage() {
+  const { data: profile, isLoading: profileLoading } = useProfile()
   const queryClient = useQueryClient()
   const { data: projects, isLoading, isError } = useProjects()
   const [projectId, setProjectId] = useState('')
   const { data: hotspots } = useRiskHotspots(projectId || undefined)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const canViewEnv = hasCapability(profile?.role, 'dashboard:view') || hasCapability(profile?.role, 'envrisk:assess')
+
+  if (profileLoading) {
+    return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
+  }
+
+  if (profile && !canViewEnv) {
+    return (
+      <AccessDenied
+        title="Environmental Assessment Restricted"
+        message="Geohazard and environmental risk assessment is restricted to Structural Engineers and System Administrators. Inspectors can access the Document Vault to submit inspection photos."
+        returnHref="/document"
+        returnLabel="Go to Document Vault"
+      />
+    )
+  }
 
   useEffect(() => {
     if (!projectId && projects && projects.length > 0) {

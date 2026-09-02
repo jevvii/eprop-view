@@ -5,6 +5,11 @@ import { createClient } from './supabase/client'
 import { runAIAnalysis, verifyDetection, updateAIDetection } from '@/app/actions/ai'
 import { startARSession, endARSession, createARAnchor } from '@/app/actions/ar'
 import { toggleAIModelStatus, registerAIModel, updateUserRole } from '@/app/actions/admin'
+import { createInspection } from '@/app/actions/inspections'
+import { createReportAction, updateReportAction } from '@/app/actions/reports'
+import { addImageCommentAction, markCommentsReadAction } from '@/app/actions/comments'
+import { upsertEnvironmentalRiskAction, updateEnvironmentalRiskAction } from '@/app/actions/environmental'
+import { createMaintenanceTaskAction, updateMaintenanceTaskAction } from '@/app/actions/maintenance'
 import type {
   Report,
   Inspection,
@@ -31,10 +36,8 @@ export function useCreateInspection() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (inspection: Omit<Inspection, 'id' | 'created_at' | 'updated_at' | 'risk_level' | 'lead_inspector_id'>) => {
-      const { data, error } = await getClient().from('inspections').insert(inspection).select().single()
-      if (error) throw error
-      return data
+    mutationFn: async (inspection: unknown) => {
+      return createInspection(inspection)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspections'] })
@@ -47,10 +50,8 @@ export function useCreateReport() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (report: Omit<Report, 'id' | 'report_id' | 'created_at' | 'updated_at' | 'lead_inspector_id'>) => {
-      const { data, error } = await getClient().rpc('create_report_with_id', { report_data: report })
-      if (error) throw error
-      return data
+    mutationFn: async (report: unknown) => {
+      return createReportAction(report)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] })
@@ -72,46 +73,7 @@ export function useUpdateReport() {
       updates: Partial<Pick<Report, 'status' | 'risk_score' | 'key_findings'>>
       previousStatus?: Report['status']
     }) => {
-      const { data: authData, error: authError } = await getClient().auth.getUser()
-      if (authError || !authData.user) {
-        throw authError ?? new Error('Not authenticated')
-      }
-
-      const now = new Date().toISOString()
-      const payload: Record<string, unknown> = {
-        ...updates,
-        last_edited_by: authData.user.id,
-        last_edited_at: now,
-      }
-
-      if (updates.status === 'completed' && previousStatus !== 'completed') {
-        payload.reviewed_by = authData.user.id
-        payload.reviewed_at = now
-      }
-
-      const { data, error } = await getClient()
-        .from('reports')
-        .update(payload)
-        .eq('id', id)
-        .select('id')
-        .single()
-
-      if (error && error.code === '42703') {
-        if (process.env.NODE_ENV !== 'production') {
-          console.warn('Reports audit columns missing. Apply migration 002_reports_audit_trail.sql.')
-        }
-        const { data: fallbackData, error: fallbackError } = await getClient()
-          .from('reports')
-          .update(updates)
-          .eq('id', id)
-          .select('id')
-          .single()
-        if (fallbackError) throw fallbackError
-        return fallbackData
-      }
-
-      if (error) throw error
-      return data
+      return updateReportAction(id, updates, previousStatus)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] })
@@ -131,21 +93,7 @@ export function useAddComment() {
       imageId: string
       content: string
     }) => {
-      const { data: authData } = await getClient().auth.getUser()
-      if (!authData.user) throw new Error('Not authenticated')
-
-      const { data, error } = await getClient()
-        .from('image_comments')
-        .insert({
-          image_id: imageId,
-          content,
-          author_id: authData.user.id,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      return data
+      return addImageCommentAction(imageId, content)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['image-comments', variables.imageId] })
@@ -159,13 +107,7 @@ export function useMarkCommentsRead() {
 
   return useMutation({
     mutationFn: async (imageId: string) => {
-      const { error } = await getClient()
-        .from('image_comments')
-        .update({ is_read: true })
-        .eq('image_id', imageId)
-        .eq('is_read', false)
-
-      if (error) throw error
+      return markCommentsReadAction(imageId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unread-asset-notifications'] })
@@ -179,9 +121,7 @@ export function useUpdateEnvironmentalRisk() {
   return useMutation({
     mutationFn: async ({ id, project_id, ...updates }: Partial<EnvironmentalRisk> & { id: string; project_id: string }) => {
       void project_id
-      const { data, error } = await getClient().from('environmental_risks').update(updates).eq('id', id).select().single()
-      if (error) throw error
-      return data
+      return updateEnvironmentalRiskAction(id, updates)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['environmental-risk', variables.project_id] })
@@ -194,13 +134,7 @@ export function useUpsertEnvironmentalRisk() {
 
   return useMutation({
     mutationFn: async (payload: Partial<EnvironmentalRisk> & { project_id: string }) => {
-      const { data, error } = await getClient()
-        .from('environmental_risks')
-        .upsert(payload, { onConflict: 'project_id' })
-        .select()
-        .single()
-      if (error) throw error
-      return data
+      return upsertEnvironmentalRiskAction(payload)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['environmental-risk', variables.project_id] })
@@ -402,13 +336,7 @@ export function useCreateMaintenanceTask() {
       due_date?: string | null
       notes?: string
     }) => {
-      const { data, error } = await getClient()
-        .from('maintenance_priorities')
-        .insert(task)
-        .select()
-        .single()
-      if (error) throw error
-      return data as MaintenancePriority
+      return createMaintenanceTaskAction(task)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] })
@@ -436,17 +364,7 @@ export function useUpdateMaintenanceTask() {
         notes: string
       }>
     }) => {
-      const { data, error } = await getClient()
-        .from('maintenance_priorities')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single()
-      if (error) throw error
-      return data as MaintenancePriority
+      return updateMaintenanceTaskAction(id, updates)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] })

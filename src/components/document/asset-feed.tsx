@@ -8,6 +8,8 @@ import { useState } from 'react'
 import { createClient } from '@/app/lib/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 
+import { deleteInspectionImage } from '@/app/actions/uploads'
+
 interface AssetFeedProps {
   inspectionId: string
   label?: string | null
@@ -23,14 +25,13 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
     if (!window.confirm('Permanent Deletion Protocol: Are you sure you want to remove this asset?')) return
     
     setDeletingId(imageId)
-    const supabase = createClient()
 
     try {
-      await supabase.storage.from('inspection-images').remove([storagePath])
-      await supabase.from('inspection_images').delete().eq('id', imageId)
+      await deleteInspectionImage(imageId, storagePath)
       queryClient.invalidateQueries({ queryKey: ['inspection-images', inspectionId] })
     } catch (err) {
       console.error('Delete error:', err)
+      alert(err instanceof Error ? err.message : 'Deletion failed')
     } finally {
       setDeletingId(null)
     }

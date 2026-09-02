@@ -7,6 +7,8 @@ import { RiskScore } from '@/components/shared/risk-score'
 import { Button } from '@/components/ui/button'
 import { ReportModal } from './report-modal'
 import { useUpdateReport } from '@/app/lib/mutations'
+import { useProfile } from '@/app/lib/queries'
+import { hasCapability } from '@/app/lib/role-utils'
 
 type ReportsTableProps = {
   reports?: Report[]
@@ -27,9 +29,14 @@ export function ReportsTable({
   setSelectedReport,
   onPrintSelected
 }: ReportsTableProps) {
+  const { data: profile } = useProfile()
   const [modalReport, setModalReport] = useState<Report | null>(null)
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list')
   const updateReport = useUpdateReport()
+
+  const canViewAudit = hasCapability(profile?.role, 'audit:view')
+  const canEditReport = hasCapability(profile?.role, 'report:edit')
+
   const [isEditing, setIsEditing] = useState(false)
   const [editStatus, setEditStatus] = useState<(typeof statusOptions)[number]>('open')
   const [editRiskScore, setEditRiskScore] = useState('0')
@@ -303,7 +310,7 @@ export function ReportsTable({
                 )}
               </div>
 
-              {auditTrail && (
+              {canViewAudit && auditTrail && (
                 <div className="bg-slate-50/70 border border-slate-100 rounded-3xl p-6 space-y-4">
                   <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Audit Trail</div>
                   <div className="grid grid-cols-1 gap-3 text-[11px] font-bold text-slate-600">
@@ -338,32 +345,34 @@ export function ReportsTable({
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {isEditing ? (
-                  <>
+              {canEditReport && (
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {isEditing ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsEditing(false)}
+                        disabled={updateReport.isPending}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="button" onClick={handleSave} disabled={updateReport.isPending}>
+                        {updateReport.isPending ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </>
+                  ) : (
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setIsEditing(false)}
-                      disabled={updateReport.isPending}
+                      onClick={() => setIsEditing(true)}
+                      disabled={selectedReport.status === 'completed'}
                     >
-                      Cancel
+                      {selectedReport.status === 'completed' ? 'Completed' : 'Edit Log'}
                     </Button>
-                    <Button type="button" onClick={handleSave} disabled={updateReport.isPending}>
-                      {updateReport.isPending ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsEditing(true)}
-                    disabled={selectedReport.status === 'completed'}
-                  >
-                    {selectedReport.status === 'completed' ? 'Completed' : 'Edit Log'}
-                  </Button>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : (

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/app/lib/supabase/server'
+import { requireRole } from '@/app/lib/dal'
 import { computeFinalDamageScore, scoreToRiskLevel } from '@/app/lib/damage-score'
 import type {
   AIModel,
@@ -184,7 +185,24 @@ export async function runAIAnalysis(
   imageId: string,
   modelId?: string
 ): Promise<{ job: AIAnalysisJob; detections: AIDamageDetection[] }> {
+  const { userId, role } = await requireRole(['inspector', 'admin'])
   const supabase = await createClient()
+
+  // Verify image exists and (if inspector) belongs to inspection owned by inspector
+  const { data: img, error: imgError } = await supabase
+    .from('inspection_images')
+    .select('id, inspection_id, inspections(lead_inspector_id)')
+    .eq('id', imageId)
+    .single()
+
+  if (imgError || !img) {
+    throw new Error(`Target inspection image '${imageId}' not found.`)
+  }
+
+  const parentInspection = img.inspections as { lead_inspector_id?: string } | null
+  if (role === 'inspector' && parentInspection?.lead_inspector_id && parentInspection.lead_inspector_id !== userId) {
+    throw new Error('Access denied: inspectors may only trigger AI inference on their assigned inspections.')
+  }
 
   // 1. Validate requested or fallback model
   let resolvedModelId: string | null = null
@@ -210,7 +228,10 @@ export async function runAIAnalysis(
       .order('created_at', { ascending: false })
       .limit(1)
 
-    resolvedModelId = activeModels?.[0]?.id ?? null
+    if (!activeModels || activeModels.length === 0) {
+      throw new Error('No active AI model found for inference. Please activate a model in settings.')
+    }
+    resolvedModelId = activeModels[0].id
   }
 
   // 2. Create job row
@@ -297,19 +318,15 @@ export async function verifyDetection(
   approved: boolean,
   notes?: string
 ): Promise<AIDamageDetection> {
+  const { userId } = await requireRole(['engineer', 'admin'])
   const supabase = await createClient()
-
-  const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError || !authData.user) {
-    throw authError ?? new Error('Not authenticated')
-  }
 
   const updates: Record<string, unknown> = {
     notes: notes ?? '',
   }
 
   if (approved) {
-    updates.verified_by = authData.user.id
+    updates.verified_by = userId
     updates.verified_at = new Date().toISOString()
   } else {
     updates.verified_by = null
@@ -375,12 +392,8 @@ export async function updateAIDetection(
     approved?: boolean
   }
 ): Promise<AIDamageDetection> {
+  const { userId } = await requireRole(['engineer', 'admin'])
   const supabase = await createClient()
-
-  const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError || !authData.user) {
-    throw authError ?? new Error('Not authenticated')
-  }
 
   const updates: Record<string, unknown> = {}
   if (params.damage_type !== undefined) updates.damage_type = params.damage_type
@@ -390,7 +403,7 @@ export async function updateAIDetection(
   if (params.notes !== undefined) updates.notes = params.notes
   
   if (params.approved === true) {
-    updates.verified_by = authData.user.id
+    updates.verified_by = userId
     updates.verified_at = new Date().toISOString()
   } else if (params.approved === false) {
     updates.verified_by = null

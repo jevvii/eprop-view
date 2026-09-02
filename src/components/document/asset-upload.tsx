@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/app/lib/supabase/client'
+import { uploadInspectionImage } from '@/app/actions/uploads'
 import { Button } from '@/components/ui/button'
 
 interface AssetUploadProps {
@@ -37,27 +37,14 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
     setError(null)
     setSuccess(null)
     setUploading(true)
-    const supabase = createClient()
 
     try {
-      const { data: authData } = await supabase.auth.getUser()
-      const uploaderId = authData.user?.id
-
       for (const file of files) {
-        const safeName = file.name.replace(/\s+/g, '-')
-        const path = `${inspectionId}/${Date.now()}-${safeName}`
-        const { error: uploadError } = await supabase.storage
-          .from('inspection-images')
-          .upload(path, file, { upsert: false })
-        if (uploadError) throw uploadError
-
-        const { error: insertError } = await supabase.from('inspection_images').insert({
-          inspection_id: inspectionId,
-          storage_path: path,
-          caption: file.name,
-          uploader_id: uploaderId,
-        })
-        if (insertError) throw insertError
+        const formData = new FormData()
+        formData.append('inspectionId', inspectionId)
+        formData.append('file', file)
+        formData.append('caption', file.name)
+        await uploadInspectionImage(formData)
       }
 
       setFiles([])

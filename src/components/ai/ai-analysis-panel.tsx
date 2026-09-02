@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useAIModels, useAIDetections, useAIAnalysisJobs } from '@/app/lib/queries'
+import { useAIModels, useAIDetections, useAIAnalysisJobs, useProfile } from '@/app/lib/queries'
 import { useRunAIAnalysis } from '@/app/lib/mutations'
+import { hasCapability } from '@/app/lib/role-utils'
 import { Button } from '@/components/ui/button'
 import { DetectionList } from './detection-list'
 import { SeverityBadge } from './severity-badge'
@@ -13,12 +14,15 @@ interface AIAnalysisPanelProps {
 }
 
 export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
+  const { data: profile } = useProfile()
   const { data: models, isLoading: modelsLoading } = useAIModels()
   const { data: detections, isLoading: detectionsLoading } = useAIDetections(imageId)
   const { data: jobs, isLoading: jobsLoading } = useAIAnalysisJobs(imageId)
   const runAnalysis = useRunAIAnalysis()
 
   const [selectedModelId, setSelectedModelId] = useState<string>('')
+
+  const canTriggerAI = hasCapability(profile?.role, 'ai:trigger')
 
   const activeModel = selectedModelId
     ? models?.find((m) => m.id === selectedModelId)
@@ -54,7 +58,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         <div>
           <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">AI Structural Diagnostics</h3>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
-            {activeModel ? `Active Checkpoint: ${activeModel.name} (v${activeModel.version})` : 'No AI models registered'}
+            {activeModel ? `Active Checkpoint: ${activeModel.name} (v${activeModel.version})` : 'No active AI models registered'}
           </p>
         </div>
         {isRunning && (
@@ -67,31 +71,43 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
 
       {/* Model Selection and Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {models && models.length > 1 && (
-          <div className="flex items-center gap-2">
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Model</label>
-            <select
-              value={activeModel?.id ?? ''}
-              onChange={(e) => setSelectedModelId(e.target.value)}
-              className="text-[10px] font-bold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none"
-            >
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} ({m.format.toUpperCase()})
-                </option>
-              ))}
-            </select>
+        {canTriggerAI ? (
+          <>
+            {models && models.length > 1 && (
+              <div className="flex items-center gap-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Model</label>
+                <select
+                  value={activeModel?.id ?? ''}
+                  onChange={(e) => setSelectedModelId(e.target.value)}
+                  className="text-[10px] font-bold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none"
+                >
+                  {models.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.format.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleRun}
+                disabled={!activeModel || isRunning}
+                className="text-[9px] font-black uppercase tracking-[0.2em] px-5 py-3 h-auto shadow-md shadow-primary/10"
+              >
+                {isRunning ? 'Analyzing Image…' : detections && detections.length > 0 ? 'Re-Run Analysis' : 'Run AI Analysis'}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-100">
+            <span className="text-xs">🧑‍🔬</span>
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+              Review & Validation Mode
+            </span>
           </div>
         )}
-
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={handleRun}
-            disabled={!activeModel || isRunning}
-            className="text-[9px] font-black uppercase tracking-[0.2em] px-5 py-3 h-auto shadow-md shadow-primary/10"
-          >
-            {isRunning ? 'Analyzing Image…' : detections && detections.length > 0 ? 'Re-Run Analysis' : 'Run AI Analysis'}
-          </Button>
 
           {damageScore !== null && (
             <div className="flex flex-col gap-1">
@@ -113,7 +129,6 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
               </p>
             </div>
           )}
-        </div>
       </div>
 
       {latestJob?.status === 'failed' && (

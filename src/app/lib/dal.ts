@@ -29,3 +29,19 @@ export const verifySession = cache(async () => {
     email: user.email ?? '',
   }
 })
+
+export async function requireRole(allowed: import('@/app/types').Role[] | import('@/app/types').Role): Promise<{ userId: string; role: import('@/app/types').Role; email: string }> {
+  const session = await verifySession()
+  const list = Array.isArray(allowed) ? allowed : [allowed]
+  if (!list.includes(session.role)) {
+    throw new Error(`Access denied: role '${session.role}' is not in allowed roles (${list.join(', ')})`)
+  }
+  return session
+}
+
+export async function requireCapabilityCheck(capability: import('./role-utils').Capability): Promise<{ userId: string; role: import('@/app/types').Role; email: string }> {
+  const session = await verifySession()
+  const { requireCapability } = await import('./role-utils')
+  requireCapability(session.role, capability)
+  return session
+}

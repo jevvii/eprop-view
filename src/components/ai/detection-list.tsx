@@ -4,6 +4,8 @@ import { useState } from 'react'
 import type { AIDamageDetection, DamageType, SeverityLevel } from '@/app/types'
 import { SeverityBadge } from './severity-badge'
 import { useVerifyDetection, useUpdateAIDetection } from '@/app/lib/mutations'
+import { useProfile } from '@/app/lib/queries'
+import { hasCapability } from '@/app/lib/role-utils'
 import { Button } from '@/components/ui/button'
 
 interface DetectionListProps {
@@ -14,8 +16,11 @@ const damageTypeOptions: DamageType[] = ['crack', 'corrosion', 'spalling', 'defo
 const severityOptions: SeverityLevel[] = ['low', 'medium', 'high', 'critical']
 
 export function DetectionList({ detections }: DetectionListProps) {
+  const { data: profile } = useProfile()
   const verify = useVerifyDetection()
   const updateDetection = useUpdateAIDetection()
+
+  const canReview = hasCapability(profile?.role, 'ai:review')
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDamageType, setEditDamageType] = useState<DamageType>('crack')
@@ -24,6 +29,7 @@ export function DetectionList({ detections }: DetectionListProps) {
   const [editNotes, setEditNotes] = useState<string>('')
 
   const startEdit = (detection: AIDamageDetection) => {
+    if (!canReview) return
     setEditingId(detection.id)
     setEditDamageType(detection.damage_type)
     setEditSeverity(detection.severity)
@@ -213,70 +219,72 @@ export function DetectionList({ detections }: DetectionListProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => startEdit(detection)}
-                className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 transition-colors"
-              >
-                Adjust
-              </Button>
-
-              {!isVerified && (
+            {canReview && (
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={verify.isPending}
-                  onClick={() =>
-                    verify.mutate({
-                      detectionId: detection.id,
-                      approved: true,
-                      notes: 'Verified by structural engineer.',
-                    })
-                  }
-                  className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors"
+                  onClick={() => startEdit(detection)}
+                  className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 transition-colors"
                 >
-                  {isRejected ? 'Re-Verify' : 'Verify'}
+                  Adjust
                 </Button>
-              )}
 
-              {isVerified && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={verify.isPending}
-                  onClick={() =>
-                    verify.mutate({
-                      detectionId: detection.id,
-                      approved: false,
-                      notes: 'Rejected: Marked as false positive.',
-                    })
-                  }
-                  className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
-                >
-                  Reject
-                </Button>
-              )}
+                {!isVerified && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={verify.isPending}
+                    onClick={() =>
+                      verify.mutate({
+                        detectionId: detection.id,
+                        approved: true,
+                        notes: 'Verified by structural engineer.',
+                      })
+                    }
+                    className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors"
+                  >
+                    {isRejected ? 'Re-Verify' : 'Verify'}
+                  </Button>
+                )}
 
-              {!isVerified && !isRejected && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={verify.isPending}
-                  onClick={() =>
-                    verify.mutate({
-                      detectionId: detection.id,
-                      approved: false,
-                      notes: 'Rejected: Marked as false positive.',
-                    })
-                  }
-                  className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-slate-200 text-slate-500 transition-colors"
-                >
-                  Reject
-                </Button>
-              )}
-            </div>
+                {isVerified && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={verify.isPending}
+                    onClick={() =>
+                      verify.mutate({
+                        detectionId: detection.id,
+                        approved: false,
+                        notes: 'Rejected: Marked as false positive.',
+                      })
+                    }
+                    className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
+                  >
+                    Reject
+                  </Button>
+                )}
+
+                {!isVerified && !isRejected && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={verify.isPending}
+                    onClick={() =>
+                      verify.mutate({
+                        detectionId: detection.id,
+                        approved: false,
+                        notes: 'Rejected: Marked as false positive.',
+                      })
+                    }
+                    className="text-[9px] font-black uppercase tracking-wider h-auto py-1.5 px-3 bg-white hover:bg-slate-200 text-slate-500 transition-colors"
+                  >
+                    Reject
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         )
       })}
