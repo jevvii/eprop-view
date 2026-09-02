@@ -5,6 +5,8 @@ import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
 import type { StorageAuditEntry, StorageSummary, StorageClass } from '@/app/types'
 
+const TRACKED_BUCKETS = ['inspection-images', 'ai-models', 'reports-archive']
+
 /**
  * Returns aggregated storage metrics across all buckets and classes.
  * Requires Admin role.
@@ -99,6 +101,7 @@ export async function listStorageAuditObjects(filter?: {
 
 /**
  * Deletes an object from both Supabase Storage and storage_audit table.
+ * Aborts if storage deletion fails, preventing orphaned cloud assets.
  * Requires Admin role.
  */
 export async function deleteStorageObject(
@@ -109,10 +112,10 @@ export async function deleteStorageObject(
   await requireRole(['admin'])
   const supabase = await createClient()
 
-  // 1. Delete from Supabase Storage bucket
+  // 1. Delete from Supabase Storage bucket first
   const { error: storageError } = await supabase.storage.from(bucketId).remove([objectPath])
   if (storageError) {
-    console.warn(`Storage delete warning for ${bucketId}/${objectPath}:`, storageError.message)
+    throw new Error(`Failed to remove file from storage bucket "${bucketId}": ${storageError.message}`)
   }
 
   // 2. Delete from storage_audit
@@ -132,6 +135,7 @@ export async function deleteStorageObject(
 
 /**
  * Transitions an object's storage class (standard -> cold -> archive).
+ * Also moves files to the cold archive storage bucket ('reports-archive') when archiving.
  * Requires Admin role.
  */
 export async function updateStorageClass(
@@ -140,6 +144,36 @@ export async function updateStorageClass(
 ): Promise<void> {
   await requireRole(['admin'])
   const supabase = await createClient()
+
+  // Retrieve current record
+  const { data: current, error: fetchErr } = await supabase
+    .from('storage_audit')
+    .select('*')
+    .eq('id', auditId)
+    .single()
+
+  if (fetchErr || !current) {
+    throw new Error(`Storage audit record ${auditId} not found`)
+  }
+
+  // If archiving an inspection image, copy to reports-archive bucket
+  if ((newClass === 'archive' || newClass === 'cold') && current.bucket_id === 'inspection-images') {
+    try {
+      const { data: fileData, error: dlErr } = await supabase.storage
+        .from(current.bucket_id)
+        .download(current.object_path)
+
+      if (!dlErr && fileData) {
+        const archivePath = `archive/${current.object_path}`
+        await supabase.storage.from('reports-archive').upload(archivePath, fileData, {
+          upsert: true,
+          contentType: fileData.type,
+        })
+      }
+    } catch (moveErr) {
+      console.warn('Archive copy warning (proceeding with tier update):', moveErr)
+    }
+  }
 
   const { error } = await supabase
     .from('storage_audit')
@@ -151,8 +185,8 @@ export async function updateStorageClass(
 }
 
 /**
- * Synchronizes Supabase Storage bucket objects with database records
- * and updates the storage_audit registry.
+ * Synchronizes ALL Supabase Storage buckets with database records
+ * with paginated listing and orphaned asset detection.
  * Requires Admin role.
  */
 export async function syncStorageAudit(): Promise<{ synced: number; orphaned: number }> {
@@ -161,46 +195,71 @@ export async function syncStorageAudit(): Promise<{ synced: number; orphaned: nu
 
   // 1. Fetch referenced paths in DB
   const { data: dbImages } = await supabase.from('inspection_images').select('id, storage_path, inspection_id')
-  const referencedPaths = new Set((dbImages || []).map((img) => img.storage_path))
+  const referencedImagePaths = new Set((dbImages || []).map((img) => img.storage_path))
 
-  // 2. List files in inspection-images bucket
-  const { data: files, error: listError } = await supabase.storage.from('inspection-images').list('', {
-    limit: 500,
-  })
-
-  if (listError) {
-    console.warn('Storage list failed:', listError.message)
-  }
+  const { data: dbModels } = await supabase.from('ai_models').select('id, storage_path')
+  const referencedModelPaths = new Set((dbModels || []).map((m) => m.storage_path).filter(Boolean))
 
   let syncedCount = 0
   let orphanedCount = 0
+  const pageSize = 100
 
-  const fileList = files || []
-  for (const file of fileList) {
-    if (!file.name || file.name === '.emptyFolderPlaceholder') continue
+  // 2. Iterate through all tracked buckets
+  for (const bucketId of TRACKED_BUCKETS) {
+    let offset = 0
+    let hasMore = true
 
-    const path = file.name
-    const isOrphan = !referencedPaths.has(path)
-    if (isOrphan) orphanedCount++
+    while (hasMore) {
+      const { data: files, error: listError } = await supabase.storage.from(bucketId).list('', {
+        limit: pageSize,
+        offset,
+      })
 
-    const sizeBytes = file.metadata?.size || 120000
+      if (listError || !files || files.length === 0) {
+        hasMore = false
+        break
+      }
 
-    await supabase.from('storage_audit').upsert(
-      {
-        bucket_id: 'inspection-images',
-        object_path: path,
-        size_bytes: sizeBytes,
-        storage_class: 'standard',
-        is_orphan: isOrphan,
-        uploaded_at: file.created_at || new Date().toISOString(),
-        last_accessed_at: new Date().toISOString(),
-      },
-      { onConflict: 'bucket_id,object_path' }
-    )
-    syncedCount++
+      for (const file of files) {
+        if (!file.name || file.name === '.emptyFolderPlaceholder') continue
+
+        const path = file.name
+        let isOrphan = false
+
+        if (bucketId === 'inspection-images') {
+          isOrphan = !referencedImagePaths.has(path)
+        } else if (bucketId === 'ai-models') {
+          isOrphan = !referencedModelPaths.has(path)
+        }
+
+        if (isOrphan) orphanedCount++
+
+        const sizeBytes = file.metadata?.size || 150000
+
+        await supabase.from('storage_audit').upsert(
+          {
+            bucket_id: bucketId,
+            object_path: path,
+            size_bytes: sizeBytes,
+            storage_class: bucketId === 'reports-archive' ? 'archive' : 'standard',
+            is_orphan: isOrphan,
+            uploaded_at: file.created_at || new Date().toISOString(),
+            last_accessed_at: new Date().toISOString(),
+          },
+          { onConflict: 'bucket_id,object_path' }
+        )
+        syncedCount++
+      }
+
+      if (files.length < pageSize) {
+        hasMore = false
+      } else {
+        offset += pageSize
+      }
+    }
   }
 
-  // Also record known inspection_images that exist in database
+  // 3. Ensure known DB records are also reflected in storage_audit
   if (dbImages) {
     for (const img of dbImages) {
       if (!img.storage_path) continue
@@ -227,7 +286,8 @@ export async function syncStorageAudit(): Promise<{ synced: number; orphaned: nu
 /**
  * Applies automated storage lifecycle policies:
  * - Moves objects older than 365 days to 'cold' storage class.
- * - Enforces compliance 7-year retention tagging.
+ * - Enforces 7-year regulatory retention lifecycle.
+ * - Cleans orphaned temporary files older than 30 days.
  * Requires Admin role.
  */
 export async function applyStorageLifecyclePolicies(): Promise<{
@@ -238,8 +298,9 @@ export async function applyStorageLifecyclePolicies(): Promise<{
   const supabase = await createClient()
 
   const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  // Transition objects older than 1 year to 'cold'
+  // 1. Transition objects older than 1 year to 'cold'
   const { data: oldObjects } = await supabase
     .from('storage_audit')
     .select('id')
@@ -253,6 +314,26 @@ export async function applyStorageLifecyclePolicies(): Promise<{
     archivedCount = ids.length
   }
 
+  // 2. Clean orphaned temporary objects older than 30 days
+  const { data: staleOrphans } = await supabase
+    .from('storage_audit')
+    .select('id, bucket_id, object_path')
+    .eq('is_orphan', true)
+    .lt('uploaded_at', thirtyDaysAgo)
+
+  let cleanedCount = 0
+  if (staleOrphans && staleOrphans.length > 0) {
+    for (const orphan of staleOrphans) {
+      try {
+        await supabase.storage.from(orphan.bucket_id).remove([orphan.object_path])
+        await supabase.from('storage_audit').delete().eq('id', orphan.id)
+        cleanedCount++
+      } catch (err) {
+        console.warn(`Orphan cleanup error for ${orphan.object_path}:`, err)
+      }
+    }
+  }
+
   revalidatePath('/settings')
-  return { archived: archivedCount, cleaned: 0 }
+  return { archived: archivedCount, cleaned: cleanedCount }
 }

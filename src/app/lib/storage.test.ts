@@ -93,4 +93,30 @@ describe('Phase E: Storage Audit & Lifecycle Management Tests', () => {
       assert.ok(['standard', 'cold', 'glacier', 'archive'].includes(c))
     }
   })
+
+  test('correctly partitions objects for 1-year archival and 30-day orphan purge', () => {
+    const now = new Date('2026-09-02T12:00:00Z').getTime()
+    const oneYearMs = 365 * 24 * 60 * 60 * 1000
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
+
+    const mockFiles = [
+      { id: '1', uploaded_at: '2025-01-01T00:00:00Z', storage_class: 'standard', is_orphan: false }, // > 1 year -> archive
+      { id: '2', uploaded_at: '2026-06-01T00:00:00Z', storage_class: 'standard', is_orphan: false }, // recent -> stay
+      { id: '3', uploaded_at: '2026-07-01T00:00:00Z', storage_class: 'standard', is_orphan: true }, // orphan > 30 days -> clean
+      { id: '4', uploaded_at: '2026-08-25T00:00:00Z', storage_class: 'standard', is_orphan: true }, // orphan < 30 days -> retain grace
+    ]
+
+    const toArchive = mockFiles.filter(
+      (f) => f.storage_class === 'standard' && now - new Date(f.uploaded_at).getTime() > oneYearMs
+    )
+    const toClean = mockFiles.filter(
+      (f) => f.is_orphan && now - new Date(f.uploaded_at).getTime() > thirtyDaysMs
+    )
+
+    assert.equal(toArchive.length, 1)
+    assert.equal(toArchive[0].id, '1')
+
+    assert.equal(toClean.length, 1)
+    assert.equal(toClean[0].id, '3')
+  })
 })

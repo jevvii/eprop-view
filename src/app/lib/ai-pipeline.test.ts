@@ -124,5 +124,36 @@ describe('Phase A: Real-Time AI Damage Detection Pipeline Tests', () => {
         assert.ok(d.bbox !== null)
       }
     })
+
+    test('runDetection accepts image Blob and produces CHW tensor dimensions [1, 3, H, W]', async () => {
+      const mockModel: AIModel = {
+        id: 'test-model-2',
+        name: 'YOLOv8-Blob-Detector',
+        version: '2.0.0',
+        task: 'detection',
+        format: 'onnx',
+        storage_path: null,
+        labels: ['crack', 'spalling'],
+        is_active: true,
+        architecture: 'yolov8',
+        input_width: 640,
+        input_height: 640,
+        confidence_threshold: 0.30,
+        iou_threshold: 0.40,
+        created_at: new Date().toISOString(),
+      }
+
+      // Create a mock image byte payload
+      const mockImageBytes = new Uint8Array(1024 * 64)
+      for (let i = 0; i < mockImageBytes.length; i++) {
+        mockImageBytes[i] = (i * 17) % 256
+      }
+      const imageBlob = new Blob([mockImageBytes], { type: 'image/jpeg' })
+
+      const result = await runDetection(imageBlob, mockModel)
+      assert.ok(result.latencyMs < 3000)
+      assert.deepEqual(result.tensorDimensions, [1, 3, 640, 640])
+      assert.ok(result.detections.length > 0)
+    })
   })
 })

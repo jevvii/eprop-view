@@ -200,11 +200,19 @@ export async function reorderFloors(buildingId: string, orderedFloorIds: string[
   await requireRole(['admin'])
   const supabase = await createClient()
 
-  const updates = orderedFloorIds.map((id, index) =>
-    supabase.from('floors').update({ sort_order: index }).eq('id', id).eq('building_id', buildingId)
-  )
+  for (let i = 0; i < orderedFloorIds.length; i++) {
+    const id = orderedFloorIds[i]
+    const { error } = await supabase
+      .from('floors')
+      .update({ sort_order: i })
+      .eq('id', id)
+      .eq('building_id', buildingId)
 
-  await Promise.all(updates)
+    if (error) {
+      throw new Error(`Failed to update floor sequence for floor ID ${id}: ${error.message}`)
+    }
+  }
+
   revalidatePath('/settings')
 }
 
@@ -291,7 +299,9 @@ export async function updateStructuralElement(
 
   const { data, error } = await supabase
     .from('structural_elements')
-    .update(input)
+    .update({
+      ...input,
+    })
     .eq('id', id)
     .select()
     .single()
@@ -313,8 +323,7 @@ export async function deleteStructuralElement(id: string): Promise<void> {
 }
 
 /**
- * Bulk imports structural elements from CSV content:
- * Expected CSV headers: `identifier,element_type,description`
+ * Bulk import structural elements from CSV content with automatic deduplication.
  */
 export async function importStructuralElementsCSV(
   floorId: string,
@@ -338,6 +347,17 @@ export async function importStructuralElementsCSV(
   const lines = csvContent.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
   if (lines.length <= 1) {
     return { created: 0, errors: ['CSV content is empty or contains only header'] }
+  }
+
+  // Query existing floor elements to deduplicate against
+  const { data: existing } = await supabase
+    .from('structural_elements')
+    .select('identifier')
+    .eq('floor_id', floorId)
+
+  const seen = new Set<string>()
+  if (existing) {
+    existing.forEach((e) => seen.add(e.identifier.trim().toLowerCase()))
   }
 
   // Detect header indices
@@ -365,10 +385,17 @@ export async function importStructuralElementsCSV(
       continue
     }
 
+    const key = identifier.trim().toLowerCase()
+    if (seen.has(key)) {
+      errors.push(`Row ${i + 1}: Identifier "${identifier}" already exists or is duplicate in batch; skipped.`)
+      continue
+    }
+    seen.add(key)
+
     const element_type = (validTypes.has(rawType) ? rawType : 'general') as StructuralElement
     rowsToInsert.push({
       floor_id: floorId,
-      identifier,
+      identifier: identifier.trim(),
       element_type,
       description,
     })

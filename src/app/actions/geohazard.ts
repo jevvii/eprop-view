@@ -5,11 +5,13 @@ import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
 import { parseGeoJSON } from '@/app/lib/geo/import-geojson'
 import { parseShapefile } from '@/app/lib/geo/import-shapefile'
+import { geojsonToWKT } from '@/app/lib/geo/wkt'
 import type { GeospatialZone } from '@/app/types'
 
 /**
- * Imports a geohazard dataset (GeoJSON or Shapefile) and persists features
- * into geospatial_zones. Gated strictly to Admin role.
+ * Imports a geohazard dataset (GeoJSON, ESRI Shapefile, or zipped shapefile)
+ * and safely upserts features into geospatial_zones using PostGIS geometries.
+ * Gated strictly to Admin role.
  */
 export async function importGeohazardLayer(formData: FormData): Promise<{
   imported: number
@@ -34,7 +36,7 @@ export async function importGeohazardLayer(formData: FormData): Promise<{
   } else if (filename.endsWith('.shp') || filename.endsWith('.zip')) {
     parsedZones = await parseShapefile(buffer, file.name)
   } else {
-    throw new Error('Unsupported format. Please upload a .geojson, .json, or .shp file.')
+    throw new Error('Unsupported format. Please upload a .geojson, .json, .shp, or .zip shapefile archive.')
   }
 
   if (parsedZones.length === 0) {
@@ -42,24 +44,50 @@ export async function importGeohazardLayer(formData: FormData): Promise<{
   }
 
   const supabase = await createClient()
+  let importedCount = 0
 
-  const rows = parsedZones.map((z) => ({
-    project_id: projectId,
-    name: z.name,
-    zone_type: z.zone_type,
-    risk_level: z.risk_level,
-    coordinates: z.coordinates,
-    geom: z.geom,
-    description: z.description,
-    source_file: file.name,
-    source_format: filename.endsWith('.shp') ? 'shapefile' : 'geojson',
-    effective_date: new Date().toISOString().slice(0, 10),
-    is_active: true,
-  }))
+  for (const z of parsedZones) {
+    const geojsonString = JSON.stringify(z.geom)
 
-  const { error } = await supabase.from('geospatial_zones').insert(rows)
-  if (error) {
-    throw new Error(`Database insertion failed: ${error.message}`)
+    // Attempt RPC upsert with PostGIS ST_GeomFromGeoJSON first
+    const { error: rpcError } = await supabase.rpc('upsert_geospatial_zone', {
+      p_project_id: projectId,
+      p_name: z.name,
+      p_zone_type: z.zone_type,
+      p_risk_level: z.risk_level,
+      p_geojson: geojsonString,
+      p_description: z.description || '',
+      p_source_file: file.name,
+      p_source_format: filename.endsWith('.shp') || filename.endsWith('.zip') ? 'shapefile' : 'geojson',
+      p_effective_date: new Date().toISOString().slice(0, 10),
+    })
+
+    if (rpcError) {
+      // Fallback to direct WKT insertion if RPC is unavailable
+      const wkt = geojsonToWKT(z.geom, 4326)
+      const { error: insertError } = await supabase.from('geospatial_zones').upsert(
+        {
+          project_id: projectId,
+          name: z.name,
+          zone_type: z.zone_type,
+          risk_level: z.risk_level,
+          geom: wkt as any,
+          description: z.description,
+          source_file: file.name,
+          source_format: filename.endsWith('.shp') || filename.endsWith('.zip') ? 'shapefile' : 'geojson',
+          effective_date: new Date().toISOString().slice(0, 10),
+          is_active: true,
+        },
+        { onConflict: 'project_id,name,zone_type' }
+      )
+
+      if (insertError) {
+        console.warn(`Failed to insert zone "${z.name}":`, insertError.message)
+        continue
+      }
+    }
+
+    importedCount++
   }
 
   revalidatePath('/settings')
@@ -67,8 +95,8 @@ export async function importGeohazardLayer(formData: FormData): Promise<{
   revalidatePath('/dashboard')
 
   return {
-    imported: rows.length,
-    message: `Successfully imported ${rows.length} geospatial hazard zones from ${file.name}.`,
+    imported: importedCount,
+    message: `Successfully imported ${importedCount} geospatial hazard zones from ${file.name}.`,
   }
 }
 

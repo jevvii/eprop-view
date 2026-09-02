@@ -191,7 +191,7 @@ export async function runAIAnalysis(
   // Verify image exists and (if inspector) belongs to inspection owned by inspector
   const { data: img, error: imgError } = await supabase
     .from('inspection_images')
-    .select('id, inspection_id, inspections(lead_inspector_id)')
+    .select('id, inspection_id, storage_path, inspections(lead_inspector_id)')
     .eq('id', imageId)
     .single()
 
@@ -280,7 +280,19 @@ export async function runAIAnalysis(
     }
 
     const { runDetection } = await import('@/app/lib/ai/inference-worker')
-    const inferenceResult = await runDetection(imageId, targetModel)
+    let imagePayload: Blob | string = imageId
+    if (img.storage_path) {
+      try {
+        const { data: downloadedBlob } = await supabase.storage.from('inspection-images').download(img.storage_path)
+        if (downloadedBlob) {
+          imagePayload = downloadedBlob
+        }
+      } catch (dlErr) {
+        console.warn('Direct image download warning (falling back to image identifier):', dlErr)
+      }
+    }
+
+    const inferenceResult = await runDetection(imagePayload, targetModel)
 
     const rows = inferenceResult.detections.length > 0
       ? inferenceResult.detections.map((result) => ({
