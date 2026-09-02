@@ -75,3 +75,25 @@ export async function updateEnvironmentalRiskAction(
 
   return data as EnvironmentalRisk
 }
+
+/**
+ * Automatically calculates environmental risk scores from GIS hazard layers
+ * and saves proposal to project environmental_risks.
+ * Role-gated to Engineer and Admin.
+ */
+export async function calculateAndApplyProjectRisk(projectId: string): Promise<EnvironmentalRisk> {
+  await requireRole(['engineer', 'admin'])
+
+  const { computeProjectEnvironmentalRisk } = await import('@/app/lib/environmental/scoring')
+  const computation = await computeProjectEnvironmentalRisk(projectId)
+
+  return upsertEnvironmentalRiskAction({
+    project_id: projectId,
+    overall_risk_score: computation.overall_risk_score,
+    fault_line_proximity: computation.fault_line_proximity,
+    soil_liquefaction_risk: computation.soil_liquefaction_risk,
+    erosion_potential: computation.erosion_potential,
+    additional_analysis: computation.additional_analysis,
+  })
+}
+

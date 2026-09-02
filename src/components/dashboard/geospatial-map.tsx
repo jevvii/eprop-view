@@ -106,9 +106,25 @@ export function GeospatialMap() {
                     id: "risk-zones-fill",
                     type: "fill",
                     source: "risk-zones",
+                    filter: ["==", ["geometry-type"], "Polygon"],
                     paint: {
                         "fill-color": ["get", "color"],
                         "fill-opacity": 0.35,
+                    },
+                },
+                beforeId,
+            );
+
+            m.addLayer(
+                {
+                    id: "risk-zones-line",
+                    type: "line",
+                    source: "risk-zones",
+                    filter: ["==", ["geometry-type"], "LineString"],
+                    paint: {
+                        "line-color": ["get", "color"],
+                        "line-width": 3.5,
+                        "line-opacity": 0.85,
                     },
                 },
                 beforeId,
@@ -166,15 +182,18 @@ export function GeospatialMap() {
         const features = (zones || [])
             .filter(
                 (z) =>
+                    z.is_active !== false &&
                     z.geom &&
                     (z.geom.type === "Polygon" ||
-                        z.geom.type === "MultiPolygon"),
+                        z.geom.type === "MultiPolygon" ||
+                        z.geom.type === "LineString" ||
+                        z.geom.type === "MultiLineString"),
             )
             .map((z) => ({
                 type: "Feature",
                 geometry: z.geom,
                 properties: {
-                    color: riskColors[z.risk_level] || "#94a3b8",
+                    color: z.zone_type === 'fault_line' ? '#dc2626' : (riskColors[z.risk_level] || "#94a3b8"),
                 },
             }));
 

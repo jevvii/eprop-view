@@ -417,6 +417,13 @@ export function useRegisterAIModel() {
       format: AIModelFormat
       labels: string[]
       is_active?: boolean
+      architecture?: string
+      input_width?: number
+      input_height?: number
+      confidence_threshold?: number
+      iou_threshold?: number
+      preprocessing?: Record<string, unknown>
+      metadata?: Record<string, unknown>
     }) => {
       const res = await registerAIModel(modelData)
       if (res.error) throw new Error(res.error)
@@ -428,5 +435,154 @@ export function useRegisterAIModel() {
     },
   })
 }
+
+// Building Master Data mutations (Phase C)
+export function useCreateBuilding() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: Parameters<typeof import('@/app/actions/buildings').createBuilding>[0]) => {
+      const { createBuilding } = await import('@/app/actions/buildings')
+      return createBuilding(input)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buildings'] })
+    },
+  })
+}
+
+export function useUpdateBuilding() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Parameters<typeof import('@/app/actions/buildings').updateBuilding>[1] }) => {
+      const { updateBuilding } = await import('@/app/actions/buildings')
+      return updateBuilding(id, data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buildings'] })
+    },
+  })
+}
+
+export function useDeleteBuilding() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { deleteBuilding } = await import('@/app/actions/buildings')
+      return deleteBuilding(id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buildings'] })
+    },
+  })
+}
+
+export function useCreateFloor() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: Parameters<typeof import('@/app/actions/buildings').createFloor>[0]) => {
+      const { createFloor } = await import('@/app/actions/buildings')
+      return createFloor(input)
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['floors', variables.building_id] })
+    },
+  })
+}
+
+export function useUpdateFloor() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, data, buildingId }: { id: string; data: Parameters<typeof import('@/app/actions/buildings').updateFloor>[1]; buildingId: string }) => {
+      const { updateFloor } = await import('@/app/actions/buildings')
+      const res = await updateFloor(id, data)
+      return { res, buildingId }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['floors', data.buildingId] })
+    },
+  })
+}
+
+export function useDeleteFloor() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, buildingId }: { id: string; buildingId: string }) => {
+      const { deleteFloor } = await import('@/app/actions/buildings')
+      await deleteFloor(id)
+      return { buildingId }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['floors', data.buildingId] })
+    },
+  })
+}
+
+export function useReorderFloors() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ buildingId, orderedFloorIds }: { buildingId: string; orderedFloorIds: string[] }) => {
+      const { reorderFloors } = await import('@/app/actions/buildings')
+      return reorderFloors(buildingId, orderedFloorIds)
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['floors', variables.buildingId] })
+    },
+  })
+}
+
+export function useCreateStructuralElement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: Parameters<typeof import('@/app/actions/buildings').createStructuralElement>[0]) => {
+      const { createStructuralElement } = await import('@/app/actions/buildings')
+      return createStructuralElement(input)
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['structural-elements', variables.floor_id] })
+    },
+  })
+}
+
+export function useUpdateStructuralElement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, data, floorId }: { id: string; data: Parameters<typeof import('@/app/actions/buildings').updateStructuralElement>[1]; floorId: string }) => {
+      const { updateStructuralElement } = await import('@/app/actions/buildings')
+      const res = await updateStructuralElement(id, data)
+      return { res, floorId }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['structural-elements', data.floorId] })
+    },
+  })
+}
+
+export function useDeleteStructuralElement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, floorId }: { id: string; floorId: string }) => {
+      const { deleteStructuralElement } = await import('@/app/actions/buildings')
+      await deleteStructuralElement(id)
+      return { floorId }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['structural-elements', data.floorId] })
+    },
+  })
+}
+
+export function useImportStructuralElementsCSV() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ floorId, csvContent }: { floorId: string; csvContent: string }) => {
+      const { importStructuralElementsCSV } = await import('@/app/actions/buildings')
+      return importStructuralElementsCSV(floorId, csvContent)
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['structural-elements', variables.floorId] })
+    },
+  })
+}
+
 
 

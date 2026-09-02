@@ -90,11 +90,46 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
     )
   }
 
+  const [isAutoCalculating, setIsAutoCalculating] = useState(false)
+
+  const handleAutoCalculate = async () => {
+    if (!canAssess) return
+    setIsAutoCalculating(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const { calculateAndApplyProjectRisk } = await import('@/app/actions/environmental')
+      const updated = await calculateAndApplyProjectRisk(projectId)
+      setFaultLine(updated.fault_line_proximity)
+      setLiquefaction(updated.soil_liquefaction_risk)
+      setErosion(updated.erosion_potential)
+      setOverallScore(String(updated.overall_risk_score ?? 0))
+      setAnalysis(updated.additional_analysis ?? '')
+      setSuccess('AUTO_SYNTHESIS_COMPLETE: GIS layers synthesized and score calibrated.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'GIS calculation failed')
+    } finally {
+      setIsAutoCalculating(false)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-8 flex flex-col h-full">
       <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-8">
         <div>
-          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Suitability Analysis</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Suitability Analysis</h3>
+            {canAssess && (
+              <button
+                type="button"
+                onClick={handleAutoCalculate}
+                disabled={isAutoCalculating}
+                className="text-[8px] font-black uppercase tracking-wider bg-primary/10 text-primary hover:bg-primary hover:text-white px-2.5 py-1 rounded-lg transition-colors border border-primary/20"
+              >
+                {isAutoCalculating ? 'Analyzing GIS…' : '⚡ Auto-Calculate from GIS'}
+              </button>
+            )}
+          </div>
           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
             Last Telemetry: {risk?.assessed_date ? new Date(risk.assessed_date).toLocaleDateString() : 'INITIAL_SCAN'}
           </p>

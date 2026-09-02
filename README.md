@@ -90,9 +90,33 @@ flowchart TB
 * **Print & Export Layout**: Dedicated CSS media query styling optimized for official PDF document generation and paper audits.
 
 ### 5. 👥 Administrative RBAC & User Management
-* **Role Hierarchy**: Strict permission partitioning between **Admin**, **Inspector**, and **Viewer** roles.
+* **Role Hierarchy**: Strict permission partitioning between **Admin**, **Engineer**, **Inspector**, and **Viewer** roles.
 * **Inspector Provisioning**: Administrative console to create, invite, activate, or deactivate inspection personnel.
 * **Legacy Migration Utility**: Built-in CLI and API data migrator bridging legacy SQLite/Django backends into Supabase PostgreSQL.
+
+### 6. 🤖 Real-Time AI Damage Detection Pipeline & Registry v2
+* **Computer Vision Pipeline**: Aspect-ratio-preserving letterboxing, luminance stretching, crack contrast enhancement, and Non-Maximum Suppression (NMS).
+* **Calibrated Severity Scoring**: Standardized civil structural formulas combining defect classification, normalized area, and confidence.
+* **Model Registry v2**: Live deployment of ONNX/TensorRT architectures (`yolov8`, `resnet50`) with configurable input dimensions and IoU thresholds.
+
+### 7. 📱 Native ARKit & ARCore Mobile Bridge
+* **Mobile Sensor Tracking**: Native Capacitor bridge plugins for iOS (`ARKit`) and Android (`ARCore`) providing low-latency 60 FPS plane tracking.
+* **In-Situ Optical Defect Tagging**: Drop persistent 3D spatial defect anchors with real-world XYZ coordinates and snapshot capture.
+* **Universal Fallback**: WebXR and simulated desktop viewport support.
+
+### 8. 🏢 Building, Floor & Structural Element Master Data
+* **Complex Multi-Structure Hierarchy**: Projects contain distinct physical buildings with structural codes and geographic coordinates.
+* **Vertical Floor Levels**: Reorderable elevations supporting basements through roof decks.
+* **Structural Member Catalog**: Tag inspections against specific load-bearing columns, transfer beams, and shear walls, with bulk CSV schedule import.
+
+### 9. 🗺️ Geohazard GIS Layer Management & Auto-Scoring
+* **GeoJSON & ESRI Shapefile Ingestion**: Upload vector fault line traces and polygonal liquefaction/flood datasets.
+* **Automated Risk Calibration**: Auto-calculate project environmental risk by evaluating real-time spatial intersections with active GIS layers.
+
+### 10. 📦 Object Storage Lifecycle & S3/Storj Archival Manager
+* **Multi-Bucket Telemetry**: Continuous auditing across `inspection-images`, `ai-models`, and `reports-archive`.
+* **Automated Cold Archival**: 1-year automated transition to cold/archive storage classes (Storj DCS / AWS S3 Glacier).
+* **Orphaned Asset Detection**: Automated cross-referencing between cloud storage files and PostgreSQL records.
 
 ---
 
