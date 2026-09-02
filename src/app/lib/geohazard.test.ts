@@ -110,5 +110,38 @@ describe('Phase D: Geohazard Layer Management Tests', () => {
       assert.equal(zones[0].zone_type, 'liquefaction')
       assert.equal(zones[0].risk_level, 'zone_b')
     })
+
+    test('geojsonToWKT correctly formats PostGIS WKT geometry strings', async () => {
+      const { geojsonToWKT } = await import('./geo/wkt')
+
+      const polyWKT = geojsonToWKT(
+        {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [121.0, 14.5],
+              [121.1, 14.5],
+              [121.1, 14.6],
+              [121.0, 14.6],
+              [121.0, 14.5],
+            ],
+          ],
+        },
+        4326
+      )
+      assert.ok(polyWKT.startsWith('SRID=4326;POLYGON((121 14.5, 121.1 14.5'))
+
+      const lineWKT = geojsonToWKT(
+        {
+          type: 'LineString',
+          coordinates: [
+            [121.0, 14.5],
+            [121.2, 14.7],
+          ],
+        },
+        4326
+      )
+      assert.equal(lineWKT, 'SRID=4326;LINESTRING(121 14.5, 121.2 14.7)')
+    })
   })
 })

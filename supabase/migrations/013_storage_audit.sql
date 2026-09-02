@@ -1,7 +1,7 @@
 -- =================================================================
 -- Migration 013: Storage Audit & Lifecycle Management
 -- Creates storage_audit table to track objects, retention tiers,
--- and lifecycle states
+-- orphaned states, and lifecycle transitions
 -- =================================================================
 
 CREATE TABLE IF NOT EXISTS public.storage_audit (
@@ -15,12 +15,14 @@ CREATE TABLE IF NOT EXISTS public.storage_audit (
   uploaded_at timestamptz DEFAULT now(),
   last_accessed_at timestamptz DEFAULT now(),
   storage_class text DEFAULT 'standard' CHECK (storage_class IN ('standard', 'cold', 'glacier', 'archive')),
+  is_orphan boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS storage_audit_bucket_idx ON public.storage_audit(bucket_id);
 CREATE INDEX IF NOT EXISTS storage_audit_project_idx ON public.storage_audit(project_id);
 CREATE INDEX IF NOT EXISTS storage_audit_class_idx ON public.storage_audit(storage_class);
+CREATE INDEX IF NOT EXISTS storage_audit_is_orphan_idx ON public.storage_audit(is_orphan);
 CREATE UNIQUE INDEX IF NOT EXISTS storage_audit_bucket_path_idx ON public.storage_audit(bucket_id, object_path);
 
 ALTER TABLE public.storage_audit ENABLE ROW LEVEL SECURITY;

@@ -1,0 +1,16 @@
+{
+  "name": "epropview-native-shell",
+  "version": "1.0.0",
+  "description": "Capacitor native shell container for EPROPVIEW ARKit and ARCore mobile builds",
+  "scripts": {
+    "cap:sync": "cap sync",
+    "cap:open:ios": "cap open ios",
+    "cap:open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0"
+  }
+}
