@@ -8,7 +8,106 @@
 -- =================================================================
 
 -- =================================================================
--- 0. CLEANUP: DROP ALL LEGACY POLICIES (FROM 001, 006, 007, 008)
+-- 0. ROLE RESOLUTION & PROFILE SYNCHRONIZATION
+-- Upgrades get_my_role() to resolve role from profiles, falling back to
+-- JWT app_metadata and user_metadata. Also installs auto-sync trigger
+-- on auth.users so any created user always has a profiles row.
+-- =================================================================
+
+CREATE OR REPLACE FUNCTION get_my_role()
+RETURNS text AS $$
+DECLARE
+  profile_role text;
+  jwt_role text;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  -- 1. Try profiles table
+  SELECT role INTO profile_role FROM public.profiles WHERE id = auth.uid();
+  IF profile_role IS NOT NULL THEN
+    RETURN profile_role;
+  END IF;
+
+  -- 2. Fallback to auth.jwt() claims
+  jwt_role := COALESCE(
+    auth.jwt() -> 'app_metadata' ->> 'role',
+    auth.jwt() -> 'user_metadata' ->> 'role'
+  );
+
+  IF jwt_role IS NOT NULL THEN
+    -- Self-heal the missing profile row in the background
+    BEGIN
+      INSERT INTO public.profiles (id, role, full_name, is_active)
+      VALUES (
+        auth.uid(),
+        jwt_role,
+        COALESCE(auth.jwt() -> 'user_metadata' ->> 'full_name', 'User'),
+        true
+      )
+      ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
+    EXCEPTION WHEN OTHERS THEN
+      -- Ignore concurrency collisions
+    END;
+
+    RETURN jwt_role;
+  END IF;
+
+  -- 3. Default fallback for any authenticated user
+  RETURN 'viewer';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Auto-provision profile row whenever a new user is created in auth.users
+CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, role, full_name, is_active)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_app_meta_data->>'role', NEW.raw_user_meta_data->>'role', 'viewer'),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    true
+  )
+  ON CONFLICT (id) DO UPDATE
+    SET role = COALESCE(profiles.role, EXCLUDED.role);
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'auth' AND tablename = 'users') THEN
+    DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+    CREATE TRIGGER on_auth_user_created
+      AFTER INSERT ON auth.users
+      FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
+  END IF;
+END $$;
+
+-- Backfill any existing auth.users missing from profiles
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'auth' AND tablename = 'users') THEN
+    INSERT INTO public.profiles (id, role, full_name, is_active)
+    SELECT 
+      u.id,
+      COALESCE(u.raw_app_meta_data->>'role', u.raw_user_meta_data->>'role', 'viewer'),
+      COALESCE(u.raw_user_meta_data->>'full_name', u.email),
+      true
+    FROM auth.users u
+    WHERE NOT EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = u.id)
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+-- =================================================================
+-- 1. CLEANUP: DROP ALL LEGACY POLICIES (FROM 001, 006, 007, 008)
 -- Permissive policies in Postgres are additive (OR-evaluated), so
 -- all legacy broad policies must be explicitly dropped to avoid
 -- unauthorized privilege bypass.
