@@ -70,7 +70,9 @@ export function StorageManager() {
     setFeedback(null)
     try {
       const res = await applyStorageLifecyclePolicies()
-      setFeedback(`Lifecycle policy executed: ${res.archived} objects transitioned to cold storage.`)
+      setFeedback(
+        `Lifecycle policy executed: ${res.archived} objects transitioned to cold storage, ${res.cleaned} stale orphans cleaned (${res.retentionExpired} past 7-year regulatory retention).`
+      )
       await loadData()
     } catch (err) {
       setFeedback(`Lifecycle error: ${err instanceof Error ? err.message : 'Unknown'}`)

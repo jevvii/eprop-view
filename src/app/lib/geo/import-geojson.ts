@@ -49,6 +49,33 @@ function extractRiskLevel(props: Record<string, any>): ZoneRiskLevel {
 }
 
 /**
+ * Validates that coordinates fall within WGS84 geographic boundaries [-180, 180], [-90, 90].
+ */
+export function validateCoordinatesBounds(coords: number[][]): boolean {
+  for (const pt of coords) {
+    if (!Array.isArray(pt) || pt.length < 2) continue
+    const [lon, lat] = pt
+    if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Ensures that a polygon linear ring is properly closed (first and last coordinates match).
+ */
+export function ensureClosedRing(ring: number[][]): number[][] {
+  if (ring.length === 0) return ring
+  const first = ring[0]
+  const last = ring[ring.length - 1]
+  if (first[0] !== last[0] || first[1] !== last[1]) {
+    return [...ring, [first[0], first[1]]]
+  }
+  return ring
+}
+
+/**
  * Parses a GeoJSON string or object into validated GeospatialZone rows.
  */
 export function parseGeoJSON(content: string | object): ParsedGeoZone[] {
@@ -81,16 +108,25 @@ export function parseGeoJSON(content: string | object): ParsedGeoZone[] {
 
     // Extract 2D ring coordinates representation for mapbox polygon/linestring
     let flatCoords: number[][] = []
+    let sanitizedGeom = { ...feat.geometry }
+
     if (geomType === 'Polygon' && Array.isArray(rawCoords[0])) {
-      flatCoords = rawCoords[0]
+      const closedRing = ensureClosedRing(rawCoords[0])
+      flatCoords = closedRing
+      sanitizedGeom.coordinates = [closedRing, ...rawCoords.slice(1).map(ensureClosedRing)]
     } else if (geomType === 'MultiPolygon' && Array.isArray(rawCoords[0]?.[0])) {
-      flatCoords = rawCoords[0][0]
+      const closedRing = ensureClosedRing(rawCoords[0][0])
+      flatCoords = closedRing
     } else if (geomType === 'LineString') {
       flatCoords = rawCoords
     } else if (geomType === 'MultiLineString' && Array.isArray(rawCoords[0])) {
       flatCoords = rawCoords[0]
     } else if (geomType === 'Point' && Array.isArray(rawCoords)) {
       flatCoords = [rawCoords]
+    }
+
+    if (!validateCoordinatesBounds(flatCoords)) {
+      throw new Error(`Invalid coordinates in feature "${props.name || i + 1}": Coordinates exceed WGS84 range [-180..180, -90..90]`)
     }
 
     const name = props.name || props.NAME || props.title || `Hazard Zone ${i + 1}`
@@ -103,7 +139,7 @@ export function parseGeoJSON(content: string | object): ParsedGeoZone[] {
       zone_type,
       risk_level,
       coordinates: flatCoords,
-      geom: feat.geometry,
+      geom: sanitizedGeom,
       description,
     })
   }

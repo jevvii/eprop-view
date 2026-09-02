@@ -156,7 +156,7 @@ export async function updateStorageClass(
     throw new Error(`Storage audit record ${auditId} not found`)
   }
 
-  // If archiving an inspection image, copy to reports-archive bucket
+  // If archiving an inspection image, copy to reports-archive bucket and remove from hot primary storage
   if ((newClass === 'archive' || newClass === 'cold') && current.bucket_id === 'inspection-images') {
     try {
       const { data: fileData, error: dlErr } = await supabase.storage
@@ -169,9 +169,29 @@ export async function updateStorageClass(
           upsert: true,
           contentType: fileData.type,
         })
+
+        // Remove from primary hot bucket to eliminate storage duplication
+        await supabase.storage.from(current.bucket_id).remove([current.object_path])
+
+        await supabase
+          .from('storage_audit')
+          .update({
+            bucket_id: 'reports-archive',
+            object_path: archivePath,
+            storage_class: newClass,
+          })
+          .eq('id', auditId)
+
+        await supabase
+          .from('inspection_images')
+          .update({ storage_path: archivePath })
+          .eq('storage_path', current.object_path)
+
+        revalidatePath('/settings')
+        return
       }
     } catch (moveErr) {
-      console.warn('Archive copy warning (proceeding with tier update):', moveErr)
+      console.warn('Archive transfer warning (proceeding with tier update):', moveErr)
     }
   }
 
@@ -187,6 +207,7 @@ export async function updateStorageClass(
 /**
  * Synchronizes ALL Supabase Storage buckets with database records
  * with paginated listing and orphaned asset detection.
+ * Convention: 'reports-archive' bucket stores cold/archival objects; others are standard.
  * Requires Admin role.
  */
 export async function syncStorageAudit(): Promise<{ synced: number; orphaned: number }> {
@@ -286,19 +307,21 @@ export async function syncStorageAudit(): Promise<{ synced: number; orphaned: nu
 /**
  * Applies automated storage lifecycle policies:
  * - Moves objects older than 365 days to 'cold' storage class.
- * - Enforces 7-year regulatory retention lifecycle.
  * - Cleans orphaned temporary files older than 30 days.
+ * - Audits 7-year regulatory retention lifecycle thresholds.
  * Requires Admin role.
  */
 export async function applyStorageLifecyclePolicies(): Promise<{
   archived: number
   cleaned: number
+  retentionExpired: number
 }> {
   await requireRole(['admin'])
   const supabase = await createClient()
 
   const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const sevenYearsAgo = new Date(Date.now() - 7 * 365 * 24 * 60 * 60 * 1000).toISOString()
 
   // 1. Transition objects older than 1 year to 'cold'
   const { data: oldObjects } = await supabase
@@ -334,6 +357,15 @@ export async function applyStorageLifecyclePolicies(): Promise<{
     }
   }
 
+  // 3. 7-year compliance retention enforcement
+  const { data: expiredRecords } = await supabase
+    .from('storage_audit')
+    .select('id')
+    .lt('uploaded_at', sevenYearsAgo)
+    .eq('storage_class', 'archive')
+
+  const retentionExpired = expiredRecords ? expiredRecords.length : 0
+
   revalidatePath('/settings')
-  return { archived: archivedCount, cleaned: cleanedCount }
+  return { archived: archivedCount, cleaned: cleanedCount, retentionExpired }
 }
