@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS postgis SCHEMA extensions;
 -- TABLES
 -- =================================================================
 
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role text NOT NULL CHECK (role IN ('admin', 'inspector', 'viewer')) DEFAULT 'viewer',
   full_name text DEFAULT '',
@@ -14,7 +14,7 @@ CREATE TABLE profiles (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   location text NOT NULL DEFAULT '',
@@ -26,7 +26,7 @@ CREATE TABLE projects (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE inspections (
+CREATE TABLE IF NOT EXISTS inspections (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   lead_inspector_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
@@ -40,7 +40,7 @@ CREATE TABLE inspections (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE inspection_images (
+CREATE TABLE IF NOT EXISTS inspection_images (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   inspection_id uuid NOT NULL REFERENCES inspections(id) ON DELETE CASCADE,
   storage_path text NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE inspection_images (
   uploaded_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE reports (
+CREATE TABLE IF NOT EXISTS reports (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   report_id text UNIQUE NOT NULL,
   title text NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE reports (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE environmental_risks (
+CREATE TABLE IF NOT EXISTS environmental_risks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id uuid NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
   fault_line_proximity text NOT NULL CHECK (fault_line_proximity IN ('none', 'low', 'moderate', 'high', 'very_high')) DEFAULT 'none',
@@ -76,7 +76,7 @@ CREATE TABLE environmental_risks (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE risk_hotspots (
+CREATE TABLE IF NOT EXISTS risk_hotspots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   title text NOT NULL,
@@ -88,7 +88,7 @@ CREATE TABLE risk_hotspots (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE maintenance_priorities (
+CREATE TABLE IF NOT EXISTS maintenance_priorities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   title text NOT NULL,
@@ -102,7 +102,7 @@ CREATE TABLE maintenance_priorities (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE damage_trends (
+CREATE TABLE IF NOT EXISTS damage_trends (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   date date NOT NULL,
@@ -112,7 +112,7 @@ CREATE TABLE damage_trends (
   UNIQUE (project_id, date, severity)
 );
 
-CREATE TABLE geospatial_zones (
+CREATE TABLE IF NOT EXISTS geospatial_zones (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   name text NOT NULL,
@@ -126,35 +126,35 @@ CREATE TABLE geospatial_zones (
 -- =================================================================
 -- SPATIAL INDEXES
 -- =================================================================
-CREATE INDEX projects_geom_idx ON projects USING GIST (geom);
-CREATE INDEX risk_hotspots_geom_idx ON risk_hotspots USING GIST (geom);
-CREATE INDEX geospatial_zones_geom_idx ON geospatial_zones USING GIST (geom);
+CREATE INDEX IF NOT EXISTS projects_geom_idx ON projects USING GIST (geom);
+CREATE INDEX IF NOT EXISTS risk_hotspots_geom_idx ON risk_hotspots USING GIST (geom);
+CREATE INDEX IF NOT EXISTS geospatial_zones_geom_idx ON geospatial_zones USING GIST (geom);
 
 -- =================================================================
 -- BTREE INDEXES
 -- =================================================================
 
-CREATE INDEX inspections_project_id_idx ON inspections(project_id);
-CREATE INDEX inspections_lead_inspector_id_idx ON inspections(lead_inspector_id);
-CREATE INDEX inspection_images_inspection_id_idx ON inspection_images(inspection_id);
-CREATE INDEX reports_project_id_idx ON reports(project_id);
-CREATE INDEX reports_inspection_id_idx ON reports(inspection_id);
-CREATE INDEX reports_lead_inspector_id_idx ON reports(lead_inspector_id);
-CREATE INDEX environmental_risks_project_id_idx ON environmental_risks(project_id);
-CREATE INDEX risk_hotspots_project_id_idx ON risk_hotspots(project_id);
-CREATE INDEX maintenance_priorities_project_id_idx ON maintenance_priorities(project_id);
-CREATE INDEX maintenance_priorities_assigned_to_idx ON maintenance_priorities(assigned_to);
-CREATE INDEX damage_trends_project_id_idx ON damage_trends(project_id);
-CREATE INDEX geospatial_zones_project_id_idx ON geospatial_zones(project_id);
+CREATE INDEX IF NOT EXISTS inspections_project_id_idx ON inspections(project_id);
+CREATE INDEX IF NOT EXISTS inspections_lead_inspector_id_idx ON inspections(lead_inspector_id);
+CREATE INDEX IF NOT EXISTS inspection_images_inspection_id_idx ON inspection_images(inspection_id);
+CREATE INDEX IF NOT EXISTS reports_project_id_idx ON reports(project_id);
+CREATE INDEX IF NOT EXISTS reports_inspection_id_idx ON reports(inspection_id);
+CREATE INDEX IF NOT EXISTS reports_lead_inspector_id_idx ON reports(lead_inspector_id);
+CREATE INDEX IF NOT EXISTS environmental_risks_project_id_idx ON environmental_risks(project_id);
+CREATE INDEX IF NOT EXISTS risk_hotspots_project_id_idx ON risk_hotspots(project_id);
+CREATE INDEX IF NOT EXISTS maintenance_priorities_project_id_idx ON maintenance_priorities(project_id);
+CREATE INDEX IF NOT EXISTS maintenance_priorities_assigned_to_idx ON maintenance_priorities(assigned_to);
+CREATE INDEX IF NOT EXISTS damage_trends_project_id_idx ON damage_trends(project_id);
+CREATE INDEX IF NOT EXISTS geospatial_zones_project_id_idx ON geospatial_zones(project_id);
 
-CREATE INDEX projects_created_by_idx ON projects(created_by);
-CREATE INDEX projects_status_idx ON projects(status);
-CREATE INDEX inspections_status_idx ON inspections(status);
-CREATE INDEX reports_status_idx ON reports(status);
-CREATE INDEX reports_date_idx ON reports(date);
-CREATE INDEX maintenance_priorities_status_idx ON maintenance_priorities(status);
-CREATE INDEX maintenance_priorities_due_date_idx ON maintenance_priorities(due_date);
-CREATE INDEX inspections_inspection_date_idx ON inspections(inspection_date);
+CREATE INDEX IF NOT EXISTS projects_created_by_idx ON projects(created_by);
+CREATE INDEX IF NOT EXISTS projects_status_idx ON projects(status);
+CREATE INDEX IF NOT EXISTS inspections_status_idx ON inspections(status);
+CREATE INDEX IF NOT EXISTS reports_status_idx ON reports(status);
+CREATE INDEX IF NOT EXISTS reports_date_idx ON reports(date);
+CREATE INDEX IF NOT EXISTS maintenance_priorities_status_idx ON maintenance_priorities(status);
+CREATE INDEX IF NOT EXISTS maintenance_priorities_due_date_idx ON maintenance_priorities(due_date);
+CREATE INDEX IF NOT EXISTS inspections_inspection_date_idx ON inspections(inspection_date);
 
 -- =================================================================
 -- ROW LEVEL SECURITY
@@ -179,43 +179,96 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Profiles: users can read their own profile; admins can read all and modify all
+DROP POLICY IF EXISTS "profiles_select_own" ON profiles;
 CREATE POLICY "profiles_select_own" ON profiles FOR SELECT TO authenticated
   USING (id = auth.uid() OR get_my_role() = 'admin');
+
+DROP POLICY IF EXISTS "profiles_admin_all" ON profiles;
 CREATE POLICY "profiles_admin_all" ON profiles FOR ALL TO authenticated
   USING (get_my_role() = 'admin');
 
 -- Admin: full access to all tables
+DROP POLICY IF EXISTS "admin_all_projects" ON projects;
 CREATE POLICY "admin_all_projects" ON projects FOR ALL TO authenticated USING (get_my_role() = 'admin');
+
+DROP POLICY IF EXISTS "admin_all_inspections" ON inspections;
 CREATE POLICY "admin_all_inspections" ON inspections FOR ALL TO authenticated USING (get_my_role() = 'admin');
+
+DROP POLICY IF EXISTS "admin_all_inspection_images" ON inspection_images;
 CREATE POLICY "admin_all_inspection_images" ON inspection_images FOR ALL TO authenticated USING (get_my_role() = 'admin');
+
+DROP POLICY IF EXISTS "admin_all_reports" ON reports;
 CREATE POLICY "admin_all_reports" ON reports FOR ALL TO authenticated USING (get_my_role() = 'admin');
+
+DROP POLICY IF EXISTS "admin_all_env_risks" ON environmental_risks;
 CREATE POLICY "admin_all_env_risks" ON environmental_risks FOR ALL TO authenticated USING (get_my_role() = 'admin');
+
+DROP POLICY IF EXISTS "admin_all_hotspots" ON risk_hotspots;
 CREATE POLICY "admin_all_hotspots" ON risk_hotspots FOR ALL TO authenticated USING (get_my_role() = 'admin');
+
+DROP POLICY IF EXISTS "admin_all_maintenance" ON maintenance_priorities;
 CREATE POLICY "admin_all_maintenance" ON maintenance_priorities FOR ALL TO authenticated USING (get_my_role() = 'admin');
+
+DROP POLICY IF EXISTS "admin_all_trends" ON damage_trends;
 CREATE POLICY "admin_all_trends" ON damage_trends FOR ALL TO authenticated USING (get_my_role() = 'admin');
+
+DROP POLICY IF EXISTS "admin_all_zones" ON geospatial_zones;
 CREATE POLICY "admin_all_zones" ON geospatial_zones FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 -- Viewer: read-only on all tables
+DROP POLICY IF EXISTS "viewer_select_projects" ON projects;
 CREATE POLICY "viewer_select_projects" ON projects FOR SELECT TO authenticated USING (get_my_role() = 'viewer');
+
+DROP POLICY IF EXISTS "viewer_select_inspections" ON inspections;
 CREATE POLICY "viewer_select_inspections" ON inspections FOR SELECT TO authenticated USING (get_my_role() = 'viewer');
+
+DROP POLICY IF EXISTS "viewer_select_images" ON inspection_images;
 CREATE POLICY "viewer_select_images" ON inspection_images FOR SELECT TO authenticated USING (get_my_role() = 'viewer');
+
+DROP POLICY IF EXISTS "viewer_select_reports" ON reports;
 CREATE POLICY "viewer_select_reports" ON reports FOR SELECT TO authenticated USING (get_my_role() = 'viewer');
+
+DROP POLICY IF EXISTS "viewer_select_env_risks" ON environmental_risks;
 CREATE POLICY "viewer_select_env_risks" ON environmental_risks FOR SELECT TO authenticated USING (get_my_role() = 'viewer');
+
+DROP POLICY IF EXISTS "viewer_select_hotspots" ON risk_hotspots;
 CREATE POLICY "viewer_select_hotspots" ON risk_hotspots FOR SELECT TO authenticated USING (get_my_role() = 'viewer');
+
+DROP POLICY IF EXISTS "viewer_select_maintenance" ON maintenance_priorities;
 CREATE POLICY "viewer_select_maintenance" ON maintenance_priorities FOR SELECT TO authenticated USING (get_my_role() = 'viewer');
+
+DROP POLICY IF EXISTS "viewer_select_trends" ON damage_trends;
 CREATE POLICY "viewer_select_trends" ON damage_trends FOR SELECT TO authenticated USING (get_my_role() = 'viewer');
+
+DROP POLICY IF EXISTS "viewer_select_zones" ON geospatial_zones;
 CREATE POLICY "viewer_select_zones" ON geospatial_zones FOR SELECT TO authenticated USING (get_my_role() = 'viewer');
 
 -- Inspector: read all, write operational tables
+DROP POLICY IF EXISTS "inspector_select_projects" ON projects;
 CREATE POLICY "inspector_select_projects" ON projects FOR SELECT TO authenticated USING (get_my_role() = 'inspector');
+
+DROP POLICY IF EXISTS "inspector_select_zones" ON geospatial_zones;
 CREATE POLICY "inspector_select_zones" ON geospatial_zones FOR SELECT TO authenticated USING (get_my_role() = 'inspector');
 
+DROP POLICY IF EXISTS "inspector_all_inspections" ON inspections;
 CREATE POLICY "inspector_all_inspections" ON inspections FOR ALL TO authenticated USING (get_my_role() = 'inspector') WITH CHECK (get_my_role() = 'inspector');
+
+DROP POLICY IF EXISTS "inspector_all_images" ON inspection_images;
 CREATE POLICY "inspector_all_images" ON inspection_images FOR ALL TO authenticated USING (get_my_role() = 'inspector') WITH CHECK (get_my_role() = 'inspector');
+
+DROP POLICY IF EXISTS "inspector_all_reports" ON reports;
 CREATE POLICY "inspector_all_reports" ON reports FOR ALL TO authenticated USING (get_my_role() = 'inspector') WITH CHECK (get_my_role() = 'inspector');
+
+DROP POLICY IF EXISTS "inspector_all_env_risks" ON environmental_risks;
 CREATE POLICY "inspector_all_env_risks" ON environmental_risks FOR ALL TO authenticated USING (get_my_role() = 'inspector') WITH CHECK (get_my_role() = 'inspector');
+
+DROP POLICY IF EXISTS "inspector_all_hotspots" ON risk_hotspots;
 CREATE POLICY "inspector_all_hotspots" ON risk_hotspots FOR ALL TO authenticated USING (get_my_role() = 'inspector') WITH CHECK (get_my_role() = 'inspector');
+
+DROP POLICY IF EXISTS "inspector_all_maintenance" ON maintenance_priorities;
 CREATE POLICY "inspector_all_maintenance" ON maintenance_priorities FOR ALL TO authenticated USING (get_my_role() = 'inspector') WITH CHECK (get_my_role() = 'inspector');
+
+DROP POLICY IF EXISTS "inspector_all_trends" ON damage_trends;
 CREATE POLICY "inspector_all_trends" ON damage_trends FOR ALL TO authenticated USING (get_my_role() = 'inspector') WITH CHECK (get_my_role() = 'inspector');
 
 -- =================================================================
@@ -377,16 +430,25 @@ $$ LANGUAGE plpgsql;
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('inspection-images', 'inspection-images', false);
 
 -- Storage RLS policies
-CREATE POLICY "admin_storage_all" ON storage.objects FOR ALL TO authenticated
-  USING (bucket_id = 'inspection-images' AND get_my_role() = 'admin')
-  WITH CHECK (bucket_id = 'inspection-images' AND get_my_role() = 'admin');
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'storage' AND tablename = 'objects') THEN
+    DROP POLICY IF EXISTS "admin_storage_all" ON storage.objects;
+    CREATE POLICY "admin_storage_all" ON storage.objects FOR ALL TO authenticated
+      USING (bucket_id = 'inspection-images' AND get_my_role() = 'admin')
+      WITH CHECK (bucket_id = 'inspection-images' AND get_my_role() = 'admin');
 
-CREATE POLICY "viewer_storage_read" ON storage.objects FOR SELECT TO authenticated
-  USING (bucket_id = 'inspection-images' AND get_my_role() IN ('viewer', 'inspector'));
+    DROP POLICY IF EXISTS "viewer_storage_read" ON storage.objects;
+    CREATE POLICY "viewer_storage_read" ON storage.objects FOR SELECT TO authenticated
+      USING (bucket_id = 'inspection-images' AND get_my_role() IN ('viewer', 'inspector'));
 
-CREATE POLICY "inspector_storage_write" ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'inspection-images' AND get_my_role() = 'inspector');
+    DROP POLICY IF EXISTS "inspector_storage_write" ON storage.objects;
+    CREATE POLICY "inspector_storage_write" ON storage.objects FOR INSERT TO authenticated
+      WITH CHECK (bucket_id = 'inspection-images' AND get_my_role() = 'inspector');
 
-CREATE POLICY "inspector_storage_update" ON storage.objects FOR UPDATE TO authenticated
-  USING (bucket_id = 'inspection-images' AND get_my_role() = 'inspector')
-  WITH CHECK (bucket_id = 'inspection-images' AND get_my_role() = 'inspector');
+    DROP POLICY IF EXISTS "inspector_storage_update" ON storage.objects;
+    CREATE POLICY "inspector_storage_update" ON storage.objects FOR UPDATE TO authenticated
+      USING (bucket_id = 'inspection-images' AND get_my_role() = 'inspector')
+      WITH CHECK (bucket_id = 'inspection-images' AND get_my_role() = 'inspector');
+  END IF;
+END $$;

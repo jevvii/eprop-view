@@ -9,11 +9,11 @@ CREATE POLICY "admin_all_profiles" ON profiles FOR ALL TO authenticated
     (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
   );
 ALTER TABLE reports
-  ADD COLUMN created_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  ADD COLUMN reviewed_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  ADD COLUMN reviewed_at timestamptz,
-  ADD COLUMN last_edited_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  ADD COLUMN last_edited_at timestamptz;
+  ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS reviewed_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS reviewed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_edited_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS last_edited_at timestamptz;
 
 CREATE INDEX IF NOT EXISTS reports_created_by_idx ON reports(created_by);
 CREATE INDEX IF NOT EXISTS reports_reviewed_by_idx ON reports(reviewed_by);
@@ -72,36 +72,51 @@ $$ LANGUAGE plpgsql;
 -- manually in the Supabase Dashboard (Storage tab) and ensure 
 -- RLS is enabled there. Then run these policy commands.
 
--- 1. ADMIN: Absolute control
-CREATE POLICY "admin_storage_all" ON storage.objects FOR ALL TO authenticated
-  USING (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin')
-  WITH CHECK (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'storage' AND tablename = 'objects') THEN
+    -- 1. ADMIN: Absolute control
+    DROP POLICY IF EXISTS "admin_storage_all" ON storage.objects;
+    CREATE POLICY "admin_storage_all" ON storage.objects FOR ALL TO authenticated
+      USING (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin')
+      WITH CHECK (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
 
--- 2. VIEWERS/INSPECTORS: Read access (Signed URL generation)
-CREATE POLICY "viewer_storage_read" ON storage.objects FOR SELECT TO authenticated
-  USING (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('viewer', 'inspector', 'admin'));
+    -- 2. VIEWERS/INSPECTORS: Read access (Signed URL generation)
+    DROP POLICY IF EXISTS "viewer_storage_read" ON storage.objects;
+    CREATE POLICY "viewer_storage_read" ON storage.objects FOR SELECT TO authenticated
+      USING (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('viewer', 'inspector', 'admin'));
 
--- 3. INSPECTORS: Permission to upload imagery
-CREATE POLICY "inspector_storage_write" ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('inspector', 'admin'));
+    -- 3. INSPECTORS: Permission to upload imagery
+    DROP POLICY IF EXISTS "inspector_storage_write" ON storage.objects;
+    CREATE POLICY "inspector_storage_write" ON storage.objects FOR INSERT TO authenticated
+      WITH CHECK (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('inspector', 'admin'));
 
--- 4. INSPECTORS: Permission to update metadata
-CREATE POLICY "inspector_storage_update" ON storage.objects FOR UPDATE TO authenticated
-  USING (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('inspector', 'admin'))
-  WITH CHECK (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('inspector', 'admin'));
+    -- 4. INSPECTORS: Permission to update metadata
+    DROP POLICY IF EXISTS "inspector_storage_update" ON storage.objects;
+    CREATE POLICY "inspector_storage_update" ON storage.objects FOR UPDATE TO authenticated
+      USING (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('inspector', 'admin'))
+      WITH CHECK (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('inspector', 'admin'));
 
--- 5. ADMIN ONLY: Permission to delete
-CREATE POLICY "admin_storage_delete" ON storage.objects FOR DELETE TO authenticated
-  USING (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
+    -- 5. ADMIN ONLY: Permission to delete
+    DROP POLICY IF EXISTS "admin_storage_delete" ON storage.objects;
+    CREATE POLICY "admin_storage_delete" ON storage.objects FOR DELETE TO authenticated
+      USING (bucket_id = 'inspection-images' AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
+  END IF;
+END $$;
+-- =================================================================
 -- 2. Add uploader_id to inspection_images to track ownership
+-- =================================================================
 ALTER TABLE public.inspection_images 
-ADD COLUMN uploader_id uuid REFERENCES public.profiles(id) DEFAULT auth.uid();
+ADD COLUMN IF NOT EXISTS uploader_id uuid REFERENCES public.profiles(id) DEFAULT auth.uid();
 
 -- 3. Update RLS policies for inspection_images table
--- DROP existing policies if they exist (adjust names if necessary based on your initial schema)
+-- DROP existing policies if they exist
 DROP POLICY IF EXISTS "admin_all_inspection_images" ON public.inspection_images;
 DROP POLICY IF EXISTS "viewer_select_images" ON public.inspection_images;
 DROP POLICY IF EXISTS "inspector_all_images" ON public.inspection_images;
+DROP POLICY IF EXISTS "inspection_images_read" ON public.inspection_images;
+DROP POLICY IF EXISTS "inspection_images_insert" ON public.inspection_images;
+DROP POLICY IF EXISTS "inspection_images_delete" ON public.inspection_images;
 
 -- CREATE new secure policies
 -- Viewers/Inspectors: Can see all images
@@ -123,22 +138,8 @@ CREATE POLICY "inspection_images_delete" ON public.inspection_images
     uploader_id = auth.uid() OR 
     (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
   );
-
--- 4. Update Storage Policies for 'inspection-images' bucket
--- These must be done in the Supabase Dashboard UI for best results (as per previous fix), 
--- but here is the logic to mirror:
-
-/*
-NAME: Allow Owner or Admin Delete
-OPERATION: DELETE
-USING: 
-  bucket_id = 'inspection-images' AND (
-    (SELECT auth.uid()) = (owner) OR 
-    (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
-  )
-*/
 -- Create table for image comments
-CREATE TABLE public.image_comments (
+CREATE TABLE IF NOT EXISTS public.image_comments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   image_id uuid NOT NULL REFERENCES public.inspection_images(id) ON DELETE CASCADE,
   author_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -156,16 +157,19 @@ ALTER TABLE public.image_comments ENABLE ROW LEVEL SECURITY;
 
 -- Policies for image_comments
 -- Anyone authenticated can read comments
+DROP POLICY IF EXISTS "image_comments_read" ON public.image_comments;
 CREATE POLICY "image_comments_read" ON public.image_comments
   FOR SELECT TO authenticated
   USING (true);
 
 -- Anyone authenticated can insert a comment
+DROP POLICY IF EXISTS "image_comments_insert" ON public.image_comments;
 CREATE POLICY "image_comments_insert" ON public.image_comments
   FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = author_id);
 
 -- Only author or admin can delete a comment
+DROP POLICY IF EXISTS "image_comments_delete" ON public.image_comments;
 CREATE POLICY "image_comments_delete" ON public.image_comments
   FOR DELETE TO authenticated
   USING (
@@ -174,6 +178,7 @@ CREATE POLICY "image_comments_delete" ON public.image_comments
   );
 
 -- Only the owner of the image can update the is_read status
+DROP POLICY IF EXISTS "image_comments_update_read" ON public.image_comments;
 CREATE POLICY "image_comments_update_read" ON public.image_comments
   FOR UPDATE TO authenticated
   USING (
@@ -210,7 +215,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =================================================================
 
 -- Registered AI models / checkpoints
-CREATE TABLE ai_models (
+CREATE TABLE IF NOT EXISTS ai_models (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   version text NOT NULL,
@@ -223,7 +228,7 @@ CREATE TABLE ai_models (
 );
 
 -- AI damage detection results attached to inspection images
-CREATE TABLE ai_damage_detections (
+CREATE TABLE IF NOT EXISTS ai_damage_detections (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   image_id uuid NOT NULL REFERENCES inspection_images(id) ON DELETE CASCADE,
   model_id uuid REFERENCES ai_models(id) ON DELETE SET NULL,
@@ -240,7 +245,7 @@ CREATE TABLE ai_damage_detections (
 );
 
 -- Per-image AI analysis job queue / status
-CREATE TABLE ai_analysis_jobs (
+CREATE TABLE IF NOT EXISTS ai_analysis_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   image_id uuid NOT NULL REFERENCES inspection_images(id) ON DELETE CASCADE,
   model_id uuid REFERENCES ai_models(id) ON DELETE SET NULL,
@@ -254,12 +259,12 @@ CREATE TABLE ai_analysis_jobs (
 -- =================================================================
 -- INDEXES
 -- =================================================================
-CREATE INDEX ai_detections_image_id_idx ON ai_damage_detections(image_id);
-CREATE INDEX ai_detections_damage_type_idx ON ai_damage_detections(damage_type);
-CREATE INDEX ai_detections_severity_idx ON ai_damage_detections(severity);
-CREATE INDEX ai_models_active_idx ON ai_models(is_active);
-CREATE INDEX ai_jobs_image_id_idx ON ai_analysis_jobs(image_id);
-CREATE INDEX ai_jobs_status_idx ON ai_analysis_jobs(status);
+CREATE INDEX IF NOT EXISTS ai_detections_image_id_idx ON ai_damage_detections(image_id);
+CREATE INDEX IF NOT EXISTS ai_detections_damage_type_idx ON ai_damage_detections(damage_type);
+CREATE INDEX IF NOT EXISTS ai_detections_severity_idx ON ai_damage_detections(severity);
+CREATE INDEX IF NOT EXISTS ai_models_active_idx ON ai_models(is_active);
+CREATE INDEX IF NOT EXISTS ai_jobs_image_id_idx ON ai_analysis_jobs(image_id);
+CREATE INDEX IF NOT EXISTS ai_jobs_status_idx ON ai_analysis_jobs(status);
 
 -- =================================================================
 -- ROW LEVEL SECURITY
@@ -269,21 +274,34 @@ ALTER TABLE ai_damage_detections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_analysis_jobs ENABLE ROW LEVEL SECURITY;
 
 -- All authenticated users can read AI results; only admins can manage models
+DROP POLICY IF EXISTS "ai_models_select_all" ON ai_models;
 CREATE POLICY "ai_models_select_all" ON ai_models FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ai_models_admin_all" ON ai_models;
 CREATE POLICY "ai_models_admin_all" ON ai_models FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 -- Inspectors and admins can create/verify detections; everyone authenticated can read
+DROP POLICY IF EXISTS "ai_detections_select_all" ON ai_damage_detections;
 CREATE POLICY "ai_detections_select_all" ON ai_damage_detections FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ai_detections_inspector_all" ON ai_damage_detections;
 CREATE POLICY "ai_detections_inspector_all" ON ai_damage_detections FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'inspector'))
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
+
+DROP POLICY IF EXISTS "ai_detections_admin_all" ON ai_damage_detections;
 CREATE POLICY "ai_detections_admin_all" ON ai_damage_detections FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 -- Inspectors and admins can create/update jobs; everyone authenticated can read
+DROP POLICY IF EXISTS "ai_jobs_select_all" ON ai_analysis_jobs;
 CREATE POLICY "ai_jobs_select_all" ON ai_analysis_jobs FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ai_jobs_inspector_all" ON ai_analysis_jobs;
 CREATE POLICY "ai_jobs_inspector_all" ON ai_analysis_jobs FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'inspector'))
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
+
+DROP POLICY IF EXISTS "ai_jobs_admin_all" ON ai_analysis_jobs;
 CREATE POLICY "ai_jobs_admin_all" ON ai_analysis_jobs FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 -- Seed a mock/demo model so the UI and data flow can be demonstrated
@@ -305,7 +323,7 @@ WHERE NOT EXISTS (
 -- =================================================================
 
 -- AR sessions created during an inspection
-CREATE TABLE ar_sessions (
+CREATE TABLE IF NOT EXISTS ar_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   inspection_id uuid NOT NULL REFERENCES inspections(id) ON DELETE CASCADE,
   started_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
@@ -316,7 +334,7 @@ CREATE TABLE ar_sessions (
 );
 
 -- Persistent AR anchors attached to physical structures
-CREATE TABLE ar_anchors (
+CREATE TABLE IF NOT EXISTS ar_anchors (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id uuid NOT NULL REFERENCES ar_sessions(id) ON DELETE CASCADE,
   inspection_id uuid NOT NULL REFERENCES inspections(id) ON DELETE CASCADE,
@@ -334,10 +352,10 @@ CREATE TABLE ar_anchors (
 -- =================================================================
 -- INDEXES
 -- =================================================================
-CREATE INDEX ar_sessions_inspection_id_idx ON ar_sessions(inspection_id);
-CREATE INDEX ar_sessions_status_idx ON ar_sessions(status);
-CREATE INDEX ar_anchors_session_id_idx ON ar_anchors(session_id);
-CREATE INDEX ar_anchors_inspection_id_idx ON ar_anchors(inspection_id);
+CREATE INDEX IF NOT EXISTS ar_sessions_inspection_id_idx ON ar_sessions(inspection_id);
+CREATE INDEX IF NOT EXISTS ar_sessions_status_idx ON ar_sessions(status);
+CREATE INDEX IF NOT EXISTS ar_anchors_session_id_idx ON ar_anchors(session_id);
+CREATE INDEX IF NOT EXISTS ar_anchors_inspection_id_idx ON ar_anchors(inspection_id);
 
 -- =================================================================
 -- ROW LEVEL SECURITY
@@ -346,17 +364,27 @@ ALTER TABLE ar_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ar_anchors ENABLE ROW LEVEL SECURITY;
 
 -- Inspectors and admins can manage AR sessions; everyone authenticated can read
+DROP POLICY IF EXISTS "ar_sessions_select_all" ON ar_sessions;
 CREATE POLICY "ar_sessions_select_all" ON ar_sessions FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ar_sessions_inspector_all" ON ar_sessions;
 CREATE POLICY "ar_sessions_inspector_all" ON ar_sessions FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'inspector'))
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
+
+DROP POLICY IF EXISTS "ar_sessions_admin_all" ON ar_sessions;
 CREATE POLICY "ar_sessions_admin_all" ON ar_sessions FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 -- Inspectors and admins can manage AR anchors; everyone authenticated can read
+DROP POLICY IF EXISTS "ar_anchors_select_all" ON ar_anchors;
 CREATE POLICY "ar_anchors_select_all" ON ar_anchors FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ar_anchors_inspector_all" ON ar_anchors;
 CREATE POLICY "ar_anchors_inspector_all" ON ar_anchors FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'inspector'))
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
+
+DROP POLICY IF EXISTS "ar_anchors_admin_all" ON ar_anchors;
 CREATE POLICY "ar_anchors_admin_all" ON ar_anchors FOR ALL TO authenticated USING (get_my_role() = 'admin');
 -- =================================================================
 -- Migration 008: RBAC & Use Case Parity Alignment
@@ -718,9 +746,11 @@ DROP POLICY IF EXISTS "ar_anchors_modify_policy" ON public.ar_anchors;
 -- =================================================================
 -- 1. PROFILES (Item 7: Allow all authenticated users to read staff/assignee names)
 -- =================================================================
+DROP POLICY IF EXISTS "profiles_select_all_authenticated" ON public.profiles;
 CREATE POLICY "profiles_select_all_authenticated" ON public.profiles FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "profiles_admin_all" ON public.profiles;
 CREATE POLICY "profiles_admin_all" ON public.profiles FOR ALL TO authenticated
   USING (get_my_role() = 'admin')
   WITH CHECK (get_my_role() = 'admin');
@@ -728,9 +758,11 @@ CREATE POLICY "profiles_admin_all" ON public.profiles FOR ALL TO authenticated
 -- =================================================================
 -- 2. PROJECTS
 -- =================================================================
+DROP POLICY IF EXISTS "projects_select_authenticated" ON public.projects;
 CREATE POLICY "projects_select_authenticated" ON public.projects FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "projects_admin_all" ON public.projects;
 CREATE POLICY "projects_admin_all" ON public.projects FOR ALL TO authenticated
   USING (get_my_role() = 'admin')
   WITH CHECK (get_my_role() = 'admin');
@@ -742,18 +774,21 @@ CREATE POLICY "projects_admin_all" ON public.projects FOR ALL TO authenticated
 -- Admin: full access
 -- Viewer: read all
 -- =================================================================
+DROP POLICY IF EXISTS "inspections_select_policy" ON public.inspections;
 CREATE POLICY "inspections_select_policy" ON public.inspections FOR SELECT TO authenticated
   USING (
     get_my_role() IN ('admin', 'engineer', 'viewer')
     OR (get_my_role() = 'inspector' AND (lead_inspector_id = auth.uid() OR lead_inspector_id IS NULL))
   );
 
+DROP POLICY IF EXISTS "inspections_insert_policy" ON public.inspections;
 CREATE POLICY "inspections_insert_policy" ON public.inspections FOR INSERT TO authenticated
   WITH CHECK (
     get_my_role() = 'admin'
     OR (get_my_role() = 'inspector' AND (lead_inspector_id = auth.uid() OR lead_inspector_id IS NULL))
   );
 
+DROP POLICY IF EXISTS "inspections_update_policy" ON public.inspections;
 CREATE POLICY "inspections_update_policy" ON public.inspections FOR UPDATE TO authenticated
   USING (
     get_my_role() IN ('admin', 'engineer')
@@ -764,6 +799,7 @@ CREATE POLICY "inspections_update_policy" ON public.inspections FOR UPDATE TO au
     OR (get_my_role() = 'inspector' AND lead_inspector_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "inspections_delete_policy" ON public.inspections;
 CREATE POLICY "inspections_delete_policy" ON public.inspections FOR DELETE TO authenticated
   USING (get_my_role() = 'admin');
 
@@ -773,9 +809,11 @@ CREATE POLICY "inspections_delete_policy" ON public.inspections FOR DELETE TO au
 -- Insert: admin OR inspector (uploading to own inspection, uploader_id = auth.uid())
 -- Delete: admin OR owner (uploader_id = auth.uid())
 -- =================================================================
+DROP POLICY IF EXISTS "inspection_images_read" ON public.inspection_images;
 CREATE POLICY "inspection_images_read" ON public.inspection_images FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "inspection_images_insert" ON public.inspection_images;
 CREATE POLICY "inspection_images_insert" ON public.inspection_images FOR INSERT TO authenticated
   WITH CHECK (
     get_my_role() = 'admin'
@@ -792,6 +830,7 @@ CREATE POLICY "inspection_images_insert" ON public.inspection_images FOR INSERT 
     )
   );
 
+DROP POLICY IF EXISTS "inspection_images_delete" ON public.inspection_images;
 CREATE POLICY "inspection_images_delete" ON public.inspection_images FOR DELETE TO authenticated
   USING (
     get_my_role() = 'admin'
@@ -805,16 +844,20 @@ CREATE POLICY "inspection_images_delete" ON public.inspection_images FOR DELETE 
 -- Delete: admin
 -- Inspector: BLOCKED from report authoring/updating
 -- =================================================================
+DROP POLICY IF EXISTS "reports_select_policy" ON public.reports;
 CREATE POLICY "reports_select_policy" ON public.reports FOR SELECT TO authenticated
   USING (get_my_role() IN ('admin', 'engineer', 'viewer'));
 
+DROP POLICY IF EXISTS "reports_insert_policy" ON public.reports;
 CREATE POLICY "reports_insert_policy" ON public.reports FOR INSERT TO authenticated
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "reports_update_policy" ON public.reports;
 CREATE POLICY "reports_update_policy" ON public.reports FOR UPDATE TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "reports_delete_policy" ON public.reports;
 CREATE POLICY "reports_delete_policy" ON public.reports FOR DELETE TO authenticated
   USING (get_my_role() = 'admin');
 
@@ -823,17 +866,20 @@ CREATE POLICY "reports_delete_policy" ON public.reports FOR DELETE TO authentica
 -- Read: all authenticated
 -- Insert/Update/Delete: admin, engineer
 -- =================================================================
+DROP POLICY IF EXISTS "env_risks_select_policy" ON public.environmental_risks;
 CREATE POLICY "env_risks_select_policy" ON public.environmental_risks FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "env_risks_modify_policy" ON public.environmental_risks;
 CREATE POLICY "env_risks_modify_policy" ON public.environmental_risks FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "hotspots_select_policy" ON public.risk_hotspots;
 CREATE POLICY "hotspots_select_policy" ON public.risk_hotspots FOR SELECT TO authenticated
   USING (true);
 
-CREATE POLICY "hotspots_modify_policy" ON public.risk_hotspots FOR ALL TO authenticated
+DROP POLICY IF EXISTS "hotspots_modify_policy" ON public.risk_hotspots FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
@@ -842,9 +888,11 @@ CREATE POLICY "hotspots_modify_policy" ON public.risk_hotspots FOR ALL TO authen
 -- Read: all authenticated
 -- Insert/Update/Delete: admin, engineer
 -- =================================================================
+DROP POLICY IF EXISTS "maintenance_select_policy" ON public.maintenance_priorities;
 CREATE POLICY "maintenance_select_policy" ON public.maintenance_priorities FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "maintenance_modify_policy" ON public.maintenance_priorities;
 CREATE POLICY "maintenance_modify_policy" ON public.maintenance_priorities FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
@@ -852,16 +900,20 @@ CREATE POLICY "maintenance_modify_policy" ON public.maintenance_priorities FOR A
 -- =================================================================
 -- 8. DAMAGE TRENDS & GEOSPATIAL ZONES
 -- =================================================================
+DROP POLICY IF EXISTS "trends_select_authenticated" ON public.damage_trends;
 CREATE POLICY "trends_select_authenticated" ON public.damage_trends FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "trends_modify_policy" ON public.damage_trends;
 CREATE POLICY "trends_modify_policy" ON public.damage_trends FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "zones_select_authenticated" ON public.geospatial_zones;
 CREATE POLICY "zones_select_authenticated" ON public.geospatial_zones FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "zones_admin_all" ON public.geospatial_zones;
 CREATE POLICY "zones_admin_all" ON public.geospatial_zones FOR ALL TO authenticated
   USING (get_my_role() = 'admin')
   WITH CHECK (get_my_role() = 'admin');
@@ -876,39 +928,49 @@ CREATE POLICY "zones_admin_all" ON public.geospatial_zones FOR ALL TO authentica
 --   - Update: engineer, admin (validation, review, adjustments)
 --   - Delete: admin
 -- =================================================================
+DROP POLICY IF EXISTS "ai_models_select_all" ON public.ai_models;
 CREATE POLICY "ai_models_select_all" ON public.ai_models FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ai_models_admin_all" ON public.ai_models;
 CREATE POLICY "ai_models_admin_all" ON public.ai_models FOR ALL TO authenticated
   USING (get_my_role() = 'admin')
   WITH CHECK (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "ai_jobs_select_all" ON public.ai_analysis_jobs;
 CREATE POLICY "ai_jobs_select_all" ON public.ai_analysis_jobs FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ai_jobs_modify_policy" ON public.ai_analysis_jobs;
 CREATE POLICY "ai_jobs_modify_policy" ON public.ai_analysis_jobs FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'inspector'))
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
 
+DROP POLICY IF EXISTS "ai_detections_select_policy" ON public.ai_damage_detections;
 CREATE POLICY "ai_detections_select_policy" ON public.ai_damage_detections FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ai_detections_insert_policy" ON public.ai_damage_detections;
 CREATE POLICY "ai_detections_insert_policy" ON public.ai_damage_detections FOR INSERT TO authenticated
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
 
+DROP POLICY IF EXISTS "ai_detections_update_policy" ON public.ai_damage_detections;
 CREATE POLICY "ai_detections_update_policy" ON public.ai_damage_detections FOR UPDATE TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "ai_detections_delete_policy" ON public.ai_damage_detections;
 CREATE POLICY "ai_detections_delete_policy" ON public.ai_damage_detections FOR DELETE TO authenticated
   USING (get_my_role() = 'admin');
 
 -- =================================================================
 -- 10. AR SESSIONS & AR ANCHORS (Item 1: uses started_by NOT inspector_id)
 -- =================================================================
+DROP POLICY IF EXISTS "ar_sessions_select_policy" ON public.ar_sessions;
 CREATE POLICY "ar_sessions_select_policy" ON public.ar_sessions FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ar_sessions_modify_policy" ON public.ar_sessions;
 CREATE POLICY "ar_sessions_modify_policy" ON public.ar_sessions FOR ALL TO authenticated
   USING (
     get_my_role() = 'admin'
@@ -919,9 +981,11 @@ CREATE POLICY "ar_sessions_modify_policy" ON public.ar_sessions FOR ALL TO authe
     OR (get_my_role() = 'inspector' AND started_by = auth.uid())
   );
 
+DROP POLICY IF EXISTS "ar_anchors_select_policy" ON public.ar_anchors;
 CREATE POLICY "ar_anchors_select_policy" ON public.ar_anchors FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ar_anchors_modify_policy" ON public.ar_anchors;
 CREATE POLICY "ar_anchors_modify_policy" ON public.ar_anchors FOR ALL TO authenticated
   USING (
     get_my_role() = 'admin'
