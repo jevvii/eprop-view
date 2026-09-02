@@ -36,7 +36,7 @@ export function RealtimeSync() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'inspection_images' }, () => {
         queryClient.invalidateQueries({ queryKey: ['inspection-images'] })
       })
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           if (process.env.NODE_ENV !== 'production') {
             console.warn(

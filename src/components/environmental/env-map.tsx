@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useGeospatialZones, useRiskHotspots } from '@/app/lib/queries'
@@ -31,19 +31,17 @@ export function EnvMap({ projectId, center }: EnvMapProps) {
   const map = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<mapboxgl.Marker[]>([])
   const addedLayersRef = useRef<{ sourceId: string; layerId: string }[]>([])
-  const styleReadyRef = useRef(false)
+  const [isStyleLoaded, setIsStyleLoaded] = useState(false)
   const [tokenMissing, setTokenMissing] = useState(false)
+
+  const initialCenterRef = useRef<[number, number]>(center || [121.0437, 14.676])
 
   const { data: zones, isError: zonesError } = useGeospatialZones(projectId)
   const { data: hotspots, isError: hotspotsError } = useRiskHotspots(projectId)
 
-  const mapCenter = useMemo<[number, number]>(() => {
-    if (center) return center
-    return [121.0437, 14.676]
-  }, [center])
-
+  // 1. Initialize Map Strictly Once on Mount
   useEffect(() => {
-    if (!mapContainer.current || map.current) return
+    if (map.current || !mapContainer.current) return
 
     const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
     if (!token) {
@@ -52,109 +50,168 @@ export function EnvMap({ projectId, center }: EnvMapProps) {
     }
     mapboxgl.accessToken = token
 
-    map.current = new mapboxgl.Map({
+    const m = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: mapCenter,
+      center: initialCenterRef.current,
       zoom: 13,
+      antialias: true,
+      trackResize: true,
+    })
+    map.current = m
+
+    m.on('style.load', () => {
+      setIsStyleLoaded(true)
     })
 
-    map.current.on('load', () => {
-      styleReadyRef.current = true
+    const resizeObserver = new ResizeObserver(() => {
+      map.current?.resize()
     })
+    if (mapContainer.current) {
+      resizeObserver.observe(mapContainer.current)
+    }
 
     return () => {
-      map.current?.remove()
-      map.current = null
-      styleReadyRef.current = false
-    }
-  }, [mapCenter])
-
-  useEffect(() => {
-    if (!map.current || !center) return
-    map.current.flyTo({ center, zoom: 13, essential: true })
-  }, [center])
-
-  useEffect(() => {
-    if (!map.current || !zones) return
-
-    const updateLayers = () => {
+      resizeObserver.disconnect()
       markersRef.current.forEach((marker) => marker.remove())
       markersRef.current = []
-
-      addedLayersRef.current.forEach(({ sourceId, layerId }) => {
-        if (map.current?.getLayer(layerId)) map.current.removeLayer(layerId)
-        if (map.current?.getSource(sourceId)) map.current.removeSource(sourceId)
-      })
-      addedLayersRef.current = []
-
-      zones.forEach((zone) => {
-        if (zone.is_active === false) return
-
-        const sourceId = `env-zone-${zone.id}`
-        const layerId = `env-zone-layer-${zone.id}`
-
-        if (zone.coordinates?.length > 0 && map.current && !map.current.getSource(sourceId)) {
-          const isLine = zone.geom?.type === 'LineString' || zone.zone_type === 'fault_line'
-          const geojson = {
-            type: 'Feature' as const,
-            geometry: isLine
-              ? ({
-                  type: 'LineString' as const,
-                  coordinates: zone.coordinates,
-                })
-              : ({
-                  type: 'Polygon' as const,
-                  coordinates: [zone.coordinates],
-                }),
-            properties: {},
-          }
-
-          map.current.addSource(sourceId, { type: 'geojson', data: geojson })
-
-          if (isLine) {
-            map.current.addLayer({
-              id: layerId,
-              type: 'line',
-              source: sourceId,
-              paint: {
-                'line-color': zoneColors[zone.zone_type] ?? '#dc2626',
-                'line-width': 3.5,
-                'line-opacity': 0.85,
-              },
-            })
-          } else {
-            map.current.addLayer({
-              id: layerId,
-              type: 'fill',
-              source: sourceId,
-              paint: {
-                'fill-color': zoneColors[zone.zone_type] ?? '#94a3b8',
-                'fill-opacity': 0.28,
-              },
-            })
-          }
-          addedLayersRef.current.push({ sourceId, layerId })
-        }
-      })
-
-      hotspots?.forEach((hotspot) => {
-        if (hotspot.latitude && hotspot.longitude && map.current) {
-          const marker = new mapboxgl.Marker({ color: hotspotColor(hotspot.severity) })
-            .setLngLat([hotspot.longitude, hotspot.latitude])
-            .setPopup(new mapboxgl.Popup().setHTML(`<strong>${hotspot.title}</strong><br/>${hotspot.description}`))
-            .addTo(map.current)
-          markersRef.current.push(marker)
-        }
-      })
+      m.remove()
+      map.current = null
+      setIsStyleLoaded(false)
     }
+  }, [])
 
-    if (styleReadyRef.current || map.current.isStyleLoaded()) {
-      updateLayers()
-    } else {
-      map.current.once('load', updateLayers)
+  // 2. Smoothly reposition camera when coordinates numerically change (without destroying the map)
+  const centerLng = center?.[0]
+  const centerLat = center?.[1]
+
+  useEffect(() => {
+    const m = map.current
+    if (!m || centerLng == null || centerLat == null) return
+
+    const currentCenter = m.getCenter()
+    if (Math.abs(currentCenter.lng - centerLng) > 0.0001 || Math.abs(currentCenter.lat - centerLat) > 0.0001) {
+      m.flyTo({ center: [centerLng, centerLat], zoom: 13, essential: true })
     }
-  }, [zones, hotspots])
+  }, [centerLng, centerLat])
+
+  // 3. Synchronize Hazard Zone Layers
+  useEffect(() => {
+    const m = map.current
+    if (!m || !isStyleLoaded) return
+
+    // Clean up existing hazard layers & sources
+    addedLayersRef.current.forEach(({ sourceId, layerId }) => {
+      if (m.getLayer(layerId)) m.removeLayer(layerId)
+      if (m.getSource(sourceId)) m.removeSource(sourceId)
+    })
+    addedLayersRef.current = []
+
+    if (!zones || zones.length === 0) return
+
+    zones.forEach((zone) => {
+      if (zone.is_active === false) return
+
+      const sourceId = `env-zone-${zone.id}`
+      const layerId = `env-zone-layer-${zone.id}`
+
+      if (zone.coordinates && zone.coordinates.length > 0 && !m.getSource(sourceId)) {
+        const isLine = zone.geom?.type === 'LineString' || zone.zone_type === 'fault_line'
+        const geojson = {
+          type: 'Feature' as const,
+          geometry: isLine
+            ? ({
+                type: 'LineString' as const,
+                coordinates: zone.coordinates,
+              })
+            : ({
+                type: 'Polygon' as const,
+                coordinates: [zone.coordinates],
+              }),
+          properties: {},
+        }
+
+        m.addSource(sourceId, { type: 'geojson', data: geojson })
+
+        if (isLine) {
+          m.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            paint: {
+              'line-color': zoneColors[zone.zone_type] ?? '#dc2626',
+              'line-width': 3.5,
+              'line-opacity': 0.85,
+            },
+          })
+        } else {
+          m.addLayer({
+            id: layerId,
+            type: 'fill',
+            source: sourceId,
+            paint: {
+              'fill-color': zoneColors[zone.zone_type] ?? '#94a3b8',
+              'fill-opacity': 0.28,
+            },
+          })
+        }
+        addedLayersRef.current.push({ sourceId, layerId })
+      }
+    })
+  }, [zones, isStyleLoaded])
+
+  // 4. Synchronize Geo Markers (Hotspots & Project Center)
+  useEffect(() => {
+    const m = map.current
+    if (!m || !isStyleLoaded) return
+
+    // Remove old markers
+    markersRef.current.forEach((marker) => marker.remove())
+    markersRef.current = []
+
+    // 1. Hotspot markers
+    hotspots?.forEach((hotspot) => {
+      if (hotspot.latitude && hotspot.longitude) {
+        const popupContent = `
+          <div style="font-family: sans-serif; padding: 4px;">
+            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px;">
+              ${hotspot.title}
+            </div>
+            <div style="font-size: 10px; color: #64748b; line-height: 1.3;">
+              ${hotspot.description || 'Sector Risk Hotspot'}
+            </div>
+            <div style="margin-top: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; color: ${hotspotColor(hotspot.severity)};">
+              Severity: ${hotspot.severity}
+            </div>
+          </div>
+        `
+        const marker = new mapboxgl.Marker({ color: hotspotColor(hotspot.severity) })
+          .setLngLat([hotspot.longitude, hotspot.latitude])
+          .setPopup(new mapboxgl.Popup({ offset: 12 }).setHTML(popupContent))
+          .addTo(m)
+        markersRef.current.push(marker)
+      }
+    })
+
+    // 2. Project Site Location pin
+    if (centerLng != null && centerLat != null) {
+      const sitePopup = `
+        <div style="font-family: sans-serif; padding: 4px;">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #2563eb;">
+            Project Site Center
+          </div>
+          <div style="font-size: 10px; color: #64748b;">
+            Active Structural Assessment Boundary
+          </div>
+        </div>
+      `
+      const siteMarker = new mapboxgl.Marker({ color: '#2563eb' })
+        .setLngLat([centerLng, centerLat])
+        .setPopup(new mapboxgl.Popup({ offset: 12 }).setHTML(sitePopup))
+        .addTo(m)
+      markersRef.current.push(siteMarker)
+    }
+  }, [hotspots, centerLng, centerLat, isStyleLoaded])
 
   if (tokenMissing) {
     return (
