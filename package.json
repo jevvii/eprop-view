@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test src/app/lib/*.test.ts",
-    "migrate": "tsx --env-file=.env.local src/scripts/migrate.ts"
+    "migrate": "tsx --env-file=.env.local src/scripts/migrate.ts",
+    "db:migrate": "tsx src/scripts/apply-all-migrations.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
