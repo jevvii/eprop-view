@@ -518,3 +518,37 @@ export function useAllARAnchors(projectId?: string) {
   })
 }
 
+// Building Master Data queries (Phase C)
+export function useBuildings(projectId?: string) {
+  return useQuery({
+    queryKey: ['buildings', projectId],
+    queryFn: async () => {
+      const { getBuildings } = await import('@/app/actions/buildings')
+      return getBuildings(projectId)
+    },
+  })
+}
+
+export function useFloors(buildingId?: string) {
+  return useQuery({
+    queryKey: ['floors', buildingId],
+    enabled: buildingId !== undefined,
+    queryFn: async () => {
+      const { getFloors } = await import('@/app/actions/buildings')
+      return getFloors(buildingId)
+    },
+  })
+}
+
+export function useStructuralElements(floorId?: string) {
+  return useQuery({
+    queryKey: ['structural-elements', floorId],
+    enabled: floorId !== undefined,
+    queryFn: async () => {
+      const { getStructuralElements } = await import('@/app/actions/buildings')
+      return getStructuralElements(floorId)
+    },
+  })
+}
+
+

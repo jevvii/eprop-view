@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { Suspense, useState, useCallback } from 'react'
+import { Suspense, useState, useCallback, useEffect } from 'react'
 import { ARSessionManager, useARSessionContext } from '@/components/ar/ar-session-manager'
 import { ARUnsupportedNotice } from '@/components/ar/ar-unsupported-notice'
 import { ARCameraView } from '@/components/ar/ar-camera-view'
@@ -23,8 +23,32 @@ function ARPageContent() {
   const endARSession = useEndARSession()
   const createARAnchor = useCreateARAnchor()
   const [dbSessionId, setDbSessionId] = useState<string | null>(null)
+  const [nativeInfo, setNativeInfo] = useState<{ available: boolean; engine: string; platform: string }>({
+    available: false,
+    engine: 'WebXR',
+    platform: 'web',
+  })
+  const [detectedPlanesCount, setDetectedPlanesCount] = useState<number>(0)
 
   const canUseAR = hasCapability(profile?.role, 'ar:use')
+
+  // Check for Capacitor native ARKit/ARCore bridge
+  useEffect(() => {
+    let unsubscribe = () => {}
+    import('@/app/lib/ar/native-bridge').then(({ isNativeARAvailable, onARBridgeEvent }) => {
+      isNativeARAvailable().then((res) => {
+        setNativeInfo(res)
+      })
+
+      unsubscribe = onARBridgeEvent((event) => {
+        if (event.type === 'planeDetected') {
+          setDetectedPlanesCount((c) => c + 1)
+        }
+      })
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   if (profileLoading) {
     return <div className="bg-white p-10 rounded-[2.5rem] shadow-xl h-80 animate-pulse border border-slate-100 mx-2" />
@@ -46,15 +70,23 @@ function ARPageContent() {
     let createdSessionId: string | null = null
     try {
       // 1. Create DB session row first
-      const created = await startARSession.mutateAsync({ inspectionId })
+      const created = await startARSession.mutateAsync({
+        inspectionId,
+        deviceInfo: {
+          engine: nativeInfo.engine,
+          platform: nativeInfo.platform,
+        },
+      })
       createdSessionId = created.id
       setDbSessionId(created.id)
 
-      // 2. Request WebXR immersive AR session
+      // 2. Start native session if on Capacitor, or WebXR
+      const { startNativeARSession } = await import('@/app/lib/ar/native-bridge')
+      await startNativeARSession(inspectionId)
       await startWebXR()
     } catch (err) {
       console.error('AR session start failure:', err)
-      // Cleanup orphaned DB session if WebXR start fails
+      // Cleanup orphaned DB session if start fails
       if (createdSessionId) {
         setDbSessionId(null)
         try {
@@ -64,7 +96,7 @@ function ARPageContent() {
         }
       }
     }
-  }, [inspectionId, startARSession, startWebXR, endARSession])
+  }, [inspectionId, startARSession, startWebXR, endARSession, nativeInfo])
 
   const handleEnd = useCallback(async () => {
     if (dbSessionId) {
@@ -76,7 +108,10 @@ function ARPageContent() {
         console.warn('DB session end update failed:', err)
       }
     }
+    const { stopNativeARSession } = await import('@/app/lib/ar/native-bridge')
+    await stopNativeARSession()
     await endWebXR()
+    setDetectedPlanesCount(0)
   }, [dbSessionId, endARSession, endWebXR, inspectionId])
 
   const handleTapToAnchor = useCallback(async () => {
@@ -109,7 +144,17 @@ function ARPageContent() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-2">
         <div>
-          <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">AR Inspection Mode</h2>
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">AR Inspection Mode</h2>
+            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+              ⚡ {nativeInfo.engine}
+            </span>
+            {detectedPlanesCount > 0 && (
+              <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 animate-pulse">
+                {detectedPlanesCount} Planes Tracked
+              </span>
+            )}
+          </div>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
             {inspectionId
               ? `Live surface tracking for inspection ${inspectionId.slice(0, 8)}…`

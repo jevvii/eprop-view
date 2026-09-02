@@ -37,10 +37,10 @@ export function DamageOverlay({ imageId }: DamageOverlayProps) {
               height: `${height * 100}%`,
             }}
           >
-            <div className="absolute -top-5 left-0 flex items-center gap-1.5">
+            <div className="absolute -top-5 left-0 flex items-center gap-1.5 whitespace-nowrap shadow-sm">
               <SeverityBadge severity={detection.severity} />
-              <span className="text-[8px] font-black text-white bg-slate-900/80 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                {detection.damage_type}
+              <span className="text-[8px] font-black text-white bg-slate-900/90 px-1.5 py-0.5 rounded uppercase tracking-wider border border-white/10">
+                {detection.damage_type} {(detection.confidence * 100).toFixed(0)}%
               </span>
             </div>
           </div>

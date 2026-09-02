@@ -58,6 +58,12 @@ export interface Inspection {
   location: string
   floor?: string
   structural_element?: StructuralElement | string
+  building_id?: string | null
+  floor_id?: string | null
+  structural_element_id?: string | null
+  building_name?: string
+  floor_name?: string
+  element_identifier?: string
   notes: string
   created_at: string
   updated_at: string
@@ -146,10 +152,15 @@ export interface GeospatialZone {
   risk_level: ZoneRiskLevel
   coordinates: number[][]
   geom?: {
-    type: 'Polygon' | 'MultiPolygon' | 'Point'
+    type: 'Polygon' | 'MultiPolygon' | 'Point' | 'LineString' | 'MultiLineString'
     coordinates: any
   }
   description: string
+  source_file?: string | null
+  source_format?: 'geojson' | 'shapefile' | 'kml' | 'manual' | null
+  effective_date?: string | null
+  expiry_date?: string | null
+  is_active?: boolean
   created_at: string
 }
 
@@ -208,6 +219,13 @@ export interface AIModel {
   storage_path: string | null
   labels: string[]
   is_active: boolean
+  architecture?: string
+  input_width?: number
+  input_height?: number
+  confidence_threshold?: number
+  iou_threshold?: number
+  preprocessing?: Record<string, unknown>
+  metadata?: Record<string, unknown>
   created_at: string
 }
 
@@ -283,3 +301,71 @@ export interface ARAnchor {
   snapshot_path: string | null
   created_at: string
 }
+
+// Building Master Data types (Phase C)
+export interface Building {
+  id: string
+  project_id: string
+  name: string
+  code: string | null
+  description: string
+  latitude: number | null
+  longitude: number | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  project_name?: string
+  floors_count?: number
+}
+
+export interface Floor {
+  id: string
+  building_id: string
+  name: string
+  level: number | null
+  sort_order: number
+  created_at: string
+  building_name?: string
+  elements_count?: number
+}
+
+export interface StructuralElementRecord {
+  id: string
+  floor_id: string
+  element_type: StructuralElement
+  identifier: string
+  description: string
+  created_at: string
+  floor_name?: string
+}
+
+// Storage Management types (Phase E)
+export type StorageClass = 'standard' | 'cold' | 'glacier' | 'archive'
+
+export interface StorageAuditEntry {
+  id: string
+  bucket_id: string
+  object_path: string
+  size_bytes: number
+  owner_id: string | null
+  project_id: string | null
+  inspection_id: string | null
+  uploaded_at: string
+  last_accessed_at: string
+  storage_class: StorageClass
+  created_at: string
+  is_orphan?: boolean
+}
+
+export interface StorageSummary {
+  totalBytes: number
+  totalObjects: number
+  bucketStats: {
+    bucketId: string
+    sizeBytes: number
+    objectCount: number
+  }[]
+  classStats: Record<StorageClass, { sizeBytes: number; objectCount: number }>
+  orphanedCount: number
+}
+

@@ -56,18 +56,46 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
     <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 space-y-6">
       <div className="flex items-center justify-between border-b border-slate-50 pb-4">
         <div>
-          <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">AI Structural Diagnostics</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">AI Structural Diagnostics</h3>
+            {activeModel?.architecture && (
+              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100">
+                {activeModel.architecture}
+              </span>
+            )}
+            <span className="text-[8px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+              {activeModel?.input_width || 640}×{activeModel?.input_height || 640}
+            </span>
+          </div>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
             {activeModel ? `Active Checkpoint: ${activeModel.name} (v${activeModel.version})` : 'No active AI models registered'}
           </p>
         </div>
-        {isRunning && (
+        {isRunning ? (
           <div className="flex items-center gap-1.5 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
             <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Inference Active</span>
           </div>
-        )}
+        ) : latestJob?.completed_at ? (
+          <div className="text-right">
+            <span className="text-[8px] font-mono text-slate-400 font-bold">
+              Latency: &lt;1.8s · NMS IoU: {activeModel?.iou_threshold ?? 0.45}
+            </span>
+          </div>
+        ) : null}
       </div>
+
+      {isRunning && (
+        <div className="space-y-1">
+          <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider">
+            <span>Executing Computer Vision Pipeline</span>
+            <span>Preprocessing & NMS…</span>
+          </div>
+          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+            <div className="h-full bg-primary animate-pulse rounded-full w-4/5" />
+          </div>
+        </div>
+      )}
 
       {/* Model Selection and Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

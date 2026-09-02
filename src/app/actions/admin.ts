@@ -222,6 +222,13 @@ export async function registerAIModel(modelData: {
   format: AIModelFormat
   labels: string[]
   is_active?: boolean
+  architecture?: string
+  input_width?: number
+  input_height?: number
+  confidence_threshold?: number
+  iou_threshold?: number
+  preprocessing?: Record<string, unknown>
+  metadata?: Record<string, unknown>
 }) {
   try {
     await requireRole('admin')
@@ -234,6 +241,11 @@ export async function registerAIModel(modelData: {
     .from('ai_models')
     .insert({
       ...modelData,
+      architecture: modelData.architecture || 'yolov8',
+      input_width: modelData.input_width || 640,
+      input_height: modelData.input_height || 640,
+      confidence_threshold: modelData.confidence_threshold ?? 0.25,
+      iou_threshold: modelData.iou_threshold ?? 0.45,
       is_active: modelData.is_active ?? true,
     })
     .select()

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useProjects } from '@/app/lib/queries'
+import { useProjects, useBuildings, useFloors, useStructuralElements } from '@/app/lib/queries'
 import { useCreateInspection } from '@/app/lib/mutations'
 import { inspectionFormSchema } from '@/app/lib/validators'
 import { Button } from '@/components/ui/button'
@@ -38,6 +38,14 @@ export function InspectionForm() {
   const createInspection = useCreateInspection()
 
   const [projectId, setProjectId] = useState('')
+  const [selectedBuildingId, setSelectedBuildingId] = useState('')
+  const [selectedFloorId, setSelectedFloorId] = useState('')
+  const [selectedElementId, setSelectedElementId] = useState('')
+
+  const { data: buildings } = useBuildings(projectId || undefined)
+  const { data: floors } = useFloors(selectedBuildingId || undefined)
+  const { data: elements } = useStructuralElements(selectedFloorId || undefined)
+
   const [inspectionDate, setInspectionDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [location, setLocation] = useState('')
   const [floor, setFloor] = useState('Ground Floor (GF)')
@@ -62,6 +70,33 @@ export function InspectionForm() {
     }
   }, [projectId, projects, location])
 
+  // Sync selected building
+  useEffect(() => {
+    if (buildings && buildings.length > 0 && !selectedBuildingId) {
+      setSelectedBuildingId(buildings[0].id)
+    }
+  }, [buildings, selectedBuildingId])
+
+  // Sync selected floor
+  useEffect(() => {
+    if (floors && floors.length > 0) {
+      if (!selectedFloorId || !floors.some((f) => f.id === selectedFloorId)) {
+        setSelectedFloorId(floors[0].id)
+        setFloor(floors[0].name)
+      }
+    }
+  }, [floors, selectedFloorId])
+
+  // Sync selected element
+  useEffect(() => {
+    if (elements && elements.length > 0) {
+      if (!selectedElementId || !elements.some((e) => e.id === selectedElementId)) {
+        setSelectedElementId(elements[0].id)
+        setStructuralElement(elements[0].element_type)
+      }
+    }
+  }, [elements, selectedElementId])
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError(null)
@@ -73,6 +108,9 @@ export function InspectionForm() {
       location,
       floor,
       structural_element: structuralElement,
+      building_id: selectedBuildingId || undefined,
+      floor_id: selectedFloorId || undefined,
+      structural_element_id: selectedElementId || undefined,
       risk_score: riskScore,
       status,
       notes,
@@ -109,15 +147,20 @@ export function InspectionForm() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 flex-1">
-        <div className="md:col-span-2">
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Building / Project</label>
+        <div>
+          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Project</label>
           <select
             value={projectId}
-            onChange={(event) => setProjectId(event.target.value)}
+            onChange={(event) => {
+              setProjectId(event.target.value)
+              setSelectedBuildingId('')
+              setSelectedFloorId('')
+              setSelectedElementId('')
+            }}
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
             required
           >
-            <option value="" disabled>SELECT_BUILDING_PROJECT</option>
+            <option value="" disabled>SELECT_PROJECT</option>
             {projects?.map((project) => (
               <option key={project.id} value={project.id}>{project.name}</option>
             ))}
@@ -125,29 +168,91 @@ export function InspectionForm() {
         </div>
 
         <div>
+          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Building</label>
+          {buildings && buildings.length > 0 ? (
+            <select
+              value={selectedBuildingId}
+              onChange={(event) => {
+                setSelectedBuildingId(event.target.value)
+                setSelectedFloorId('')
+                setSelectedElementId('')
+              }}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+            >
+              {buildings.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name} {b.code ? `(${b.code})` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="w-full rounded-xl border border-dashed border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-50">
+              Main Structure (Single Building)
+            </div>
+          )}
+        </div>
+
+        <div>
           <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Floor Level</label>
-          <select
-            value={floor}
-            onChange={(event) => setFloor(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
-          >
-            {floorOptions.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
+          {floors && floors.length > 0 ? (
+            <select
+              value={selectedFloorId}
+              onChange={(event) => {
+                const fid = event.target.value
+                setSelectedFloorId(fid)
+                const matched = floors.find((f) => f.id === fid)
+                if (matched) setFloor(matched.name)
+                setSelectedElementId('')
+              }}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+            >
+              {floors.map((f) => (
+                <option key={f.id} value={f.id}>{f.name} (Level {f.level ?? 0})</option>
+              ))}
+            </select>
+          ) : (
+            <select
+              value={floor}
+              onChange={(event) => setFloor(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+            >
+              {floorOptions.map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div>
           <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Structural Element</label>
-          <select
-            value={structuralElement}
-            onChange={(event) => setStructuralElement(event.target.value as StructuralElement)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
-          >
-            {structuralElementOptions.map((elem) => (
-              <option key={elem.value} value={elem.value}>{elem.label}</option>
-            ))}
-          </select>
+          {elements && elements.length > 0 ? (
+            <select
+              value={selectedElementId}
+              onChange={(event) => {
+                const eid = event.target.value
+                setSelectedElementId(eid)
+                const matched = elements.find((e) => e.id === eid)
+                if (matched) setStructuralElement(matched.element_type)
+              }}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+            >
+              {elements.map((elem) => (
+                <option key={elem.id} value={elem.id}>
+                  {elem.identifier} ({elem.element_type.toUpperCase()})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <select
+              value={structuralElement}
+              onChange={(event) => setStructuralElement(event.target.value as StructuralElement)}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+            >
+              {structuralElementOptions.map((elem) => (
+                <option key={elem.value} value={elem.value}>{elem.label}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div>

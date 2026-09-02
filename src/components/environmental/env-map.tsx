@@ -89,29 +89,51 @@ export function EnvMap({ projectId, center }: EnvMapProps) {
       addedLayersRef.current = []
 
       zones.forEach((zone) => {
+        if (zone.is_active === false) return
+
         const sourceId = `env-zone-${zone.id}`
         const layerId = `env-zone-layer-${zone.id}`
 
         if (zone.coordinates?.length > 0 && map.current && !map.current.getSource(sourceId)) {
+          const isLine = zone.geom?.type === 'LineString' || zone.zone_type === 'fault_line'
           const geojson = {
             type: 'Feature' as const,
-            geometry: {
-              type: 'Polygon' as const,
-              coordinates: [zone.coordinates],
-            },
+            geometry: isLine
+              ? ({
+                  type: 'LineString' as const,
+                  coordinates: zone.coordinates,
+                })
+              : ({
+                  type: 'Polygon' as const,
+                  coordinates: [zone.coordinates],
+                }),
             properties: {},
           }
 
           map.current.addSource(sourceId, { type: 'geojson', data: geojson })
-          map.current.addLayer({
-            id: layerId,
-            type: 'fill',
-            source: sourceId,
-            paint: {
-              'fill-color': zoneColors[zone.zone_type] ?? '#94a3b8',
-              'fill-opacity': 0.28,
-            },
-          })
+
+          if (isLine) {
+            map.current.addLayer({
+              id: layerId,
+              type: 'line',
+              source: sourceId,
+              paint: {
+                'line-color': zoneColors[zone.zone_type] ?? '#dc2626',
+                'line-width': 3.5,
+                'line-opacity': 0.85,
+              },
+            })
+          } else {
+            map.current.addLayer({
+              id: layerId,
+              type: 'fill',
+              source: sourceId,
+              paint: {
+                'fill-color': zoneColors[zone.zone_type] ?? '#94a3b8',
+                'fill-opacity': 0.28,
+              },
+            })
+          }
           addedLayersRef.current.push({ sourceId, layerId })
         }
       })

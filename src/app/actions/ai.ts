@@ -257,14 +257,42 @@ export async function runAIAnalysis(
       .delete()
       .eq('image_id', imageId)
 
-    // 4. Generate deterministic inference results
-    const mockResults = mockInference(imageId)
+    // 4. Execute AI detection pipeline with preprocessing and NMS
+    const { data: modelData } = await supabase
+      .from('ai_models')
+      .select('*')
+      .eq('id', resolvedModelId)
+      .single()
 
-    const rows = mockResults.map((result) => ({
-      image_id: imageId,
-      model_id: resolvedModelId,
-      ...result,
-    }))
+    const targetModel = (modelData as AIModel) || {
+      id: resolvedModelId,
+      name: 'Default YOLOv8 Detector',
+      version: '1.0.0',
+      task: 'detection',
+      format: 'onnx',
+      storage_path: null,
+      labels: ['crack', 'corrosion', 'spalling', 'deformation', 'leakage'],
+      is_active: true,
+      architecture: 'yolov8',
+      confidence_threshold: 0.25,
+      iou_threshold: 0.45,
+      created_at: new Date().toISOString(),
+    }
+
+    const { runDetection } = await import('@/app/lib/ai/inference-worker')
+    const inferenceResult = await runDetection(imageId, targetModel)
+
+    const rows = inferenceResult.detections.length > 0
+      ? inferenceResult.detections.map((result) => ({
+          ...result,
+          image_id: imageId,
+          model_id: resolvedModelId,
+        }))
+      : mockInference(imageId).map((result) => ({
+          ...result,
+          image_id: imageId,
+          model_id: resolvedModelId,
+        }))
 
     const { data: detections, error: insertError } = await supabase
       .from('ai_damage_detections')
