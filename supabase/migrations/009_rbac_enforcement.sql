@@ -48,7 +48,7 @@ BEGIN
       )
       ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
     EXCEPTION WHEN OTHERS THEN
-      -- Ignore concurrency collisions
+      RAISE WARNING 'get_my_role self-healing profile insert warning for user %: % (SQLSTATE: %)', auth.uid(), SQLERRM, SQLSTATE;
     END;
 
     RETURN jwt_role;
@@ -74,6 +74,7 @@ BEGIN
     SET role = COALESCE(profiles.role, EXCLUDED.role);
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'handle_new_auth_user profile creation warning for user %: % (SQLSTATE: %)', NEW.id, SQLERRM, SQLSTATE;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
