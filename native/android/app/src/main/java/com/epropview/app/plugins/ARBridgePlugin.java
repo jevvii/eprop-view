@@ -1,10 +1,14 @@
 package com.epropview.app.plugins;
 
+import android.Manifest;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Session;
@@ -20,12 +24,35 @@ import java.util.UUID;
  * Native Android ARCore Bridge Plugin for EPROPVIEW.
  * Interacts directly with Google ARCore SDK on supported Android hardware.
  */
-@CapacitorPlugin(name = "CapacitorARBridge")
+@CapacitorPlugin(
+    name = "CapacitorARBridge",
+    permissions = {
+        @Permission(alias = "camera", strings = { Manifest.permission.CAMERA })
+    }
+)
 public class ARBridgePlugin extends Plugin {
 
     private Session arSession;
     private boolean isSessionRunning = false;
     private String activeInspectionId;
+
+    @PluginMethod
+    public void requestCameraPermission(PluginCall call) {
+        if (getPermissionState("camera") == PermissionState.GRANTED) {
+            JSObject ret = new JSObject();
+            ret.put("granted", true);
+            call.resolve(ret);
+        } else {
+            requestPermissionForAlias("camera", call, "cameraPermsCallback");
+        }
+    }
+
+    @PermissionCallback
+    private void cameraPermsCallback(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("granted", getPermissionState("camera") == PermissionState.GRANTED);
+        call.resolve(ret);
+    }
 
     @PluginMethod
     public void isAvailable(PluginCall call) {

@@ -247,7 +247,12 @@ export function useGeospatialZones(projectId?: string) {
       if (error) throw error
       return (data || []).map((z) => ({
         ...z,
-        coordinates: z.geom?.coordinates?.[0] ?? [],
+        coordinates:
+          z.geom?.type === 'LineString'
+            ? (z.geom.coordinates ?? [])
+            : z.geom?.type === 'MultiLineString'
+            ? (z.geom.coordinates?.[0] ?? [])
+            : z.geom?.coordinates?.[0] ?? [],
       }))
     },
   })

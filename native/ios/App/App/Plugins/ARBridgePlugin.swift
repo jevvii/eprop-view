@@ -2,6 +2,7 @@ import Foundation
 import Capacitor
 import ARKit
 import SceneKit
+import AVFoundation
 
 /**
  * Native iOS ARKit Bridge Plugin for EPROPVIEW.
@@ -14,6 +15,22 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
     private var arView: ARSCNView?
     private var isSessionRunning = false
     private var activeInspectionId: String?
+
+    @objc func requestCameraPermission(_ call: CAPPluginCall) {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        switch status {
+        case .authorized:
+            call.resolve(["granted": true])
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                call.resolve(["granted": granted])
+            }
+        case .denied, .restricted:
+            call.resolve(["granted": false, "message": "Camera access denied. Please enable camera in iOS Settings."])
+        @unknown default:
+            call.resolve(["granted": false])
+        }
+    }
 
     @objc func isAvailable(_ call: CAPPluginCall) {
         let isSupported = ARWorldTrackingConfiguration.isSupported
