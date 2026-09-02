@@ -43,6 +43,7 @@ export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   viewer: [
     'inspection:read',
     'report:read',
+    'report:view',
   ],
   inspector: [
     'inspection:create',

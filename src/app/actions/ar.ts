@@ -7,8 +7,10 @@ import type { ARSession, ARAnchor, ARPose, Vector3, DamageType, SeverityLevel } 
 
 /**
  * Get the active AR session for an inspection, if any.
+ * Accessible to inspector, engineer, and admin.
  */
 export async function getActiveARSession(inspectionId: string): Promise<ARSession | null> {
+  await requireRole(['inspector', 'engineer', 'admin'])
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('ar_sessions')
@@ -25,8 +27,10 @@ export async function getActiveARSession(inspectionId: string): Promise<ARSessio
 
 /**
  * Get all anchors for an inspection.
+ * Accessible to inspector, engineer, and admin.
  */
 export async function getARAnchorsForInspection(inspectionId: string): Promise<ARAnchor[]> {
+  await requireRole(['inspector', 'engineer', 'admin'])
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('ar_anchors')
@@ -201,8 +205,10 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
 
 /**
  * Get all anchors (optionally filtered by project).
+ * Accessible to inspector, engineer, and admin.
  */
 export async function getAllARAnchors(projectId?: string): Promise<ARAnchor[]> {
+  await requireRole(['inspector', 'engineer', 'admin'])
   const supabase = await createClient()
 
   if (projectId) {

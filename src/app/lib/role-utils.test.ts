@@ -89,6 +89,12 @@ describe('Role-Based Access Control (RBAC) Matrix Tests', () => {
   })
 
   describe('Viewer Role Privileges', () => {
+    test('Viewer possesses read-only access to published reports and inspections', () => {
+      assert.equal(hasCapability('viewer', 'report:view'), true)
+      assert.equal(hasCapability('viewer', 'report:read'), true)
+      assert.equal(hasCapability('viewer', 'inspection:read'), true)
+    })
+
     test('Viewer is strictly read-only and denied mutating actions', () => {
       assert.equal(hasCapability('viewer', 'inspection:create'), false)
       assert.equal(hasCapability('viewer', 'image:upload'), false)

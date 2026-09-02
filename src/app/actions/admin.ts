@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/app/lib/supabase/server'
+import { requireRole } from '@/app/lib/dal'
 import { z } from 'zod'
 import type { Role, AIModel, AIModelFormat, AIModelTask } from '@/app/types'
 
@@ -14,19 +15,12 @@ const createUserSchema = z.object({
 })
 
 export async function createUser(prevState: unknown, formData: FormData) {
-  const supabase = await createClient()
-
-  // 1. Verify Admin Role
-  const { data: { user: adminUser }, error: authError } = await supabase.auth.getUser()
-  if (authError || !adminUser) return { error: 'Unauthorized' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', adminUser.id)
-    .single()
-
-  if (profile?.role !== 'admin') return { error: 'Admin access required' }
+  // 1. Verify Admin Role via DAL (respects session metadata and profiles)
+  try {
+    await requireRole('admin')
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Admin access required' }
+  }
 
   // 2. Validate Input
   const validated = createUserSchema.safeParse({
@@ -88,24 +82,19 @@ export async function createInspector(prevState: unknown, formData: FormData) {
 }
 
 export async function updateUserRole(userId: string, newRole: Role) {
-  const supabase = await createClient()
-
-  // 1. Verify Admin Role
-  const { data: { user: adminUser }, error: authError } = await supabase.auth.getUser()
-  if (authError || !adminUser) return { error: 'Unauthorized' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', adminUser.id)
-    .single()
-
-  if (profile?.role !== 'admin') return { error: 'Admin access required' }
+  let adminSession
+  try {
+    adminSession = await requireRole('admin')
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Admin access required' }
+  }
 
   // Prevent admin from accidentally demoting themselves if they are the only admin
-  if (userId === adminUser.id && newRole !== 'admin') {
+  if (userId === adminSession.userId && newRole !== 'admin') {
     return { error: 'Cannot remove admin role from your own active session.' }
   }
+
+  const supabase = await createClient()
 
   // Update in profiles table
   const { error } = await supabase
@@ -135,23 +124,18 @@ export async function updateUserRole(userId: string, newRole: Role) {
 }
 
 export async function toggleUserStatus(userId: string, currentStatus: boolean) {
-  const supabase = await createClient()
+  let adminSession
+  try {
+    adminSession = await requireRole('admin')
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Admin access required' }
+  }
 
-  // 1. Verify Admin Role
-  const { data: { user: adminUser }, error: authError } = await supabase.auth.getUser()
-  if (authError || !adminUser) return { error: 'Unauthorized' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', adminUser.id)
-    .single()
-
-  if (profile?.role !== 'admin') return { error: 'Admin access required' }
-
-  if (userId === adminUser.id && currentStatus) {
+  if (userId === adminSession.userId && currentStatus) {
     return { error: 'Cannot deactivate your own active session.' }
   }
+
+  const supabase = await createClient()
 
   // 2. Update Status
   const { error } = await supabase
@@ -166,19 +150,7 @@ export async function toggleUserStatus(userId: string, currentStatus: boolean) {
 }
 
 export async function getAllProfilesWithEmails() {
-  const supabase = await createClient()
-
-  // 1. Verify Admin Role
-  const { data: { user: adminUser }, error: authError } = await supabase.auth.getUser()
-  if (authError || !adminUser) throw new Error('Unauthorized')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', adminUser.id)
-    .single()
-
-  if (profile?.role !== 'admin') throw new Error('Admin access required')
+  await requireRole('admin')
 
   // 2. Fetch using Admin Client
   const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
@@ -215,6 +187,7 @@ export async function getAllProfilesWithEmails() {
 
 // AI Model Management (Admin)
 export async function getAdminAIModels(): Promise<AIModel[]> {
+  await requireRole('admin')
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('ai_models')
@@ -225,19 +198,13 @@ export async function getAdminAIModels(): Promise<AIModel[]> {
 }
 
 export async function toggleAIModelStatus(modelId: string, currentStatus: boolean) {
+  try {
+    await requireRole('admin')
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Admin access required' }
+  }
+
   const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return { error: 'Unauthorized' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') return { error: 'Admin access required' }
-
   const { error } = await supabase
     .from('ai_models')
     .update({ is_active: !currentStatus })
@@ -256,19 +223,13 @@ export async function registerAIModel(modelData: {
   labels: string[]
   is_active?: boolean
 }) {
+  try {
+    await requireRole('admin')
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Admin access required' }
+  }
+
   const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return { error: 'Unauthorized' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') return { error: 'Admin access required' }
-
   const { data, error } = await supabase
     .from('ai_models')
     .insert({
