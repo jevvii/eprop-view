@@ -879,7 +879,8 @@ DROP POLICY IF EXISTS "hotspots_select_policy" ON public.risk_hotspots;
 CREATE POLICY "hotspots_select_policy" ON public.risk_hotspots FOR SELECT TO authenticated
   USING (true);
 
-DROP POLICY IF EXISTS "hotspots_modify_policy" ON public.risk_hotspots FOR ALL TO authenticated
+DROP POLICY IF EXISTS "hotspots_modify_policy" ON public.risk_hotspots;
+CREATE POLICY "hotspots_modify_policy" ON public.risk_hotspots FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
