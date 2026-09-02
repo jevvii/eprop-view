@@ -134,16 +134,46 @@ export function onARBridgeEvent(callback: (event: ARBridgeEvent) => void): () =>
   eventListeners.add(callback)
   const plugin = getCapacitorPlugin()
 
-  let pluginHandle: { remove: () => void } | null = null
+  const handles: { remove: () => void }[] = []
   if (plugin) {
-    plugin.addListener('arBridgeEvent', callback).then((handle) => {
-      pluginHandle = handle
-    })
+    // 1. Listen for wrapped 'arBridgeEvent'
+    plugin
+      .addListener('arBridgeEvent', (evt: any) => {
+        if (evt && evt.type) {
+          callback(evt as ARBridgeEvent)
+        }
+      })
+      .then((handle) => {
+        handles.push(handle)
+      })
+
+    // 2. Also listen for individual top-level native events and normalize them into ARBridgeEvent shape
+    const topLevelEvents: ARBridgeEvent['type'][] = [
+      'planeDetected',
+      'anchorPlaced',
+      'trackingChanged',
+      'sessionEnded',
+    ]
+
+    for (const evtType of topLevelEvents) {
+      plugin
+        .addListener(evtType, (payload: any) => {
+          // If already wrapped as { type, payload }
+          if (payload && payload.type && payload.payload) {
+            callback(payload as ARBridgeEvent)
+          } else {
+            callback({ type: evtType, payload: payload || {} } as ARBridgeEvent)
+          }
+        })
+        .then((handle) => {
+          handles.push(handle)
+        })
+    }
   }
 
   return () => {
     eventListeners.delete(callback)
-    pluginHandle?.remove()
+    handles.forEach((h) => h?.remove?.())
   }
 }
 
@@ -164,7 +194,7 @@ export async function captureNativeSnapshot(): Promise<string> {
 /**
  * Dispatches an event to all active JS listeners.
  */
-function emitEvent(event: ARBridgeEvent): void {
+export function emitEvent(event: ARBridgeEvent): void {
   eventListeners.forEach((listener) => {
     try {
       listener(event)

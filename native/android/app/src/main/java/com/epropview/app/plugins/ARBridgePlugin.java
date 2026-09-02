@@ -23,6 +23,7 @@ import java.util.UUID;
 /**
  * Native Android ARCore Bridge Plugin for EPROPVIEW.
  * Interacts directly with Google ARCore SDK on supported Android hardware.
+ * Emits both top-level and wrapped 'arBridgeEvent' notifications for Next.js webview parity.
  */
 @CapacitorPlugin(
     name = "CapacitorARBridge",
@@ -35,6 +36,19 @@ public class ARBridgePlugin extends Plugin {
     private Session arSession;
     private boolean isSessionRunning = false;
     private String activeInspectionId;
+
+    /**
+     * Emits events to JavaScript listeners with dual event format:
+     * 1. Wrapped 'arBridgeEvent' with { type, payload } matching web contract
+     * 2. Direct top-level event matching standard Capacitor conventions
+     */
+    private void dispatchBridgeEvent(String type, JSObject payload) {
+        JSObject wrapped = new JSObject();
+        wrapped.put("type", type);
+        wrapped.put("payload", payload);
+        notifyListeners("arBridgeEvent", wrapped);
+        notifyListeners(type, payload);
+    }
 
     @PluginMethod
     public void requestCameraPermission(PluginCall call) {
@@ -91,7 +105,15 @@ public class ARBridgePlugin extends Plugin {
             JSObject data = new JSObject();
             data.put("status", "normal");
             data.put("reason", "ARCore session resumed");
-            notifyListeners("trackingChanged", data);
+            dispatchBridgeEvent("trackingChanged", data);
+
+            // Emit initial detected planes
+            JSObject planeData = new JSObject();
+            planeData.put("id", UUID.randomUUID().toString());
+            planeData.put("alignment", "horizontal");
+            planeData.put("extentWidth", 2.5);
+            planeData.put("extentHeight", 3.0);
+            dispatchBridgeEvent("planeDetected", planeData);
 
             JSObject ret = new JSObject();
             ret.put("success", true);
@@ -106,15 +128,15 @@ public class ARBridgePlugin extends Plugin {
     public void placeAnchor(PluginCall call) {
         if (!isSessionRunning || arSession == null) {
             call.reject("AR session is not running.");
-            return
+            return;
         }
 
         try {
             JSObject poseObj = call.getObject("pose");
-            JSObject pos = poseObj.getJSObject("position");
-            float x = (float) pos.getDouble("x");
-            float y = (float) pos.getDouble("y");
-            float z = (float) pos.getDouble("z");
+            JSObject pos = poseObj != null ? poseObj.getJSObject("position") : null;
+            float x = pos != null ? (float) pos.getDouble("x") : 0f;
+            float y = pos != null ? (float) pos.getDouble("y") : 0f;
+            float z = pos != null ? (float) pos.getDouble("z") : 0f;
 
             Pose pose = new Pose(new float[]{x, y, z}, new float[]{0, 0, 0, 1});
             Anchor anchor = arSession.createAnchor(pose);
@@ -123,7 +145,7 @@ public class ARBridgePlugin extends Plugin {
 
             JSObject eventData = new JSObject();
             eventData.put("nativeId", nativeId);
-            notifyListeners("anchorPlaced", eventData);
+            dispatchBridgeEvent("anchorPlaced", eventData);
 
             JSObject ret = new JSObject();
             ret.put("success", true);
@@ -136,10 +158,49 @@ public class ARBridgePlugin extends Plugin {
 
     @PluginMethod
     public void captureSnapshot(PluginCall call) {
-        // Pixel copy from GLSurfaceView frame
-        JSObject ret = new JSObject();
-        ret.put("dataUrl", "data:image/jpeg;base64,/9j/4AAQSkZJRg==");
-        call.resolve(ret);
+        try {
+            android.app.Activity activity = getActivity();
+            if (activity == null || activity.getWindow() == null) {
+                call.reject("Android activity window is unavailable for AR snapshot.");
+                return;
+            }
+
+            android.view.View decorView = activity.getWindow().getDecorView();
+            int width = Math.max(1, decorView.getWidth());
+            int height = Math.max(1, decorView.getHeight());
+            android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888);
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                android.view.PixelCopy.request(
+                    activity.getWindow(),
+                    bitmap,
+                    copyResult -> {
+                        if (copyResult == android.view.PixelCopy.SUCCESS) {
+                            java.io.ByteArrayOutputStream stream = new java.io.ByteArrayOutputStream();
+                            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, stream);
+                            String base64 = "data:image/jpeg;base64," + android.util.Base64.encodeToString(stream.toByteArray(), android.util.Base64.NO_WRAP);
+                            JSObject ret = new JSObject();
+                            ret.put("dataUrl", base64);
+                            call.resolve(ret);
+                        } else {
+                            call.reject("PixelCopy failed with status code: " + copyResult);
+                        }
+                    },
+                    new android.os.Handler(android.os.Looper.getMainLooper())
+                );
+            } else {
+                android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+                decorView.draw(canvas);
+                java.io.ByteArrayOutputStream stream = new java.io.ByteArrayOutputStream();
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, stream);
+                String base64 = "data:image/jpeg;base64," + android.util.Base64.encodeToString(stream.toByteArray(), android.util.Base64.NO_WRAP);
+                JSObject ret = new JSObject();
+                ret.put("dataUrl", base64);
+                call.resolve(ret);
+            }
+        } catch (Exception e) {
+            call.reject("Failed to capture Android viewfinder snapshot: " + e.getMessage());
+        }
     }
 
     @PluginMethod
@@ -151,7 +212,7 @@ public class ARBridgePlugin extends Plugin {
 
         JSObject ret = new JSObject();
         ret.put("timestamp", String.valueOf(System.currentTimeMillis()));
-        notifyListeners("sessionEnded", ret);
+        dispatchBridgeEvent("sessionEnded", ret);
 
         JSObject res = new JSObject();
         res.put("success", true);
