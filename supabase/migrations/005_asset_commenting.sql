@@ -1,5 +1,5 @@
 -- Create table for image comments
-CREATE TABLE public.image_comments (
+CREATE TABLE IF NOT EXISTS public.image_comments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   image_id uuid NOT NULL REFERENCES public.inspection_images(id) ON DELETE CASCADE,
   author_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -17,16 +17,19 @@ ALTER TABLE public.image_comments ENABLE ROW LEVEL SECURITY;
 
 -- Policies for image_comments
 -- Anyone authenticated can read comments
+DROP POLICY IF EXISTS "image_comments_read" ON public.image_comments;
 CREATE POLICY "image_comments_read" ON public.image_comments
   FOR SELECT TO authenticated
   USING (true);
 
 -- Anyone authenticated can insert a comment
+DROP POLICY IF EXISTS "image_comments_insert" ON public.image_comments;
 CREATE POLICY "image_comments_insert" ON public.image_comments
   FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = author_id);
 
 -- Only author or admin can delete a comment
+DROP POLICY IF EXISTS "image_comments_delete" ON public.image_comments;
 CREATE POLICY "image_comments_delete" ON public.image_comments
   FOR DELETE TO authenticated
   USING (
@@ -35,6 +38,7 @@ CREATE POLICY "image_comments_delete" ON public.image_comments
   );
 
 -- Only the owner of the image can update the is_read status
+DROP POLICY IF EXISTS "image_comments_update_read" ON public.image_comments;
 CREATE POLICY "image_comments_update_read" ON public.image_comments
   FOR UPDATE TO authenticated
   USING (

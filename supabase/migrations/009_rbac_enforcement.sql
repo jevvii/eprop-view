@@ -230,9 +230,11 @@ DROP POLICY IF EXISTS "ar_anchors_modify_policy" ON public.ar_anchors;
 -- =================================================================
 -- 1. PROFILES (Item 7: Allow all authenticated users to read staff/assignee names)
 -- =================================================================
+DROP POLICY IF EXISTS "profiles_select_all_authenticated" ON public.profiles;
 CREATE POLICY "profiles_select_all_authenticated" ON public.profiles FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "profiles_admin_all" ON public.profiles;
 CREATE POLICY "profiles_admin_all" ON public.profiles FOR ALL TO authenticated
   USING (get_my_role() = 'admin')
   WITH CHECK (get_my_role() = 'admin');
@@ -240,9 +242,11 @@ CREATE POLICY "profiles_admin_all" ON public.profiles FOR ALL TO authenticated
 -- =================================================================
 -- 2. PROJECTS
 -- =================================================================
+DROP POLICY IF EXISTS "projects_select_authenticated" ON public.projects;
 CREATE POLICY "projects_select_authenticated" ON public.projects FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "projects_admin_all" ON public.projects;
 CREATE POLICY "projects_admin_all" ON public.projects FOR ALL TO authenticated
   USING (get_my_role() = 'admin')
   WITH CHECK (get_my_role() = 'admin');
@@ -254,18 +258,21 @@ CREATE POLICY "projects_admin_all" ON public.projects FOR ALL TO authenticated
 -- Admin: full access
 -- Viewer: read all
 -- =================================================================
+DROP POLICY IF EXISTS "inspections_select_policy" ON public.inspections;
 CREATE POLICY "inspections_select_policy" ON public.inspections FOR SELECT TO authenticated
   USING (
     get_my_role() IN ('admin', 'engineer', 'viewer')
     OR (get_my_role() = 'inspector' AND (lead_inspector_id = auth.uid() OR lead_inspector_id IS NULL))
   );
 
+DROP POLICY IF EXISTS "inspections_insert_policy" ON public.inspections;
 CREATE POLICY "inspections_insert_policy" ON public.inspections FOR INSERT TO authenticated
   WITH CHECK (
     get_my_role() = 'admin'
     OR (get_my_role() = 'inspector' AND (lead_inspector_id = auth.uid() OR lead_inspector_id IS NULL))
   );
 
+DROP POLICY IF EXISTS "inspections_update_policy" ON public.inspections;
 CREATE POLICY "inspections_update_policy" ON public.inspections FOR UPDATE TO authenticated
   USING (
     get_my_role() IN ('admin', 'engineer')
@@ -276,6 +283,7 @@ CREATE POLICY "inspections_update_policy" ON public.inspections FOR UPDATE TO au
     OR (get_my_role() = 'inspector' AND lead_inspector_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "inspections_delete_policy" ON public.inspections;
 CREATE POLICY "inspections_delete_policy" ON public.inspections FOR DELETE TO authenticated
   USING (get_my_role() = 'admin');
 
@@ -285,9 +293,11 @@ CREATE POLICY "inspections_delete_policy" ON public.inspections FOR DELETE TO au
 -- Insert: admin OR inspector (uploading to own inspection, uploader_id = auth.uid())
 -- Delete: admin OR owner (uploader_id = auth.uid())
 -- =================================================================
+DROP POLICY IF EXISTS "inspection_images_read" ON public.inspection_images;
 CREATE POLICY "inspection_images_read" ON public.inspection_images FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "inspection_images_insert" ON public.inspection_images;
 CREATE POLICY "inspection_images_insert" ON public.inspection_images FOR INSERT TO authenticated
   WITH CHECK (
     get_my_role() = 'admin'
@@ -304,6 +314,7 @@ CREATE POLICY "inspection_images_insert" ON public.inspection_images FOR INSERT 
     )
   );
 
+DROP POLICY IF EXISTS "inspection_images_delete" ON public.inspection_images;
 CREATE POLICY "inspection_images_delete" ON public.inspection_images FOR DELETE TO authenticated
   USING (
     get_my_role() = 'admin'
@@ -317,16 +328,20 @@ CREATE POLICY "inspection_images_delete" ON public.inspection_images FOR DELETE 
 -- Delete: admin
 -- Inspector: BLOCKED from report authoring/updating
 -- =================================================================
+DROP POLICY IF EXISTS "reports_select_policy" ON public.reports;
 CREATE POLICY "reports_select_policy" ON public.reports FOR SELECT TO authenticated
   USING (get_my_role() IN ('admin', 'engineer', 'viewer'));
 
+DROP POLICY IF EXISTS "reports_insert_policy" ON public.reports;
 CREATE POLICY "reports_insert_policy" ON public.reports FOR INSERT TO authenticated
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "reports_update_policy" ON public.reports;
 CREATE POLICY "reports_update_policy" ON public.reports FOR UPDATE TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "reports_delete_policy" ON public.reports;
 CREATE POLICY "reports_delete_policy" ON public.reports FOR DELETE TO authenticated
   USING (get_my_role() = 'admin');
 
@@ -335,17 +350,20 @@ CREATE POLICY "reports_delete_policy" ON public.reports FOR DELETE TO authentica
 -- Read: all authenticated
 -- Insert/Update/Delete: admin, engineer
 -- =================================================================
+DROP POLICY IF EXISTS "env_risks_select_policy" ON public.environmental_risks;
 CREATE POLICY "env_risks_select_policy" ON public.environmental_risks FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "env_risks_modify_policy" ON public.environmental_risks;
 CREATE POLICY "env_risks_modify_policy" ON public.environmental_risks FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "hotspots_select_policy" ON public.risk_hotspots;
 CREATE POLICY "hotspots_select_policy" ON public.risk_hotspots FOR SELECT TO authenticated
   USING (true);
 
-CREATE POLICY "hotspots_modify_policy" ON public.risk_hotspots FOR ALL TO authenticated
+DROP POLICY IF EXISTS "hotspots_modify_policy" ON public.risk_hotspots FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
@@ -354,9 +372,11 @@ CREATE POLICY "hotspots_modify_policy" ON public.risk_hotspots FOR ALL TO authen
 -- Read: all authenticated
 -- Insert/Update/Delete: admin, engineer
 -- =================================================================
+DROP POLICY IF EXISTS "maintenance_select_policy" ON public.maintenance_priorities;
 CREATE POLICY "maintenance_select_policy" ON public.maintenance_priorities FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "maintenance_modify_policy" ON public.maintenance_priorities;
 CREATE POLICY "maintenance_modify_policy" ON public.maintenance_priorities FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
@@ -364,16 +384,20 @@ CREATE POLICY "maintenance_modify_policy" ON public.maintenance_priorities FOR A
 -- =================================================================
 -- 8. DAMAGE TRENDS & GEOSPATIAL ZONES
 -- =================================================================
+DROP POLICY IF EXISTS "trends_select_authenticated" ON public.damage_trends;
 CREATE POLICY "trends_select_authenticated" ON public.damage_trends FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "trends_modify_policy" ON public.damage_trends;
 CREATE POLICY "trends_modify_policy" ON public.damage_trends FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "zones_select_authenticated" ON public.geospatial_zones;
 CREATE POLICY "zones_select_authenticated" ON public.geospatial_zones FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "zones_admin_all" ON public.geospatial_zones;
 CREATE POLICY "zones_admin_all" ON public.geospatial_zones FOR ALL TO authenticated
   USING (get_my_role() = 'admin')
   WITH CHECK (get_my_role() = 'admin');
@@ -388,39 +412,49 @@ CREATE POLICY "zones_admin_all" ON public.geospatial_zones FOR ALL TO authentica
 --   - Update: engineer, admin (validation, review, adjustments)
 --   - Delete: admin
 -- =================================================================
+DROP POLICY IF EXISTS "ai_models_select_all" ON public.ai_models;
 CREATE POLICY "ai_models_select_all" ON public.ai_models FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ai_models_admin_all" ON public.ai_models;
 CREATE POLICY "ai_models_admin_all" ON public.ai_models FOR ALL TO authenticated
   USING (get_my_role() = 'admin')
   WITH CHECK (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "ai_jobs_select_all" ON public.ai_analysis_jobs;
 CREATE POLICY "ai_jobs_select_all" ON public.ai_analysis_jobs FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ai_jobs_modify_policy" ON public.ai_analysis_jobs;
 CREATE POLICY "ai_jobs_modify_policy" ON public.ai_analysis_jobs FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'inspector'))
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
 
+DROP POLICY IF EXISTS "ai_detections_select_policy" ON public.ai_damage_detections;
 CREATE POLICY "ai_detections_select_policy" ON public.ai_damage_detections FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ai_detections_insert_policy" ON public.ai_damage_detections;
 CREATE POLICY "ai_detections_insert_policy" ON public.ai_damage_detections FOR INSERT TO authenticated
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
 
+DROP POLICY IF EXISTS "ai_detections_update_policy" ON public.ai_damage_detections;
 CREATE POLICY "ai_detections_update_policy" ON public.ai_damage_detections FOR UPDATE TO authenticated
   USING (get_my_role() IN ('admin', 'engineer'))
   WITH CHECK (get_my_role() IN ('admin', 'engineer'));
 
+DROP POLICY IF EXISTS "ai_detections_delete_policy" ON public.ai_damage_detections;
 CREATE POLICY "ai_detections_delete_policy" ON public.ai_damage_detections FOR DELETE TO authenticated
   USING (get_my_role() = 'admin');
 
 -- =================================================================
 -- 10. AR SESSIONS & AR ANCHORS (Item 1: uses started_by NOT inspector_id)
 -- =================================================================
+DROP POLICY IF EXISTS "ar_sessions_select_policy" ON public.ar_sessions;
 CREATE POLICY "ar_sessions_select_policy" ON public.ar_sessions FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ar_sessions_modify_policy" ON public.ar_sessions;
 CREATE POLICY "ar_sessions_modify_policy" ON public.ar_sessions FOR ALL TO authenticated
   USING (
     get_my_role() = 'admin'
@@ -431,9 +465,11 @@ CREATE POLICY "ar_sessions_modify_policy" ON public.ar_sessions FOR ALL TO authe
     OR (get_my_role() = 'inspector' AND started_by = auth.uid())
   );
 
+DROP POLICY IF EXISTS "ar_anchors_select_policy" ON public.ar_anchors;
 CREATE POLICY "ar_anchors_select_policy" ON public.ar_anchors FOR SELECT TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "ar_anchors_modify_policy" ON public.ar_anchors;
 CREATE POLICY "ar_anchors_modify_policy" ON public.ar_anchors FOR ALL TO authenticated
   USING (
     get_my_role() = 'admin'

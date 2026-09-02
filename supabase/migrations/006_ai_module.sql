@@ -5,7 +5,7 @@
 -- =================================================================
 
 -- Registered AI models / checkpoints
-CREATE TABLE ai_models (
+CREATE TABLE IF NOT EXISTS ai_models (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   version text NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE ai_models (
 );
 
 -- AI damage detection results attached to inspection images
-CREATE TABLE ai_damage_detections (
+CREATE TABLE IF NOT EXISTS ai_damage_detections (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   image_id uuid NOT NULL REFERENCES inspection_images(id) ON DELETE CASCADE,
   model_id uuid REFERENCES ai_models(id) ON DELETE SET NULL,
@@ -35,7 +35,7 @@ CREATE TABLE ai_damage_detections (
 );
 
 -- Per-image AI analysis job queue / status
-CREATE TABLE ai_analysis_jobs (
+CREATE TABLE IF NOT EXISTS ai_analysis_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   image_id uuid NOT NULL REFERENCES inspection_images(id) ON DELETE CASCADE,
   model_id uuid REFERENCES ai_models(id) ON DELETE SET NULL,
@@ -49,12 +49,12 @@ CREATE TABLE ai_analysis_jobs (
 -- =================================================================
 -- INDEXES
 -- =================================================================
-CREATE INDEX ai_detections_image_id_idx ON ai_damage_detections(image_id);
-CREATE INDEX ai_detections_damage_type_idx ON ai_damage_detections(damage_type);
-CREATE INDEX ai_detections_severity_idx ON ai_damage_detections(severity);
-CREATE INDEX ai_models_active_idx ON ai_models(is_active);
-CREATE INDEX ai_jobs_image_id_idx ON ai_analysis_jobs(image_id);
-CREATE INDEX ai_jobs_status_idx ON ai_analysis_jobs(status);
+CREATE INDEX IF NOT EXISTS ai_detections_image_id_idx ON ai_damage_detections(image_id);
+CREATE INDEX IF NOT EXISTS ai_detections_damage_type_idx ON ai_damage_detections(damage_type);
+CREATE INDEX IF NOT EXISTS ai_detections_severity_idx ON ai_damage_detections(severity);
+CREATE INDEX IF NOT EXISTS ai_models_active_idx ON ai_models(is_active);
+CREATE INDEX IF NOT EXISTS ai_jobs_image_id_idx ON ai_analysis_jobs(image_id);
+CREATE INDEX IF NOT EXISTS ai_jobs_status_idx ON ai_analysis_jobs(status);
 
 -- =================================================================
 -- ROW LEVEL SECURITY
@@ -64,21 +64,34 @@ ALTER TABLE ai_damage_detections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_analysis_jobs ENABLE ROW LEVEL SECURITY;
 
 -- All authenticated users can read AI results; only admins can manage models
+DROP POLICY IF EXISTS "ai_models_select_all" ON ai_models;
 CREATE POLICY "ai_models_select_all" ON ai_models FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ai_models_admin_all" ON ai_models;
 CREATE POLICY "ai_models_admin_all" ON ai_models FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 -- Inspectors and admins can create/verify detections; everyone authenticated can read
+DROP POLICY IF EXISTS "ai_detections_select_all" ON ai_damage_detections;
 CREATE POLICY "ai_detections_select_all" ON ai_damage_detections FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ai_detections_inspector_all" ON ai_damage_detections;
 CREATE POLICY "ai_detections_inspector_all" ON ai_damage_detections FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'inspector'))
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
+
+DROP POLICY IF EXISTS "ai_detections_admin_all" ON ai_damage_detections;
 CREATE POLICY "ai_detections_admin_all" ON ai_damage_detections FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 -- Inspectors and admins can create/update jobs; everyone authenticated can read
+DROP POLICY IF EXISTS "ai_jobs_select_all" ON ai_analysis_jobs;
 CREATE POLICY "ai_jobs_select_all" ON ai_analysis_jobs FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ai_jobs_inspector_all" ON ai_analysis_jobs;
 CREATE POLICY "ai_jobs_inspector_all" ON ai_analysis_jobs FOR ALL TO authenticated
   USING (get_my_role() IN ('admin', 'inspector'))
   WITH CHECK (get_my_role() IN ('admin', 'inspector'));
+
+DROP POLICY IF EXISTS "ai_jobs_admin_all" ON ai_analysis_jobs;
 CREATE POLICY "ai_jobs_admin_all" ON ai_analysis_jobs FOR ALL TO authenticated USING (get_my_role() = 'admin');
 
 -- Seed a mock/demo model so the UI and data flow can be demonstrated

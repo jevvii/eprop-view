@@ -1,9 +1,9 @@
 ALTER TABLE reports
-  ADD COLUMN created_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  ADD COLUMN reviewed_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  ADD COLUMN reviewed_at timestamptz,
-  ADD COLUMN last_edited_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  ADD COLUMN last_edited_at timestamptz;
+  ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS reviewed_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS reviewed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_edited_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS last_edited_at timestamptz;
 
 CREATE INDEX IF NOT EXISTS reports_created_by_idx ON reports(created_by);
 CREATE INDEX IF NOT EXISTS reports_reviewed_by_idx ON reports(reviewed_by);
