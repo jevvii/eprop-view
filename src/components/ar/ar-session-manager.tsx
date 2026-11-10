@@ -95,6 +95,11 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const opticalLoopIdRef = useRef<number | null>(null)
   const scanTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const sessionRef = useRef<XRSession | null>(null)
+
+  useEffect(() => {
+    sessionRef.current = session
+  }, [session])
 
   // Tracking reticle target normalized coordinates [0.0..1.0] (default center 0.5, 0.5)
   const targetNormRef = useRef<{ nx: number; ny: number }>({ nx: 0.5, ny: 0.5 })
@@ -656,9 +661,9 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
       if (opticalLoopIdRef.current) {
         cancelAnimationFrame(opticalLoopIdRef.current)
       }
-      if (animFrameIdRef.current && session) {
+      if (animFrameIdRef.current && sessionRef.current) {
         try {
-          session.cancelAnimationFrame(animFrameIdRef.current)
+          sessionRef.current.cancelAnimationFrame(animFrameIdRef.current)
         } catch {}
       }
       if (scanTimerRef.current) {
@@ -672,13 +677,13 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
           hitTestSourceRef.current.cancel()
         } catch {}
       }
-      if (session) {
+      if (sessionRef.current) {
         try {
-          session.end()
+          sessionRef.current.end()
         } catch {}
       }
     }
-  }, [session])
+  }, [])
 
   return (
     <ARSessionContext.Provider

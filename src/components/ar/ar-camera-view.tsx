@@ -108,7 +108,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
 
       {/* Active HUD Telemetry Overlay */}
       {isActive ? (
-        <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-3 sm:p-5">
+        <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between p-3 sm:p-5">
           {/* Top Telemetry Header Bar */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
@@ -186,7 +186,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
                 }}
                 disabled={!hitPose}
                 className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-slate-950 font-black text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-xl shadow-emerald-500/30 transition-all border border-emerald-300 min-h-[44px] min-w-[44px]"
-                aria-label="Drop Quick Anchor Marker"
+                aria-label="Drop Quick Marker"
               >
                 <span className="text-base sm:text-lg">📍</span>
                 <span className="font-extrabold uppercase tracking-wider">Quick Marker</span>

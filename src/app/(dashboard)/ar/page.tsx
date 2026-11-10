@@ -247,14 +247,15 @@ function ARPageContent() {
           {/* In-Page Inspection Selector Dropdown */}
           <div className="flex items-center gap-2 flex-wrap pt-1">
             <label
-              htmlFor="ar-inspection-picker"
+              htmlFor="ar-inspection-select"
               className="text-xs font-black uppercase tracking-wider text-slate-500 shrink-0"
             >
               Inspection:
             </label>
             <div className="relative flex-1 max-w-md">
               <select
-                id="ar-inspection-picker"
+                id="ar-inspection-select"
+                data-testid="ar-inspection-select"
                 value={selectedInspectionId}
                 onChange={(e) => handleInspectionChange(e.target.value)}
                 disabled={isActive}

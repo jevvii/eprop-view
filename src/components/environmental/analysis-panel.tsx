@@ -30,6 +30,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   const [analysis, setAnalysis] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [isAutoCalculating, setIsAutoCalculating] = useState(false)
 
   useEffect(() => {
     if (!risk) return
@@ -89,8 +90,6 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
       </div>
     )
   }
-
-  const [isAutoCalculating, setIsAutoCalculating] = useState(false)
 
   const handleAutoCalculate = async () => {
     if (!canAssess) return

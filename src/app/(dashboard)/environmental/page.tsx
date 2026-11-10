@@ -20,6 +20,17 @@ export default function EnvironmentalPage() {
 
   const canViewEnv = hasCapability(profile?.role, 'dashboard:view') || hasCapability(profile?.role, 'envrisk:assess')
 
+  useEffect(() => {
+    if (!projectId && projects && projects.length > 0) {
+      setProjectId(projects[0].id)
+    }
+  }, [projectId, projects])
+
+  const selectedProject = useMemo(
+    () => projects?.find((project) => project.id === projectId),
+    [projects, projectId]
+  )
+
   if (profileLoading) {
     return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
   }
@@ -34,17 +45,6 @@ export default function EnvironmentalPage() {
       />
     )
   }
-
-  useEffect(() => {
-    if (!projectId && projects && projects.length > 0) {
-      setProjectId(projects[0].id)
-    }
-  }, [projectId, projects])
-
-  const selectedProject = useMemo(
-    () => projects?.find((project) => project.id === projectId),
-    [projects, projectId]
-  )
 
   const handleRefresh = async () => {
     setIsRefreshing(true)

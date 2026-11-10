@@ -25,6 +25,7 @@ const PENDING_MIGRATIONS = [
   '011_building_master_data.sql',
   '012_geohazard_layers.sql',
   '013_storage_audit.sql',
+  '014_fix_profiles_rls_recursion.sql',
 ]
 
 async function promptPassword(): Promise<string> {
