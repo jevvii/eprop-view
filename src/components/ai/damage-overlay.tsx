@@ -7,8 +7,8 @@ import { SeverityBadge } from './severity-badge'
 const severityRing: Record<AIDamageDetection['severity'], string> = {
   low: 'ring-emerald-400/70',
   medium: 'ring-amber-400/70',
-  high: 'ring-red-400/70',
-  critical: 'ring-purple-400/70',
+  high: 'ring-orange-400/70',
+  critical: 'ring-red-500/80',
 }
 
 interface DamageOverlayProps {

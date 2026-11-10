@@ -32,7 +32,7 @@ export function AROverlay({ anchors }: AROverlayProps) {
 
         // Distance scaling (near = 1.1x, far = 0.8x)
         const scale = Math.min(1.1, Math.max(0.78, 1.3 / depth))
-        const snapshotUrl = (anchor as unknown as { image_url?: string }).image_url || anchor.snapshot_path
+        const snapshotUrl = anchor.image_url
 
         return (
           <div
@@ -57,7 +57,7 @@ export function AROverlay({ anchors }: AROverlayProps) {
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-black uppercase tracking-wider text-white truncate">
-                      📍 {anchor.label}
+                      {anchor.label}
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       {anchor.severity && <SeverityBadge severity={anchor.severity} />}
@@ -66,9 +66,9 @@ export function AROverlay({ anchors }: AROverlayProps) {
                 </div>
 
                 <div className="flex items-center justify-between gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider pt-0.5 border-t border-white/10">
-                  <span className="truncate">{anchor.damage_type ?? 'structural'}</span>
+                  <span className="truncate">{anchor.damage_type ?? 'unclassified'}</span>
                   <span className="font-mono text-emerald-400 shrink-0 tabular-nums">
-                    {anchor.pose?.position?.z ? `${Math.abs(anchor.pose.position.z).toFixed(1)}m` : '1.5m'}
+                    ~{Math.abs(anchor.pose?.position?.z ?? 1.45).toFixed(1)}m est.
                   </span>
                 </div>
               </div>

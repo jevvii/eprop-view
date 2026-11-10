@@ -267,21 +267,15 @@ export async function runMigration(): Promise<MigrationResult> {
       try {
         const { error: mError } = await supabase.from('ai_models').upsert([
           {
-            name: 'ResNet50-DamageClassifier-v2',
-            version: '2.1.0',
-            task: 'classification',
-            format: 'mock',
-            labels: ['crack', 'corrosion', 'spalling', 'deformation', 'leakage', 'none'],
-            is_active: true,
-          },
-          {
-            name: 'YOLOv8-StructuralDefects-v1',
-            version: '1.4.0',
+            name: 'Edge-Gradient Detector',
+            version: '2.0.0',
             task: 'detection',
-            format: 'mock',
+            format: 'heuristic',
+            architecture: 'heuristic',
             labels: ['crack', 'corrosion', 'spalling', 'deformation', 'leakage'],
             is_active: true,
-          }
+            metadata: { engine: 'heuristic', non_ml: true },
+          },
         ], { onConflict: 'name' })
 
         if (mError) {

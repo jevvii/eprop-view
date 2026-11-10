@@ -183,6 +183,12 @@ export function useRunAIAnalysis() {
       queryClient.invalidateQueries({ queryKey: ['inspections'] })
       queryClient.invalidateQueries({ queryKey: ['inspection'] })
     },
+    // A failed run still writes a failed job row. Refresh so the failure is
+    // visible instead of leaving the previous "completed" state on screen.
+    onSettled: (_, __, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ai-jobs', variables.imageId] })
+      queryClient.invalidateQueries({ queryKey: ['ai-detections', variables.imageId] })
+    },
   })
 }
 
@@ -258,7 +264,7 @@ export function useCreateARAnchor() {
       severity,
       detectionId,
       notes,
-      snapshotPath,
+      snapshotDataUrl,
     }: {
       sessionId: string
       inspectionId: string
@@ -269,7 +275,7 @@ export function useCreateARAnchor() {
       severity?: SeverityLevel
       detectionId?: string
       notes?: string
-      snapshotPath?: string
+      snapshotDataUrl?: string
     }) => {
       return createARAnchor({
         sessionId,
@@ -281,7 +287,7 @@ export function useCreateARAnchor() {
         severity,
         detectionId,
         notes,
-        snapshotPath,
+        snapshotDataUrl,
       })
     },
     onSuccess: (_, variables) => {

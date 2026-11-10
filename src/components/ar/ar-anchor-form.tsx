@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useCreateARAnchor } from '@/app/lib/mutations'
+import { analyzeCapturedFrame } from '@/app/actions/ai-frame'
 import { useARSessionContext } from './ar-session-manager'
 import { Button } from '@/components/ui/button'
 import type { ARPose, DamageType, SeverityLevel } from '@/app/types'
@@ -16,6 +17,15 @@ interface ARAnchorFormProps {
 const damageTypes: DamageType[] = ['crack', 'corrosion', 'spalling', 'deformation', 'leakage', 'none']
 const severities: SeverityLevel[] = ['low', 'medium', 'high', 'critical']
 
+const labelMap: Record<DamageType, string> = {
+  crack: 'Surface Tension Crack',
+  spalling: 'Concrete Spalling & Void',
+  corrosion: 'Reinforcement Corrosion',
+  leakage: 'Seepage & Efflorescence',
+  deformation: 'Structural Deflection',
+  none: 'Structural Member',
+}
+
 export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAnchorFormProps) {
   const createAnchor = useCreateARAnchor()
   const { captureCurrentFrame } = useARSessionContext()
@@ -26,6 +36,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
   const [notes, setNotes] = useState('')
   const [snapshot, setSnapshot] = useState<string | null>(null)
   const [isScanningAI, setIsScanningAI] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
 
   const activePose: ARPose = hitPose || {
     position: { x: 0, y: -0.15, z: -1.45 },
@@ -40,50 +51,35 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
   }, [captureCurrentFrame])
 
   const handleAICameraScan = async () => {
+    setScanError(null)
+    const frame = captureCurrentFrame()
+
+    if (!frame) {
+      setScanError('No camera frame is available. Start the camera or a WebXR session first.')
+      return
+    }
+
+    setSnapshot(frame)
     setIsScanningAI(true)
+
     try {
-      const { calculateDefectSeverity } = await import('@/app/lib/ai/severity-scoring')
-      await new Promise((res) => setTimeout(res, 400))
+      const result = await analyzeCapturedFrame({ inspectionId, dataUrl: frame })
 
-      // Also capture frame snapshot automatically during AI scan
-      const frame = captureCurrentFrame()
-      if (frame) {
-        setSnapshot(frame)
+      if (!result) {
+        setNotes('Heuristic analysis: no defect pattern detected in this frame.')
+        return
       }
 
-      const depth = Math.abs(activePose.position.z || 1.45)
-      const defectTypes: DamageType[] = ['crack', 'spalling', 'corrosion', 'leakage', 'deformation']
-      const seedIndex =
-        Math.abs(Math.round(activePose.position.x * 10 + activePose.position.y * 5 + depth * 3)) %
-        defectTypes.length
-      const detectedType = defectTypes[seedIndex]
-
-      const simulatedBox = {
-        x: 0.35,
-        y: 0.35,
-        width: Math.min(0.3, Math.max(0.08, 0.2 / depth)),
-        height: Math.min(0.3, Math.max(0.08, 0.2 / depth)),
-      }
-      const confidence = Number((0.85 + (seedIndex % 10) * 0.01).toFixed(2))
-      const { severity: calcSeverity } = calculateDefectSeverity(detectedType, simulatedBox, confidence)
-
-      const labelMap: Record<DamageType, string> = {
-        crack: 'Surface Tension Crack',
-        spalling: 'Concrete Spalling & Void',
-        corrosion: 'Reinforcement Corrosion',
-        leakage: 'Seepage & Efflorescence',
-        deformation: 'Structural Deflection',
-        none: 'Structural Member',
-      }
-
-      setDamageType(detectedType)
-      setSeverity(calcSeverity)
-      setLabel(labelMap[detectedType])
+      setDamageType(result.damageType)
+      setSeverity(result.severity)
+      setLabel(labelMap[result.damageType])
       setNotes(
-        `Optical AI: ${detectedType.toUpperCase()} at depth ${depth.toFixed(1)}m (Confidence: ${(
-          confidence * 100
-        ).toFixed(0)}%).`
+        `Heuristic edge/colour analysis (non-ML): ${result.damageType} at ${(
+          result.confidence * 100
+        ).toFixed(0)}% confidence. Not a trained classifier.`
       )
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : 'Frame analysis failed')
     } finally {
       setIsScanningAI(false)
     }
@@ -91,21 +87,25 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    setScanError(null)
 
-    await createAnchor.mutateAsync({
-      sessionId,
-      inspectionId,
-      label,
-      pose: activePose,
-      damageType,
-      severity,
-      notes,
-      snapshotPath: snapshot || undefined,
-    })
+    try {
+      await createAnchor.mutateAsync({
+        sessionId,
+        inspectionId,
+        label,
+        pose: activePose,
+        damageType,
+        severity,
+        notes,
+        snapshotDataUrl: snapshot || undefined,
+      })
 
-    // Reset snapshot after successful save
-    setSnapshot(null)
-    onSaved?.()
+      setSnapshot(null)
+      onSaved?.()
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : 'Could not save the anchor')
+    }
   }
 
   return (
@@ -124,18 +124,24 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
           type="button"
           onClick={handleAICameraScan}
           disabled={isScanningAI}
-          className="text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl uppercase tracking-wider transition-colors min-h-[36px]"
+          className="text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl uppercase tracking-wider transition-colors min-h-[44px]"
         >
-          {isScanningAI ? 'Analyzing Frame…' : 'AI Defect Scan 🪄'}
+          {isScanningAI ? 'Analyzing…' : 'Analyze Frame (heuristic)'}
         </button>
       </div>
+
+      {scanError && (
+        <p role="alert" className="text-xs font-semibold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
+          {scanError}
+        </p>
+      )}
 
       {/* Surface Coordinate Telemetry */}
       <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs">
         <div className="flex justify-between text-slate-400 font-bold uppercase tracking-wider mb-1">
-          <span>Target Pose (6-DOF)</span>
+          <span>Marker Pose (screen-space)</span>
           <span className={hitPose ? 'text-emerald-600 font-black' : 'text-amber-600 font-black'}>
-            {hitPose ? 'Plane Locked' : 'Surface Estimating'}
+            {hitPose ? 'WebXR hit' : 'Estimated'}
           </span>
         </div>
         <div className="font-mono text-slate-700 font-bold tabular-nums">
@@ -244,13 +250,14 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
                 className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-500 shadow-md shrink-0"
               />
               <div className="text-xs text-slate-500 leading-tight">
-                <span className="font-bold text-emerald-600">✓ Optical Frame Staged.</span> This snapshot
-                will be stored with the 3D anchor and visible in reports and document vault.
+                <span className="font-bold text-emerald-600">Frame staged.</span> It will be re-encoded
+                and stored privately, then linked to this anchor.
               </div>
             </div>
           ) : (
-            <p className="text-[8.5px] text-slate-400 font-medium">
-              Click &quot;Snap Frame&quot; to capture a high-res freeze frame of the inspected surface.
+            <p className="text-xs text-slate-500 font-medium">
+              Capture a freeze frame of the inspected surface. Analysis is a deterministic heuristic,
+              not a trained model.
             </p>
           )}
         </div>

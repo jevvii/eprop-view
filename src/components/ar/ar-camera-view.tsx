@@ -53,17 +53,17 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
     switch (activeMode) {
       case 'webxr':
         return {
-          label: '⚡ WebXR Hardware AR',
+          label: 'WebXR hit-test',
           classes: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
         }
       case 'optical-camera':
         return {
-          label: '📷 Live Optical Camera AR',
+          label: 'Camera + screen markers',
           classes: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
         }
       case 'simulated':
         return {
-          label: '📐 Synthetic Spatial Grid',
+          label: 'Simulated grid (no camera)',
           classes: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
         }
       default:
@@ -78,7 +78,9 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
 
   return (
     <div
-      className="relative w-full h-full bg-slate-950 overflow-hidden select-none touch-none"
+      className={`relative w-full h-full bg-slate-950 overflow-hidden select-none ${
+        isActive ? 'touch-none' : 'touch-pan-y'
+      }`}
       onPointerDown={handlePointer}
       onPointerMove={(e) => {
         // Allow drag-aiming on mobile touch

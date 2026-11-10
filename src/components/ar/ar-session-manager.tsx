@@ -20,6 +20,8 @@ export interface XRSessionState {
   isActive: boolean
   session: XRSession | null
   error: string | null
+  /** Non-fatal capability limitation, e.g. camera or motion permission denied. */
+  limitation: string | null
   hitPose: ARPose | null
   hitMatrix: number[] | null
   videoRef: React.RefObject<HTMLVideoElement | null>
@@ -83,6 +85,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const [activeMode, setActiveMode] = useState<ARActiveMode>('idle')
   const [session, setSession] = useState<XRSession | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [limitation, setLimitation] = useState<string | null>(null)
   const [hitPose, setHitPose] = useState<ARPose | null>(null)
   const [hitMatrix, setHitMatrix] = useState<number[] | null>(null)
 
@@ -96,6 +99,9 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const opticalLoopIdRef = useRef<number | null>(null)
   const scanTimerRef = useRef<NodeJS.Timeout | null>(null)
   const sessionRef = useRef<XRSession | null>(null)
+  const isStartingRef = useRef(false)
+  const endedRef = useRef(false)
+  const motionPermissionRef = useRef<'unknown' | 'granted' | 'denied'>('unknown')
 
   useEffect(() => {
     sessionRef.current = session
@@ -395,11 +401,16 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     opticalLoopIdRef.current = requestAnimationFrame(renderSimulated)
   }, [])
 
-  // WebXR session cleanup
+  // WebXR session cleanup. Guarded so an externally-ended session and an
+  // explicit End click cannot both run completion twice.
   const handleSessionEnd = useCallback(() => {
-    if (animFrameIdRef.current && session) {
+    if (endedRef.current) return
+    endedRef.current = true
+
+    const currentSession = sessionRef.current
+    if (animFrameIdRef.current && currentSession) {
       try {
-        session.cancelAnimationFrame(animFrameIdRef.current)
+        currentSession.cancelAnimationFrame(animFrameIdRef.current)
       } catch {}
       animFrameIdRef.current = null
     }
@@ -412,16 +423,16 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     }
 
     refSpaceRef.current = null
+    sessionRef.current = null
     setSession(null)
     setActiveMode('idle')
     setHitPose(null)
     setHitMatrix(null)
     onEnded?.()
-  }, [session, onEnded])
+  }, [onEnded])
 
   // Full endSession handler stopping all media tracks and loops
   const endSession = useCallback(async () => {
-    // 1. Cancel optical or simulated loops
     if (opticalLoopIdRef.current) {
       cancelAnimationFrame(opticalLoopIdRef.current)
       opticalLoopIdRef.current = null
@@ -432,7 +443,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
       scanTimerRef.current = null
     }
 
-    // 2. Stop camera media stream tracks
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop())
       mediaStreamRef.current = null
@@ -442,209 +452,268 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
       videoRef.current.srcObject = null
     }
 
-    // 3. Stop WebXR session if active
-    if (session) {
+    if (sessionRef.current) {
       try {
-        await session.end()
+        await sessionRef.current.end()
       } catch (err) {
         console.warn('Session end error:', err)
       }
     }
 
     handleSessionEnd()
-  }, [session, handleSessionEnd])
+  }, [handleSessionEnd])
 
-  // Frame snapshot capture for inspections and anchors
+  // Frame snapshot capture for inspections and anchors. Synthetic grid frames
+  // are never returned as evidence.
   const captureCurrentFrame = useCallback((): string | null => {
-    const canvas = canvasRef.current
     const video = videoRef.current
+    const canvas = canvasRef.current
 
-    if (activeMode === 'optical-camera' && video && canvas) {
+    if (activeMode === 'optical-camera' && video && video.readyState >= 2) {
       try {
-        const ctx = canvas.getContext('2d')
-        if (ctx && video.readyState >= 2) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        const width = video.videoWidth
+        const height = video.videoHeight
+        if (width > 0 && height > 0) {
+          const offscreen = document.createElement('canvas')
+          offscreen.width = width
+          offscreen.height = height
+          const ctx = offscreen.getContext('2d')
+          if (ctx) {
+            // Raw camera frame: no reticle or HUD burned into the evidence.
+            ctx.drawImage(video, 0, 0, width, height)
+            return offscreen.toDataURL('image/jpeg', 0.85)
+          }
         }
-        return canvas.toDataURL('image/jpeg', 0.85)
       } catch (e) {
         console.warn('Optical snapshot capture failed:', e)
       }
     }
 
-    if (canvas) {
+    if (activeMode === 'webxr' && canvas && canvas.width > 0 && canvas.height > 0) {
       try {
         return canvas.toDataURL('image/jpeg', 0.85)
       } catch (e) {
-        console.warn('Canvas snapshot capture failed:', e)
+        console.warn('WebXR canvas snapshot capture failed:', e)
       }
     }
 
     return null
   }, [activeMode])
 
+  // iOS requires a user gesture before device-orientation events are delivered.
+  const requestMotionPermission = useCallback(async () => {
+    if (typeof DeviceOrientationEvent === 'undefined') {
+      motionPermissionRef.current = 'denied'
+      return false
+    }
+
+    const requestPermission = (
+      DeviceOrientationEvent as unknown as {
+        requestPermission?: () => Promise<'granted' | 'denied'>
+      }
+    ).requestPermission
+
+    if (typeof requestPermission !== 'function') {
+      motionPermissionRef.current = 'granted'
+      return true
+    }
+
+    try {
+      const result = await requestPermission()
+      motionPermissionRef.current = result === 'granted' ? 'granted' : 'denied'
+      return result === 'granted'
+    } catch {
+      motionPermissionRef.current = 'denied'
+      return false
+    }
+  }, [])
+
   // Multi-tier progressive AR starter
   const startSession = useCallback(async () => {
+    if (isStartingRef.current) return
+    isStartingRef.current = true
+    endedRef.current = false
     setError(null)
+    setLimitation(null)
 
-    // Tier 1 & 2: Try WebXR hardware immersive-ar first if available
-    if (xrHardwareSupported && navigator?.xr) {
-      try {
-        const canvas = canvasRef.current
-        if (!canvas) {
-          throw new Error('AR canvas is not mounted.')
-        }
-
-        const gl = canvas.getContext('webgl', {
-          alpha: true,
-          antialias: true,
-          preserveDrawingBuffer: true,
-        }) as WebGLRenderingContext | null
-
-        if (gl) {
-          if (gl.makeXRCompatible) {
-            await gl.makeXRCompatible()
+    try {
+      // Tier 1 & 2: WebXR hardware immersive-ar, only when genuinely supported.
+      if (xrHardwareSupported && navigator?.xr) {
+        try {
+          const canvas = canvasRef.current
+          if (!canvas) {
+            throw new Error('AR canvas is not mounted.')
           }
-          glRef.current = gl
 
-          const xrSession = await navigator.xr.requestSession('immersive-ar', {
-            requiredFeatures: ['hit-test'],
-            optionalFeatures: ['dom-overlay', 'local-floor'],
-            domOverlay: typeof document !== 'undefined' ? { root: document.body } : undefined,
-          } as XRSessionInit)
+          const gl = canvas.getContext('webgl', {
+            alpha: true,
+            antialias: true,
+            preserveDrawingBuffer: true,
+          }) as WebGLRenderingContext | null
 
-          const baseLayer = new XRWebGLLayer(xrSession, gl)
-          await xrSession.updateRenderState({ baseLayer })
+          if (gl) {
+            if (gl.makeXRCompatible) {
+              await gl.makeXRCompatible()
+            }
+            glRef.current = gl
 
-          let refSpace: XRReferenceSpace
-          try {
-            refSpace = await xrSession.requestReferenceSpace('local-floor')
-          } catch {
-            refSpace = await xrSession.requestReferenceSpace('local')
-          }
-          refSpaceRef.current = refSpace
+            const xrSession = await navigator.xr.requestSession('immersive-ar', {
+              requiredFeatures: ['hit-test'],
+              optionalFeatures: ['dom-overlay', 'local-floor'],
+              domOverlay: typeof document !== 'undefined' ? { root: document.body } : undefined,
+            } as XRSessionInit)
 
-          if (xrSession.requestHitTestSource) {
+            const baseLayer = new XRWebGLLayer(xrSession, gl)
+            await xrSession.updateRenderState({ baseLayer })
+
+            let refSpace: XRReferenceSpace
             try {
-              const viewerSpace = await xrSession.requestReferenceSpace('viewer')
-              const hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace })
-              hitTestSourceRef.current = hitTestSource
-            } catch (e) {
-              console.warn('Hit test source request failed:', e)
+              refSpace = await xrSession.requestReferenceSpace('local-floor')
+            } catch {
+              refSpace = await xrSession.requestReferenceSpace('local')
             }
-          }
+            refSpaceRef.current = refSpace
 
-          xrSession.addEventListener('end', handleSessionEnd)
-
-          const onXRFrame: XRFrameRequestCallback = (_time, frame) => {
-            const currentSession = frame.session
-            animFrameIdRef.current = currentSession.requestAnimationFrame(onXRFrame)
-
-            const currentGL = glRef.current
-            const currentLayer = currentSession.renderState.baseLayer
-
-            if (currentGL && currentLayer) {
-              currentGL.bindFramebuffer(currentGL.FRAMEBUFFER, currentLayer.framebuffer)
-              currentGL.clearColor(0, 0, 0, 0)
-              currentGL.clear(currentGL.COLOR_BUFFER_BIT | currentGL.DEPTH_BUFFER_BIT)
-            }
-
-            const currentHitSource = hitTestSourceRef.current
-            const currentRefSpace = refSpaceRef.current
-
-            if (currentHitSource && currentRefSpace) {
-              const hitTestResults = frame.getHitTestResults(currentHitSource)
-              if (hitTestResults.length > 0) {
-                const hit = hitTestResults[0]
-                const pose = hit.getPose(currentRefSpace)
-                if (pose) {
-                  const pos = pose.transform.position
-                  const ori = pose.transform.orientation
-                  setHitPose({
-                    position: {
-                      x: Number(pos.x.toFixed(3)),
-                      y: Number(pos.y.toFixed(3)),
-                      z: Number(pos.z.toFixed(3)),
-                    },
-                    quaternion: {
-                      x: Number(ori.x.toFixed(3)),
-                      y: Number(ori.y.toFixed(3)),
-                      z: Number(ori.z.toFixed(3)),
-                      w: Number(ori.w.toFixed(3)),
-                    },
-                  })
-                  setHitMatrix(Array.from(pose.transform.matrix))
-                }
-              } else {
-                setHitPose(null)
-                setHitMatrix(null)
+            if (xrSession.requestHitTestSource) {
+              try {
+                const viewerSpace = await xrSession.requestReferenceSpace('viewer')
+                const hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace })
+                hitTestSourceRef.current = hitTestSource
+              } catch (e) {
+                console.warn('Hit test source request failed:', e)
               }
             }
+
+            sessionRef.current = xrSession
+            xrSession.addEventListener('end', handleSessionEnd)
+
+            const onXRFrame: XRFrameRequestCallback = (_time, frame) => {
+              const currentSession = frame.session
+              animFrameIdRef.current = currentSession.requestAnimationFrame(onXRFrame)
+
+              const currentGL = glRef.current
+              const currentLayer = currentSession.renderState.baseLayer
+
+              if (currentGL && currentLayer) {
+                currentGL.bindFramebuffer(currentGL.FRAMEBUFFER, currentLayer.framebuffer)
+                currentGL.clearColor(0, 0, 0, 0)
+                currentGL.clear(currentGL.COLOR_BUFFER_BIT | currentGL.DEPTH_BUFFER_BIT)
+              }
+
+              const currentHitSource = hitTestSourceRef.current
+              const currentRefSpace = refSpaceRef.current
+
+              if (currentHitSource && currentRefSpace) {
+                const hitTestResults = frame.getHitTestResults(currentHitSource)
+                if (hitTestResults.length > 0) {
+                  const hit = hitTestResults[0]
+                  const pose = hit.getPose(currentRefSpace)
+                  if (pose) {
+                    const pos = pose.transform.position
+                    const ori = pose.transform.orientation
+                    setHitPose({
+                      position: {
+                        x: Number(pos.x.toFixed(3)),
+                        y: Number(pos.y.toFixed(3)),
+                        z: Number(pos.z.toFixed(3)),
+                      },
+                      quaternion: {
+                        x: Number(ori.x.toFixed(3)),
+                        y: Number(ori.y.toFixed(3)),
+                        z: Number(ori.z.toFixed(3)),
+                        w: Number(ori.w.toFixed(3)),
+                      },
+                    })
+                    setHitMatrix(Array.from(pose.transform.matrix))
+                  }
+                } else {
+                  setHitPose(null)
+                  setHitMatrix(null)
+                }
+              }
+            }
+
+            animFrameIdRef.current = xrSession.requestAnimationFrame(onXRFrame)
+            setSession(xrSession)
+            setActiveMode('webxr')
+            onStarted?.()
+            return
+          }
+        } catch (xrErr) {
+          console.warn('WebXR hardware session failed, falling back to the optical camera:', xrErr)
+        }
+      }
+
+      // Tier 3A: live rear camera with a screen-space reticle.
+      if (navigator?.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+        try {
+          const motionAllowed = await requestMotionPermission()
+          if (!motionAllowed) {
+            setLimitation('Motion tracking is unavailable (permission denied). Tap the view to aim the marker.')
           }
 
-          animFrameIdRef.current = xrSession.requestAnimationFrame(onXRFrame)
-          setSession(xrSession)
-          setActiveMode('webxr')
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          })
+
+          mediaStreamRef.current = stream
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream
+            await videoRef.current.play().catch(() => {})
+          }
+
+          const virtualSession = createVirtualSession()
+          sessionRef.current = virtualSession
+          setSession(virtualSession)
+          setActiveMode('optical-camera')
+          startOpticalLoop()
+
+          // Brief surface-lock animation; the pose is screen-space, not a plane.
+          setHitPose(null)
+          scanTimerRef.current = setTimeout(() => {
+            const { pose, matrix } = calculateOpticalPose()
+            setHitPose(pose)
+            setHitMatrix(matrix)
+          }, 800)
+
           onStarted?.()
           return
+        } catch (mediaErr) {
+          console.warn('Camera unavailable or denied; using the simulated grid:', mediaErr)
+          setLimitation(
+            'Camera access was denied or unavailable. Showing a simulated grid; no image evidence will be captured.'
+          )
         }
-      } catch (xrErr) {
-        console.warn('WebXR hardware session failed, falling back to Tier 3A Optical Camera:', xrErr)
+      } else {
+        setLimitation(
+          'This browser has no camera API. Showing a simulated grid; no image evidence will be captured.'
+        )
       }
+
+      // Tier 3B: simulated grid. Clearly a training/placement aid, not tracking.
+      const virtualSession = createVirtualSession()
+      sessionRef.current = virtualSession
+      setSession(virtualSession)
+      setActiveMode('simulated')
+      startSimulatedLoop()
+
+      setHitPose(null)
+      scanTimerRef.current = setTimeout(() => {
+        const { pose, matrix } = calculateOpticalPose()
+        setHitPose(pose)
+        setHitMatrix(matrix)
+      }, 600)
+
+      onStarted?.()
+    } finally {
+      isStartingRef.current = false
     }
-
-    // Tier 3A: Live Optical Rear Camera Stream with Touch/Gyro Spatial Raycasting
-    if (navigator?.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        })
-
-        mediaStreamRef.current = stream
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          await videoRef.current.play().catch(() => {})
-        }
-
-        const virtualSession = createVirtualSession()
-        setSession(virtualSession)
-        setActiveMode('optical-camera')
-        startOpticalLoop()
-
-        // Scanning phase: brief 800ms surface lock
-        setHitPose(null)
-        scanTimerRef.current = setTimeout(() => {
-          const { pose, matrix } = calculateOpticalPose()
-          setHitPose(pose)
-          setHitMatrix(matrix)
-        }, 800)
-
-        onStarted?.()
-        return
-      } catch (mediaErr) {
-        console.warn('Camera getUserMedia unavailable or denied, falling back to Tier 3B Simulated Grid:', mediaErr)
-      }
-    }
-
-    // Tier 3B: Interactive Simulated Optical Grid Fallback (Never blocks or throws!)
-    const virtualSession = createVirtualSession()
-    setSession(virtualSession)
-    setActiveMode('simulated')
-    startSimulatedLoop()
-
-    setHitPose(null)
-    scanTimerRef.current = setTimeout(() => {
-      const { pose, matrix } = calculateOpticalPose()
-      setHitPose(pose)
-      setHitMatrix(matrix)
-    }, 600)
-
-    onStarted?.()
   }, [
     xrHardwareSupported,
     handleSessionEnd,
@@ -653,6 +722,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     startOpticalLoop,
     calculateOpticalPose,
     startSimulatedLoop,
+    requestMotionPermission,
   ])
 
   // Cleanup on unmount
@@ -678,9 +748,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
         } catch {}
       }
       if (sessionRef.current) {
-        try {
-          sessionRef.current.end()
-        } catch {}
+        sessionRef.current.end().catch(() => {})
       }
     }
   }, [])
@@ -694,6 +762,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
         isActive: activeMode !== 'idle',
         session,
         error,
+        limitation,
         hitPose,
         hitMatrix,
         videoRef,

@@ -192,13 +192,15 @@ export function calculateIoU(
 }
 
 /**
- * Performs Non-Maximum Suppression (NMS) to eliminate duplicate overlapping detections.
+ * Performs Non-Maximum Suppression (NMS) to eliminate duplicate overlapping
+ * detections. Suppression is class-aware: a corrosion box must not remove an
+ * overlapping crack box.
  */
-export function applyNMS<T extends { bbox: { x: number; y: number; width: number; height: number } | null; confidence: number }>(
-  items: T[],
-  iouThreshold: number = 0.45
-): T[] {
-  // Sort descending by confidence
+export function applyNMS<T extends {
+  bbox: { x: number; y: number; width: number; height: number } | null
+  confidence: number
+  damage_type?: string
+}>(items: T[], iouThreshold: number = 0.45): T[] {
   const sorted = [...items].sort((a, b) => b.confidence - a.confidence)
   const selected: T[] = []
 
@@ -213,11 +215,13 @@ export function applyNMS<T extends { bbox: { x: number; y: number; width: number
 
     for (let i = sorted.length - 1; i >= 0; i--) {
       const candidate = sorted[i]
-      if (candidate.bbox) {
-        const iou = calculateIoU(current.bbox, candidate.bbox)
-        if (iou >= iouThreshold) {
-          sorted.splice(i, 1)
-        }
+      if (!candidate.bbox) continue
+      if (current.damage_type && candidate.damage_type && current.damage_type !== candidate.damage_type) {
+        continue
+      }
+      const iou = calculateIoU(current.bbox, candidate.bbox)
+      if (iou >= iouThreshold) {
+        sorted.splice(i, 1)
       }
     }
   }

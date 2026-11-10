@@ -112,13 +112,17 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
                   {/* Image Section */}
                   <div className="lg:w-1/2 relative h-[260px] sm:h-[350px] bg-slate-100 overflow-hidden">
                     {image.signed_url ? (
-                      <div className="relative h-full w-full">
-                        <img
-                          src={image.signed_url}
-                          alt={image.caption}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                        <DamageOverlay imageId={image.id} />
+                      <div className="relative h-full w-full flex items-center justify-center">
+                        {/* The overlay is positioned against this wrapper, which
+                            shrink-wraps the image, so percentages match pixels. */}
+                        <div className="relative inline-flex max-h-full max-w-full">
+                          <img
+                            src={image.signed_url}
+                            alt={image.caption}
+                            className="max-h-full w-auto max-w-full object-contain"
+                          />
+                          <DamageOverlay imageId={image.id} />
+                        </div>
                       </div>
                     ) : (
                       <div className="h-full flex items-center justify-center text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50 italic">

@@ -2,7 +2,9 @@
 
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
+import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { computeFinalDamageScore, scoreToRiskLevel } from '@/app/lib/damage-score'
+import { z } from 'zod'
 import type {
   AIModel,
   AIDamageDetection,
@@ -12,25 +14,18 @@ import type {
 } from '@/app/types'
 
 /**
- * Return all active AI models. Falls back to all models if none are flagged
- * active so the prototype UI always has something to show.
+ * Return active AI models. If none are active, return an empty list: the UI
+ * must not silently select an inactive model and then fail at run time.
  */
 export async function getActiveAIModels(): Promise<AIModel[]> {
   const supabase = await createClient()
 
-  const { data: activeData, error: activeError } = await supabase
+  const { data, error } = await supabase
     .from('ai_models')
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
-  if (activeError) throw activeError
-
-  if (activeData && activeData.length > 0) {
-    return activeData as AIModel[]
-  }
-
-  const { data, error } = await supabase.from('ai_models').select('*').order('created_at', { ascending: false })
   if (error) throw error
   return (data || []) as AIModel[]
 }
@@ -66,70 +61,6 @@ export async function getAnalysisJobsForImage(imageId: string): Promise<AIAnalys
 }
 
 /**
- * Deterministic mock inference used by the capstone prototype.
- * Uses a deterministic hash of imageId to pick 1–2 defects from a realistic catalog.
- */
-function mockInference(imageId?: string): Pick<
-  AIDamageDetection,
-  'damage_type' | 'severity' | 'severity_score' | 'confidence' | 'bbox'
->[] {
-  const catalog: Pick<
-    AIDamageDetection,
-    'damage_type' | 'severity' | 'severity_score' | 'confidence' | 'bbox'
-  >[] = [
-    {
-      damage_type: 'crack',
-      severity: 'high',
-      severity_score: 75,
-      confidence: 0.92,
-      bbox: { x: 0.22, y: 0.32, width: 0.36, height: 0.14 },
-    },
-    {
-      damage_type: 'spalling',
-      severity: 'critical',
-      severity_score: 95,
-      confidence: 0.88,
-      bbox: { x: 0.58, y: 0.44, width: 0.28, height: 0.25 },
-    },
-    {
-      damage_type: 'corrosion',
-      severity: 'medium',
-      severity_score: 52,
-      confidence: 0.82,
-      bbox: { x: 0.15, y: 0.55, width: 0.32, height: 0.22 },
-    },
-    {
-      damage_type: 'leakage',
-      severity: 'medium',
-      severity_score: 48,
-      confidence: 0.79,
-      bbox: { x: 0.45, y: 0.25, width: 0.26, height: 0.35 },
-    },
-    {
-      damage_type: 'deformation',
-      severity: 'low',
-      severity_score: 28,
-      confidence: 0.74,
-      bbox: { x: 0.30, y: 0.60, width: 0.40, height: 0.18 },
-    },
-  ]
-
-  if (!imageId) {
-    return [catalog[0], catalog[1]]
-  }
-
-  // Deterministic seed from imageId characters
-  const hash = imageId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  const firstIndex = hash % catalog.length
-  const secondIndex = (hash + 2) % catalog.length
-
-  const first = catalog[firstIndex]
-  const second = catalog[secondIndex]
-
-  return firstIndex === secondIndex ? [first] : [first, second]
-}
-
-/**
  * Recalculate parent inspection risk score and risk level from AI detections.
  */
 async function updateInspectionRiskFromAI(
@@ -153,13 +84,14 @@ async function updateInspectionRiskFromAI(
     if (!siblingImages || siblingImages.length === 0) return
     const imageIds = siblingImages.map((s) => s.id)
 
-    const { data: detections } = await supabase
+    const { data: detectionsForRisk } = await supabase
       .from('ai_damage_detections')
-      .select('severity_score, severity')
+      .select('severity_score, severity, provenance')
       .in('image_id', imageIds)
 
-    if (detections && detections.length > 0) {
-      const maxScore = Math.max(...detections.map((d) => d.severity_score))
+    const usable = (detectionsForRisk || []).filter((d) => d.provenance !== 'legacy_synthetic')
+    if (usable.length > 0) {
+      const maxScore = Math.max(...usable.map((d) => d.severity_score))
       const finalScore = computeFinalDamageScore(maxScore, 1.2, 1.0, 1.0)
       const riskLevel = scoreToRiskLevel(finalScore)
 
@@ -173,7 +105,8 @@ async function updateInspectionRiskFromAI(
         .eq('id', img.inspection_id)
     }
   } catch (err) {
-    console.warn('Failed to update inspection risk score from AI:', err)
+    console.error('Failed to update inspection risk score from AI:', err)
+    throw err
   }
 }
 
@@ -186,7 +119,12 @@ export async function runAIAnalysis(
   modelId?: string
 ): Promise<{ job: AIAnalysisJob; detections: AIDamageDetection[] }> {
   const { userId, role } = await requireRole(['inspector', 'admin'])
+  await enforceRateLimit(`ai-analysis:${userId}`, 20, 3600)
   const supabase = await createClient()
+
+  if (!z.string().uuid().safeParse(imageId).success) {
+    throw new Error('Invalid image id')
+  }
 
   // Verify image exists and (if inspector) belongs to inspection owned by inspector
   const { data: img, error: imgError } = await supabase
@@ -251,67 +189,62 @@ export async function runAIAnalysis(
   }
 
   try {
-    // 3. Clear existing detections for this image to prevent duplicate bounding boxes
-    await supabase
+    // 3. Resolve the model from the registry. No synthetic default: if the row
+    //    is missing, fail rather than pretend a checkpoint exists.
+    const { data: modelData, error: modelReadError } = await supabase
+      .from('ai_models')
+      .select('*')
+      .eq('id', resolvedModelId)
+      .maybeSingle()
+
+    if (modelReadError || !modelData) {
+      throw new Error('AI model configuration could not be loaded.')
+    }
+    const targetModel = modelData as AIModel
+
+    // 4. Decode the actual stored bytes. Never fall back to an image identifier.
+    if (!img.storage_path) {
+      throw new Error('This image has no stored file to analyze.')
+    }
+
+    const { data: downloadedBlob, error: downloadError } = await supabase.storage
+      .from('inspection-images')
+      .download(img.storage_path)
+
+    if (downloadError || !downloadedBlob) {
+      throw new Error(`Stored image could not be read: ${downloadError?.message ?? 'object missing'}`)
+    }
+
+    const { runDetection } = await import('@/app/lib/ai/inference-worker')
+    const inferenceResult = await runDetection(downloadedBlob, targetModel)
+
+    // 5. Replace previous detections only after inference succeeds, so a failed
+    //    run cannot erase the last valid result.
+    const { error: deleteError } = await supabase
       .from('ai_damage_detections')
       .delete()
       .eq('image_id', imageId)
 
-    // 4. Execute AI detection pipeline with preprocessing and NMS
-    const { data: modelData } = await supabase
-      .from('ai_models')
-      .select('*')
-      .eq('id', resolvedModelId)
-      .single()
+    if (deleteError) throw deleteError
 
-    const targetModel = (modelData as AIModel) || {
-      id: resolvedModelId,
-      name: 'Default YOLOv8 Detector',
-      version: '1.0.0',
-      task: 'detection',
-      format: 'onnx',
-      storage_path: null,
-      labels: ['crack', 'corrosion', 'spalling', 'deformation', 'leakage'],
-      is_active: true,
-      architecture: 'yolov8',
-      confidence_threshold: 0.25,
-      iou_threshold: 0.45,
-      created_at: new Date().toISOString(),
+    const rows = inferenceResult.detections.map((result) => ({
+      ...result,
+      image_id: imageId,
+      model_id: resolvedModelId,
+      provenance: 'heuristic' as const,
+    }))
+
+    let detections: AIDamageDetection[] = []
+    if (rows.length > 0) {
+      const { data: inserted, error: insertError } = await supabase
+        .from('ai_damage_detections')
+        .insert(rows)
+        .select()
+
+      if (insertError) throw insertError
+      detections = (inserted || []) as AIDamageDetection[]
     }
-
-    const { runDetection } = await import('@/app/lib/ai/inference-worker')
-    let imagePayload: Blob | string = imageId
-    if (img.storage_path) {
-      try {
-        const { data: downloadedBlob } = await supabase.storage.from('inspection-images').download(img.storage_path)
-        if (downloadedBlob) {
-          imagePayload = downloadedBlob
-        }
-      } catch (dlErr) {
-        console.warn('Direct image download warning (falling back to image identifier):', dlErr)
-      }
-    }
-
-    const inferenceResult = await runDetection(imagePayload, targetModel)
-
-    const rows = inferenceResult.detections.length > 0
-      ? inferenceResult.detections.map((result) => ({
-          ...result,
-          image_id: imageId,
-          model_id: resolvedModelId,
-        }))
-      : mockInference(imageId).map((result) => ({
-          ...result,
-          image_id: imageId,
-          model_id: resolvedModelId,
-        }))
-
-    const { data: detections, error: insertError } = await supabase
-      .from('ai_damage_detections')
-      .insert(rows)
-      .select()
-
-    if (insertError) throw insertError
+    // Zero detections is a valid completed result.
 
     // 5. Mark job completed
     const { data: completedJob, error: updateError } = await supabase
@@ -333,7 +266,7 @@ export async function runAIAnalysis(
 
     return {
       job: completedJob as AIAnalysisJob,
-      detections: (detections || []) as AIDamageDetection[],
+      detections,
     }
   } catch (error) {
     await supabase
@@ -361,8 +294,13 @@ export async function verifyDetection(
   const { userId } = await requireRole(['engineer', 'admin'])
   const supabase = await createClient()
 
+  if (!z.string().uuid().safeParse(detectionId).success) {
+    throw new Error('Invalid detection id')
+  }
+  const safeNotes = notes ? z.string().max(2000).parse(notes) : ''
+
   const updates: Record<string, unknown> = {
-    notes: notes ?? '',
+    notes: safeNotes,
   }
 
   if (approved) {
@@ -396,21 +334,37 @@ export async function verifyDetection(
       const projectId = inspection?.project_id
 
       if (projectId) {
+        // Idempotency: re-verifying the same detection must not create a second
+        // maintenance ticket.
+        const { data: existingTicket } = await supabase
+          .from('maintenance_priorities')
+          .select('id')
+          .ilike('notes', `%${detectionId}%`)
+          .limit(1)
+
+        if (existingTicket && existingTicket.length > 0) {
+          return updatedDetection as AIDamageDetection
+        }
+
         const daysUntilDue = updatedDetection.severity === 'critical' ? 7 : 14
         const dueDate = new Date(Date.now() + daysUntilDue * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
-        await supabase.from('maintenance_priorities').insert({
+        const { error: ticketError } = await supabase.from('maintenance_priorities').insert({
           project_id: projectId,
           title: `AI Defect: ${updatedDetection.damage_type.toUpperCase()} (${updatedDetection.severity.toUpperCase()})`,
           location: inspection?.location || img?.caption || 'Structural Asset',
           risk_score: Math.min(10, Math.max(1, Number((updatedDetection.severity_score / 10).toFixed(1)))),
           status: 'pending',
           due_date: dueDate,
-          notes: `Automated priority from verified AI detection (${detectionId}). ${notes || ''}`,
+          notes: `Automated priority from verified AI detection (${detectionId}). ${safeNotes}`,
         })
+
+        if (ticketError) {
+          console.error('Auto-create maintenance priority failed:', ticketError.message)
+        }
       }
     } catch (maintErr) {
-      console.warn('Auto-create maintenance priority error:', maintErr)
+      console.error('Auto-create maintenance priority error:', maintErr)
     }
   }
 
@@ -421,6 +375,17 @@ export async function verifyDetection(
  * Adjust or edit AI detection parameters (Inspector Confirm/Edit & Engineer Validate/Adjust).
  * Updates damage type, severity, score, bbox, and notes, and recalculates parent inspection risk.
  */
+const detectionUpdateSchema = z
+  .object({
+    damage_type: z.enum(['crack', 'corrosion', 'spalling', 'deformation', 'leakage', 'none']).optional(),
+    severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    severity_score: z.number().min(0).max(100).optional(),
+    confidence: z.number().min(0).max(1).optional(),
+    notes: z.string().max(2000).optional(),
+    approved: z.boolean().optional(),
+  })
+  .strict()
+
 export async function updateAIDetection(
   detectionId: string,
   params: {
@@ -435,17 +400,27 @@ export async function updateAIDetection(
   const { userId } = await requireRole(['engineer', 'admin'])
   const supabase = await createClient()
 
+  if (!z.string().uuid().safeParse(detectionId).success) {
+    throw new Error('Invalid detection id')
+  }
+
+  const parsed = detectionUpdateSchema.safeParse(params)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? 'Invalid detection update')
+  }
+  const input = parsed.data
+
   const updates: Record<string, unknown> = {}
-  if (params.damage_type !== undefined) updates.damage_type = params.damage_type
-  if (params.severity !== undefined) updates.severity = params.severity
-  if (params.severity_score !== undefined) updates.severity_score = params.severity_score
-  if (params.confidence !== undefined) updates.confidence = params.confidence
-  if (params.notes !== undefined) updates.notes = params.notes
-  
-  if (params.approved === true) {
+  if (input.damage_type !== undefined) updates.damage_type = input.damage_type
+  if (input.severity !== undefined) updates.severity = input.severity
+  if (input.severity_score !== undefined) updates.severity_score = input.severity_score
+  if (input.confidence !== undefined) updates.confidence = input.confidence
+  if (input.notes !== undefined) updates.notes = input.notes
+
+  if (input.approved === true) {
     updates.verified_by = userId
     updates.verified_at = new Date().toISOString()
-  } else if (params.approved === false) {
+  } else if (input.approved === false) {
     updates.verified_by = null
     updates.verified_at = null
   }
