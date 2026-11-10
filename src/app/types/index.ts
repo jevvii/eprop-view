@@ -200,8 +200,9 @@ export interface ImageComment {
 export type DamageType = 'crack' | 'corrosion' | 'spalling' | 'deformation' | 'leakage' | 'none'
 export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical'
 export type AIModelTask = 'classification' | 'detection' | 'segmentation'
-export type AIModelFormat = 'tfjs' | 'onnx' | 'mock'
+export type AIModelFormat = 'tfjs' | 'onnx' | 'heuristic' | 'mock'
 export type AIJobStatus = 'pending' | 'running' | 'completed' | 'failed'
+export type DetectionProvenance = 'model' | 'heuristic' | 'synthetic' | 'legacy_synthetic'
 
 export interface BoundingBox {
   x: number
@@ -239,6 +240,7 @@ export interface AIDamageDetection {
   confidence: number
   bbox: BoundingBox | null
   mask_url: string | null
+  provenance?: DetectionProvenance
   verified_by: string | null
   verified_at: string | null
   notes: string
@@ -299,6 +301,8 @@ export interface ARAnchor {
   world_position: Vector3 | null
   notes: string
   snapshot_path: string | null
+  /** Short-lived signed URL generated at read time; never persisted. */
+  image_url?: string
   created_at: string
 }
 

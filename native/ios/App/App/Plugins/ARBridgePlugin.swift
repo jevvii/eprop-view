@@ -5,12 +5,28 @@ import SceneKit
 import AVFoundation
 
 /**
- * Native iOS ARKit Bridge Plugin for EPROPVIEW.
- * Provides high-frequency camera pose tracking, horizontal and vertical plane detection,
- * persistent 3D anchor positioning, and snapshot frame capture.
+ * Native iOS ARKit bridge for EPROPVIEW.
+ *
+ * Emits exactly one event channel: "arBridgeEvent" carrying { type, payload }.
+ * The AR view is inserted behind a transparent WebView so the inspection UI
+ * stays interactive while the camera feed renders underneath.
+ *
+ * The camera session, plane tracking and anchors are real. Snapshot capture is
+ * real (ARSCNView.snapshot). Nothing is fabricated when ARKit is unavailable.
  */
 @objc(CapacitorARBridgePlugin)
-public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
+public class ARBridgePlugin: CAPPlugin, CAPBridgedPlugin, ARSCNViewDelegate, ARSessionDelegate {
+
+    public let identifier = "CapacitorARBridgePlugin"
+    public let jsName = "CapacitorARBridge"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "requestCameraPermission", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "isAvailable", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "startSession", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "placeAnchor", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "captureSnapshot", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "stopSession", returnType: CAPPluginReturnPromise)
+    ]
 
     private var arView: ARSCNView?
     private var isSessionRunning = false
@@ -26,7 +42,10 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
                 call.resolve(["granted": granted])
             }
         case .denied, .restricted:
-            call.resolve(["granted": false, "message": "Camera access denied. Please enable camera in iOS Settings."])
+            call.resolve([
+                "granted": false,
+                "message": "Camera access denied. Enable camera in iOS Settings."
+            ])
         @unknown default:
             call.resolve(["granted": false])
         }
@@ -38,22 +57,17 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
             "available": isSupported,
             "platform": "ios",
             "engine": isSupported ? "ARKit" : "mock",
-            "features": [
-                "planeDetection": isSupported,
-                "meshReconstruction": ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh),
-                "depthData": true
-            ]
+            "hasCameraPermission": AVCaptureDevice.authorizationStatus(for: .video) == .authorized
         ])
     }
 
     private func dispatchBridgeEvent(_ type: String, payload: [String: Any]) {
-        // 1. Emit wrapped arBridgeEvent for web listener contract
+        // One channel only. Subscribing to both wrapped and top-level events
+        // delivered every event twice.
         self.notifyListeners("arBridgeEvent", data: [
             "type": type,
             "payload": payload
         ])
-        // 2. Also emit top-level event for direct listeners
-        self.notifyListeners(type, data: payload)
     }
 
     @objc func startSession(_ call: CAPPluginCall) {
@@ -62,17 +76,39 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
             return
         }
 
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+            call.reject("Camera permission is required to start ARKit.")
+            return
+        }
+
         self.activeInspectionId = call.getString("inspectionId")
+
         let config = ARWorldTrackingConfiguration()
         config.planeDetection = [.horizontal, .vertical]
         config.isLightEstimationEnabled = true
 
         DispatchQueue.main.async {
-            if self.arView == nil {
-                self.arView = ARSCNView(frame: self.bridge?.viewController?.view.bounds ?? .zero)
-                self.arView?.delegate = self
-                self.arView?.session.delegate = self
+            guard let hostView = self.bridge?.viewController?.view else {
+                call.reject("Host view is unavailable.")
+                return
             }
+
+            if self.arView == nil {
+                let view = ARSCNView(frame: hostView.bounds)
+                view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+                view.delegate = self
+                view.session.delegate = self
+                view.isUserInteractionEnabled = false
+                // Behind the WebView, which becomes transparent so the camera
+                // feed shows through while the inspection UI stays usable.
+                hostView.insertSubview(view, at: 0)
+                hostView.backgroundColor = .clear
+                self.bridge?.webView?.isOpaque = false
+                self.bridge?.webView?.backgroundColor = .clear
+                self.arView = view
+            }
+
+            self.arView?.frame = hostView.bounds
             self.arView?.session.run(config, options: [.resetTracking, .removeExistingAnchors])
             self.isSessionRunning = true
 
@@ -107,19 +143,21 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
         var transform = matrix_identity_float4x4
         transform.columns.3 = simd_float4(x, y, z, 1)
 
-        let anchor = ARAnchor(name: call.getString("label") ?? "DefectAnchor", transform: transform)
-        arView.session.add(anchor: anchor)
+        DispatchQueue.main.async {
+            let anchor = ARAnchor(name: call.getString("label") ?? "DefectAnchor", transform: transform)
+            arView.session.add(anchor: anchor)
 
-        let nativeId = "arkit_\(anchor.identifier.uuidString)"
-        self.dispatchBridgeEvent("anchorPlaced", payload: [
-            "nativeId": nativeId,
-            "position": ["x": x, "y": y, "z": z]
-        ])
+            let nativeId = "arkit_\(anchor.identifier.uuidString)"
+            self.dispatchBridgeEvent("anchorPlaced", payload: [
+                "nativeId": nativeId,
+                "position": ["x": x, "y": y, "z": z]
+            ])
 
-        call.resolve([
-            "success": true,
-            "nativeId": nativeId
-        ])
+            call.resolve([
+                "success": true,
+                "nativeId": nativeId
+            ])
+        }
     }
 
     @objc func captureSnapshot(_ call: CAPPluginCall) {
@@ -130,12 +168,12 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
 
         DispatchQueue.main.async {
             let image = arView.snapshot()
-            if let jpegData = image.jpegData(compressionQuality: 0.85) {
-                let base64 = "data:image/jpeg;base64," + jpegData.base64EncodedString()
-                call.resolve(["dataUrl": base64])
-            } else {
+            guard let jpegData = image.jpegData(compressionQuality: 0.85) else {
                 call.reject("Failed to serialize camera frame.")
+                return
             }
+            let base64 = "data:image/jpeg;base64," + jpegData.base64EncodedString()
+            call.resolve(["dataUrl": base64])
         }
     }
 
@@ -150,18 +188,19 @@ public class ARBridgePlugin: CAPPlugin, ARSCNViewDelegate, ARSessionDelegate {
         }
     }
 
-    // ARSCNViewDelegate Plane Detection
+    // ARSCNViewDelegate plane detection
     public func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
-        if let planeAnchor = anchor as? ARPlaneAnchor {
-            self.dispatchBridgeEvent("planeDetected", payload: [
-                "id": planeAnchor.identifier.uuidString,
-                "alignment": planeAnchor.alignment == .horizontal ? "horizontal" : "vertical",
-                "center": [
-                    "x": planeAnchor.center.x,
-                    "y": planeAnchor.center.y,
-                    "z": planeAnchor.center.z
-                ]
-            ])
-        }
+        guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
+        self.dispatchBridgeEvent("planeDetected", payload: [
+            "id": planeAnchor.identifier.uuidString,
+            "alignment": planeAnchor.alignment == .horizontal ? "horizontal" : "vertical",
+            "center": [
+                "x": planeAnchor.center.x,
+                "y": planeAnchor.center.y,
+                "z": planeAnchor.center.z
+            ],
+            "extentWidth": planeAnchor.extent.x,
+            "extentHeight": planeAnchor.extent.z
+        ])
     }
 }

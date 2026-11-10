@@ -17,11 +17,13 @@ export default function DashboardLayout({
   return (
     <NavWrapper>
       <Header />
-      <div className={`flex-1 flex flex-col min-h-0 relative ${isDashboard ? 'overflow-hidden' : 'overflow-y-auto print:overflow-visible'}`}>
+      {/* The shell's <main> owns scrolling; nested overflow caused iOS
+          scroll-chaining and unpredictable sticky behaviour. */}
+      <div className="flex-1 flex flex-col min-h-0 relative">
         <RealtimeSync />
-        <main className={`print:overflow-visible print:h-auto ${isDashboard ? 'h-full' : 'p-4 lg:p-8 space-y-6'}`}>
+        <div className={`print:overflow-visible print:h-auto ${isDashboard ? 'h-auto lg:h-full' : 'p-4 sm:p-6 lg:p-8 space-y-6'}`}>
           {children}
-        </main>
+        </div>
       </div>
     </NavWrapper>
   )

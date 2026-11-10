@@ -4,96 +4,118 @@ import { useDashboardStats, useProfile } from '@/app/lib/queries'
 import { hasCapability } from '@/app/lib/role-utils'
 import { AccessDenied } from '@/components/shared/require-role'
 import { StatCard } from '@/components/dashboard/stats-cards'
-import { DamageTrendChart } from '@/components/dashboard/damage-trend-chart'
-import { GeospatialMap } from '@/components/dashboard/geospatial-map'
+import { DamageTrendChart } from '@/components/dashboard/damage-trend-chart-lazy'
+import { GeospatialMap } from '@/components/dashboard/geospatial-map-lazy'
 import { MaintenanceTable } from '@/components/dashboard/maintenance-table'
 import { RiskHotspots } from '@/components/dashboard/risk-hotspots'
 
+function ConnectionStatus({
+  isLoading,
+  isError,
+}: {
+  isLoading: boolean
+  isError: boolean
+}) {
+  const state = isError
+    ? { label: 'Data unavailable', dot: 'bg-red-500', text: 'text-red-700' }
+    : isLoading
+      ? { label: 'Loading data', dot: 'bg-slate-400', text: 'text-slate-600' }
+      : { label: 'Data connected', dot: 'bg-emerald-500', text: 'text-emerald-700' }
+
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Data status</span>
+      <span className="flex items-center gap-2">
+        <span className={`h-2 w-2 rounded-full ${state.dot}`} aria-hidden="true" />
+        <span className={`text-xs font-semibold ${state.text}`} role="status">
+          {state.label}
+        </span>
+      </span>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const { data: profile, isLoading: profileLoading } = useProfile()
-  const { data: stats } = useDashboardStats()
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useDashboardStats()
 
   const canViewDashboard = hasCapability(profile?.role, 'dashboard:view')
 
   if (profileLoading) {
-    return <div className="bg-white p-10 rounded-[2.5rem] shadow-xl h-80 animate-pulse border border-slate-100 mx-2" />
+    return (
+      <div
+        className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm h-80 animate-pulse border border-slate-100 mx-2"
+        aria-busy="true"
+        aria-label="Loading dashboard"
+      />
+    )
   }
 
   if (profile && !canViewDashboard) {
     return (
       <AccessDenied
-        title="Dashboard Access Restricted"
-        message="The executive health overview and geospatial dashboard is restricted to Structural Engineers and System Administrators. Inspectors can access the Document Vault to submit inspection findings."
+        title="Dashboard access restricted"
+        message="The health overview and geospatial dashboard is available to structural engineers and administrators. Inspectors can submit findings in the document vault."
         returnHref="/document"
-        returnLabel="Go to Document Vault"
+        returnLabel="Go to document vault"
       />
     )
   }
 
+  const value = (
+    key: 'active_projects' | 'critical_risk_reports' | 'reports_in_review' | 'completed_repairs'
+  ) => (statsLoading ? '—' : (stats?.[key] ?? 0))
+
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-73px)] lg:h-[calc(100vh-81px)] w-full overflow-hidden bg-brand-gray">
-      {/* LEFT CANVAS: Map + Floating Overlays */}
-      <div className="flex-1 relative min-h-[400px] lg:min-h-0 bg-slate-200">
-        <GeospatialMap />
-
-        {/* Top Floating Stats */}
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex items-center justify-center gap-4 w-full px-8">
-          <StatCard 
-            label="Active Projects" 
-            value={stats?.active_projects ?? 0} 
-            isFloating
-            className="w-48 pointer-events-auto shadow-2xl"
-          />
-          <StatCard 
-            label="Critical Risk Reports" 
-            value={stats?.critical_risk_reports ?? 0} 
-            variant="critical"
-            isFloating
-            className="w-48 pointer-events-auto shadow-2xl"
-          />
-          <StatCard 
-            label="Reports In Review" 
-            value={stats?.reports_in_review ?? 0} 
-            variant="info"
-            isFloating
-            className="w-48 pointer-events-auto shadow-2xl"
-          />
-          <StatCard 
-            label="Completed Repairs" 
-            value={stats?.completed_repairs ?? 0} 
-            variant="success"
-            isFloating
-            className="w-48 pointer-events-auto shadow-2xl"
-          />
-        </div>
-
-        {/* Bottom Floating Chart */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-full px-8 max-w-4xl">
-          <div className="pointer-events-auto">
-            <DamageTrendChart
-              isFloating
-              className="h-48 shadow-2xl"
+    <div className="flex flex-col lg:flex-row w-full min-w-0 min-h-0 lg:h-full bg-background">
+      {/* One map instance for both layouts. Previously the mobile and desktop
+          branches mounted two Mapbox WebGL contexts per page load. */}
+      <section className="relative flex flex-1 flex-col min-w-0 min-h-0">
+        <div className="p-4 pb-0 lg:p-0 lg:absolute lg:top-5 lg:left-1/2 lg:-translate-x-1/2 lg:z-10 lg:w-full lg:max-w-5xl lg:px-6">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:flex lg:justify-center">
+            <StatCard
+              label="Active projects"
+              value={value('active_projects')}
+              className="lg:w-44 xl:w-52 lg:shadow-lg"
+            />
+            <StatCard
+              label="Critical risk"
+              value={value('critical_risk_reports')}
+              variant="critical"
+              className="lg:w-44 xl:w-52 lg:shadow-lg"
+            />
+            <StatCard
+              label="In review"
+              value={value('reports_in_review')}
+              variant="info"
+              className="lg:w-44 xl:w-52 lg:shadow-lg"
+            />
+            <StatCard
+              label="Completed"
+              value={value('completed_repairs')}
+              variant="success"
+              className="lg:w-44 xl:w-52 lg:shadow-lg"
             />
           </div>
         </div>
-      </div>
 
-      {/* RIGHT PANEL: Fixed Lists */}
-      <aside className="w-full lg:w-[400px] bg-white border-l border-slate-100 flex flex-col z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.02)]">
-        <div className="flex-1 overflow-y-auto p-6 space-y-10 custom-scrollbar">
+        <div className="mx-4 mt-4 lg:m-0 h-[340px] sm:h-[420px] lg:h-auto lg:flex-1 overflow-hidden rounded-2xl lg:rounded-none border border-slate-200/70 lg:border-0">
+          <GeospatialMap />
+        </div>
+
+        <div className="px-4 py-4 lg:p-0 lg:absolute lg:bottom-5 lg:left-1/2 lg:-translate-x-1/2 lg:z-10 lg:w-full lg:max-w-4xl lg:px-6">
+          <DamageTrendChart className="h-64 lg:h-48" />
+        </div>
+      </section>
+
+      <aside className="w-full lg:w-[380px] xl:w-[420px] shrink-0 bg-white border-t lg:border-t-0 lg:border-l border-slate-200/70 flex flex-col min-h-0">
+        <div className="flex-1 lg:overflow-y-auto p-4 sm:p-6 space-y-8 overscroll-contain">
           <RiskHotspots />
           <MaintenanceTable />
         </div>
-        
-        {/* Bottom Panel Summary */}
-        <div className="p-6 bg-slate-50 border-t border-slate-100">
-          <div className="flex items-center justify-between">
-            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Status</div>
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Systems Nominal</span>
-            </div>
-          </div>
+
+        <div className="p-4 border-t border-slate-100">
+          <ConnectionStatus isLoading={statsLoading} isError={statsError} />
         </div>
       </aside>
     </div>

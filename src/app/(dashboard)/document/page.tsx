@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { ScanLine, Microscope } from 'lucide-react'
 import { InspectionForm } from '@/components/document/inspection-form'
 import { AssetFeed } from '@/components/document/asset-feed'
 import { AssetUpload } from '@/components/document/asset-upload'
@@ -31,26 +32,26 @@ export default function DocumentPage() {
   }, [inspectionId, inspections])
 
   if (isLoading) {
-    return <div className="bg-white p-10 rounded-[2.5rem] shadow-xl h-80 animate-pulse border border-slate-100 mx-2" />
+    return <div className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-3xl shadow-xl h-80 animate-pulse border border-slate-100 mx-2" />
   }
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-2">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-1 sm:px-2">
         <div>
           <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Asset Vault & Registry</h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+          <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
             {selectedInspectionLabel ? `Inspecting ${selectedInspectionLabel}` : 'Manage site imagery and collaborative technical threads.'}
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Filter Entry</label>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-slate-100 shadow-xs w-full sm:w-auto">
+            <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Filter Entry</label>
             <select
               value={inspectionId}
               onChange={(event) => setInspectionId(event.target.value)}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px]"
+              className="rounded-xl border border-slate-200 px-3.5 py-2 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px] flex-1 sm:flex-initial"
             >
               <option value="">SELECT_INSPECTION</option>
               {inspections?.map((inspection) => (
@@ -64,38 +65,39 @@ export default function DocumentPage() {
           {canUseAR && inspectionId && (
             <Link
               href={`/ar?inspectionId=${encodeURIComponent(inspectionId)}`}
-              className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm text-[10px] font-black text-primary uppercase tracking-widest hover:bg-slate-50 transition-all"
+              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-sm transition-colors min-h-[44px]"
             >
-              🥽 AR Mode
+              <ScanLine className="h-4 w-4" aria-hidden="true" />
+              <span>Launch AR inspection</span>
             </Link>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.6fr_1fr]">
-        {/* Left Column: Asset Feed (Primary) */}
-        <div className="order-2 lg:order-1">
+      <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1.6fr_1fr]">
+        {/* Feed first on mobile: inspectors open the vault to review evidence. */}
+        <div className="order-1 lg:order-1 min-w-0">
           <AssetFeed inspectionId={inspectionId} label={selectedInspectionLabel} />
         </div>
 
-        {/* Right Column: Controls & Forms (Supporting) */}
-        <div className="space-y-8 order-1 lg:order-2">
+        {/* Controls and forms second. */}
+        <div className="space-y-6 sm:space-y-8 order-2 lg:order-2 min-w-0">
           {canUpload && <AssetUpload inspectionId={inspectionId} />}
           {canCreateInspection && (
-            <div className="opacity-80 hover:opacity-100 transition-opacity">
+            <div className="opacity-95 hover:opacity-100 transition-opacity">
               <InspectionForm />
             </div>
           )}
           {!canUpload && !canCreateInspection && (
-            <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 space-y-4">
+            <div className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🧑‍🔬</span>
+                <Microscope className="h-6 w-6 text-slate-500" aria-hidden="true" />
                 <div>
-                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Engineering Review Mode</h3>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Inspection Vault Read-Only</p>
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Engineering Review Mode</h3>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Inspection Vault Read-Only</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
                 As an engineer, you have full authority to inspect site imagery, validate AI defect detections, adjust severities, and assign maintenance priorities. Field photo injection and inspection creation are restricted to field inspectors.
               </p>
             </div>

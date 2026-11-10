@@ -48,6 +48,18 @@ function animateJumpTo(
     requestAnimationFrame(frame);
 }
 
+function escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, (character) => {
+        switch (character) {
+            case '&': return '&amp;'
+            case '<': return '&lt;'
+            case '>': return '&gt;'
+            case '"': return '&quot;'
+            default: return '&#39;'
+        }
+    })
+}
+
 export function GeospatialMap() {
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<mapboxgl.Map | null>(null);
@@ -160,8 +172,8 @@ export function GeospatialMap() {
                     .setPopup(
                         new mapboxgl.Popup({ offset: 25 }).setHTML(`
             <div class="p-2">
-              <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Active Project</div>
-              <div class="font-koulen text-lg text-primary tracking-wide">${p.name}</div>
+              <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Active Project</div>
+              <div class="font-koulen text-lg text-primary tracking-wide">${escapeHtml(p.name)}</div>
             </div>
           `),
                     )
@@ -232,5 +244,18 @@ export function GeospatialMap() {
         );
     }
 
-    return <div ref={mapContainer} className="w-full h-full" />;
+    const hasCoordinates = (projects ?? []).some(
+        (p) => typeof p.latitude === 'number' && typeof p.longitude === 'number'
+    )
+
+    return (
+        <div className="relative h-full w-full">
+            <div ref={mapContainer} className="h-full w-full" />
+            {projects !== undefined && !hasCoordinates && (
+                <div className="pointer-events-none absolute bottom-3 left-3 right-3 sm:right-auto rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs font-medium text-slate-700 shadow-sm">
+                    No project coordinates yet — showing the regional default extent.
+                </div>
+            )}
+        </div>
+    );
 }

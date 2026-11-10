@@ -7,6 +7,7 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "node_modules/**",
+      "native/**",
       "next-env.d.ts",
       "docs/**",
       "supabase/**",

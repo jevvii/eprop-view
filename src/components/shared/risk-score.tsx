@@ -7,12 +7,12 @@ type RiskScoreProps = {
 
 function getRiskLevel(score: number | null) {
   if (score === null) {
-    return { label: 'Unknown', style: 'bg-slate-100 text-slate-600' }
+    return { label: 'Unknown', style: 'bg-severity-none-soft text-severity-none' }
   }
-  if (score > 8) return { label: 'Critical', style: 'bg-red-100 text-red-700' }
-  if (score > 6) return { label: 'High', style: 'bg-orange-100 text-orange-700' }
-  if (score >= 4) return { label: 'Moderate', style: 'bg-amber-100 text-amber-700' }
-  return { label: 'Low', style: 'bg-emerald-100 text-emerald-700' }
+  if (score >= 8) return { label: 'Critical', style: 'bg-severity-critical-soft text-severity-critical' }
+  if (score >= 6) return { label: 'High', style: 'bg-severity-high-soft text-severity-high' }
+  if (score >= 4) return { label: 'Moderate', style: 'bg-severity-moderate-soft text-severity-moderate' }
+  return { label: 'Low', style: 'bg-severity-low-soft text-severity-low' }
 }
 
 export function RiskScore({ score, className }: RiskScoreProps) {
@@ -21,7 +21,7 @@ export function RiskScore({ score, className }: RiskScoreProps) {
 
   return (
     <div className={cn('inline-flex items-center gap-2', className)}>
-      <span className="text-sm font-semibold text-slate-900">
+      <span className="text-sm font-semibold text-slate-900 tabular-nums">
         {normalized === null ? '—' : normalized.toFixed(1)}
       </span>
       <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', level.style)}>

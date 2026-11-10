@@ -1,6 +1,15 @@
 import zlib from 'node:zlib'
 import { parseGeoJSON, type ParsedGeoZone } from './import-geojson'
 
+// Hard caps: these files come from outside the system and a small archive can
+// declare gigabytes of output (zip bomb) or millions of vertices.
+const MAX_ZIP_ENTRIES = 64
+const MAX_ENTRY_UNCOMPRESSED_BYTES = 32 * 1024 * 1024
+const MAX_TOTAL_UNCOMPRESSED_BYTES = 64 * 1024 * 1024
+const MAX_DBF_RECORDS = 100_000
+const MAX_SHAPE_PARTS = 10_000
+const MAX_SHAPE_POINTS = 5_000_000
+
 /**
  * Reprojects Web Mercator (EPSG:3857) coordinates to WGS84 (EPSG:4326) degrees.
  */
@@ -31,6 +40,8 @@ export function unzipArchive(buffer: ArrayBuffer): Map<string, Buffer> {
   const bytes = Buffer.from(buffer)
   const files = new Map<string, Buffer>()
   let offset = 0
+  let totalUncompressed = 0
+  let entryCount = 0
 
   while (offset < bytes.length - 4) {
     const sig = bytes.readUInt32LE(offset)
@@ -39,11 +50,20 @@ export function unzipArchive(buffer: ArrayBuffer): Map<string, Buffer> {
       break
     }
 
+    entryCount++
+    if (entryCount > MAX_ZIP_ENTRIES) {
+      throw new Error(`Archive contains more than ${MAX_ZIP_ENTRIES} entries`)
+    }
+
     const compMethod = bytes.readUInt16LE(offset + 8)
     const compSize = bytes.readUInt32LE(offset + 18)
     const uncompSize = bytes.readUInt32LE(offset + 22)
     const nameLen = bytes.readUInt16LE(offset + 26)
     const extraLen = bytes.readUInt16LE(offset + 28)
+
+    if (compSize > MAX_ENTRY_UNCOMPRESSED_BYTES || uncompSize > MAX_ENTRY_UNCOMPRESSED_BYTES) {
+      throw new Error('Archive entry exceeds the maximum allowed size')
+    }
 
     const nameStart = offset + 30
     const nameEnd = nameStart + nameLen
@@ -60,11 +80,19 @@ export function unzipArchive(buffer: ArrayBuffer): Map<string, Buffer> {
     if (compMethod === 0) {
       extracted = Buffer.from(rawData)
     } else if (compMethod === 8) {
-      extracted = zlib.inflateRawSync(rawData)
+      // maxOutputLength stops a lying header from inflating past the cap.
+      extracted = zlib.inflateRawSync(rawData, {
+        maxOutputLength: MAX_ENTRY_UNCOMPRESSED_BYTES,
+      })
     } else {
       // Unsupported compression method, skip
       offset = dataEnd
       continue
+    }
+
+    totalUncompressed += extracted.byteLength
+    if (totalUncompressed > MAX_TOTAL_UNCOMPRESSED_BYTES) {
+      throw new Error('Archive expands beyond the maximum allowed size')
     }
 
     // Normalize basename
@@ -86,6 +114,9 @@ export function parseDBF(dbfBuffer: Buffer): Record<string, any>[] {
   if (dbfBuffer.length < 32) return []
 
   const numRecords = dbfBuffer.readUInt32LE(4)
+  if (numRecords > MAX_DBF_RECORDS) {
+    throw new Error(`DBF contains more than ${MAX_DBF_RECORDS} records`)
+  }
   const headerLen = dbfBuffer.readUInt16LE(8)
   const recordLen = dbfBuffer.readUInt16LE(10)
 
@@ -159,6 +190,14 @@ export function parseSHP(
     if (shapeType === 3 || shapeType === 5) {
       const numParts = view.getInt32(contentOffset + 32, true)
       const numPoints = view.getInt32(contentOffset + 36, true)
+
+      if (numParts < 0 || numParts > MAX_SHAPE_PARTS || numPoints < 0 || numPoints > MAX_SHAPE_POINTS) {
+        throw new Error('Shapefile record exceeds the maximum allowed part or point count')
+      }
+
+      if (contentOffset + 40 + numParts * 4 + numPoints * 16 > shpBuffer.length) {
+        throw new Error('Invalid ESRI Shapefile: record length does not match its header')
+      }
 
       const partsOffsets: number[] = []
       let pPos = contentOffset + 40

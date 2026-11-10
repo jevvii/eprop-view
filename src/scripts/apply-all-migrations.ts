@@ -1,7 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline'
-// @ts-expect-error pg untyped in devDependencies
 import { Client } from 'pg'
 import dotenv from 'dotenv'
 
@@ -25,6 +24,8 @@ const PENDING_MIGRATIONS = [
   '011_building_master_data.sql',
   '012_geohazard_layers.sql',
   '013_storage_audit.sql',
+  '014_fix_profiles_rls_recursion.sql',
+  '015_security_hardening.sql',
 ]
 
 async function promptPassword(): Promise<string> {
@@ -58,8 +59,13 @@ async function main() {
     }
   }
 
-  // Determine host from NEXT_PUBLIC_SUPABASE_URL if direct connection string is not provided
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://gpefqnezxdhxrmwdbkdh.supabase.co'
+  // Determine host from NEXT_PUBLIC_SUPABASE_URL. No hardcoded project fallback:
+  // running against an unintended database is worse than refusing to run.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) {
+    console.error('❌ Error: NEXT_PUBLIC_SUPABASE_URL is not set. Aborting.')
+    process.exit(1)
+  }
   const projectRef = new URL(supabaseUrl).hostname.split('.')[0]
   const dbHost = `db.${projectRef}.supabase.co`
 
@@ -73,14 +79,14 @@ async function main() {
   }
 
   const clientConfig = connectionString
-    ? { connectionString, ssl: { rejectUnauthorized: false } }
+    ? { connectionString, ssl: { rejectUnauthorized: true } }
     : {
         host: dbHost,
         port: 5432,
         database: 'postgres',
         user: 'postgres',
         password: dbPassword,
-        ssl: { rejectUnauthorized: false },
+        ssl: { rejectUnauthorized: true },
         connectionTimeoutMillis: 10000,
       }
 

@@ -36,6 +36,10 @@ export interface NativeARSessionOptions {
   worldAlignment?: 'gravity' | 'gravityAndHeading'
 }
 
+/**
+ * Contract shared with the native plugins. Native returns are deliberately
+ * narrow: a plugin that cannot do something must say so, not return a mock.
+ */
 export interface ARBridgePluginInterface {
   isAvailable: () => Promise<{
     available: boolean
@@ -43,18 +47,18 @@ export interface ARBridgePluginInterface {
     engine: 'ARKit' | 'ARCore' | 'WebXR' | 'mock'
     hasCameraPermission: boolean
   }>
-  startSession: (options: { inspectionId: string } & NativeARSessionOptions) => Promise<{
-    status: 'started'
-    inspectionId: string
-  }>
+  requestCameraPermission: () => Promise<{ granted: boolean }>
+  startSession: (
+    options: { inspectionId: string } & NativeARSessionOptions
+  ) => Promise<{ success: boolean; sessionId?: string }>
   placeAnchor: (options: {
     pose: ARPose
     metadata?: Record<string, unknown>
   }) => Promise<{ nativeId: string }>
-  stopSession: () => Promise<{ status: 'stopped' }>
+  stopSession: () => Promise<{ success: boolean }>
   captureSnapshot: () => Promise<{ dataUrl: string }>
   addListener: (
     eventName: string,
-    listenerFunc: (event: any) => void
+    listenerFunc: (event: unknown) => void
   ) => Promise<{ remove: () => void }>
 }

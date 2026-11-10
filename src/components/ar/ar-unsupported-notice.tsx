@@ -1,11 +1,33 @@
+'use client'
+
+import { useState } from 'react'
+
 export function ARUnsupportedNotice() {
+  const [dismissed, setDismissed] = useState(false)
+  if (dismissed) return null
+
   return (
-    <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 text-center">
-      <div className="text-4xl mb-4 opacity-20 grayscale">🥽</div>
-      <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-2">AR Mode Unsupported</h3>
-      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider max-w-sm mx-auto leading-relaxed">
-        AR Inspection Mode requires a WebXR-capable mobile browser. Currently, immersive AR is best supported on Chrome for Android with ARCore. iOS Safari does not support WebXR immersive AR natively; use a dedicated WebXR viewer or a Capacitor wrapper for native ARKit access.
-      </p>
+    <div className="bg-sky-50/90 border border-sky-200/80 p-4 rounded-2xl flex items-start justify-between gap-3 shadow-sm">
+      <div className="flex items-start gap-3">
+        
+        <div>
+          <h4 className="text-xs font-black text-sky-950 uppercase tracking-wider">
+            Universal Optical AR Active
+          </h4>
+          <p className="text-xs text-sky-800 font-medium mt-0.5 leading-relaxed">
+            Running in progressive AR mode (Live WebRTC Camera + 6-DOF Gyro & Spatial Touch Raycasting). Full anchor placement, plane locking, and snapshot persistence are enabled.
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setDismissed(true)}
+        className="text-xs font-bold text-sky-600 hover:text-sky-800 p-1 rounded-lg"
+        aria-label="Dismiss notice"
+      >
+        ✕
+      </button>
     </div>
   )
 }

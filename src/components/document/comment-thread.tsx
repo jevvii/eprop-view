@@ -30,34 +30,34 @@ export function CommentThread({ imageId }: CommentThreadProps) {
   if (isLoading) return <div className="h-20 animate-pulse bg-slate-50 rounded-xl" />
 
   return (
-    <div className="space-y-4 pt-4 border-t border-slate-50 mt-4">
+    <div className="space-y-4 pt-4 border-t border-slate-100 mt-4">
       <div className="flex items-center gap-2 mb-2">
-        <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Discussion Thread</div>
-        <div className="h-[1px] flex-1 bg-slate-50" />
+        <div className="text-xs font-bold text-slate-700 tracking-wider uppercase">Discussion Thread</div>
+        <div className="h-[1px] flex-1 bg-slate-100" />
       </div>
 
       <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
         {comments && comments.length > 0 ? (
           comments.map((comment) => (
-            <div key={comment.id} className="flex flex-col gap-1">
+            <div key={comment.id} className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-black uppercase tracking-tight">{comment.author_name}</span>
-                  <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-1.5 py-0.5 rounded">
+                  <span className="text-xs font-bold text-slate-900 uppercase tracking-tight">{comment.author_name}</span>
+                  <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/50">
                     {comment.author_role}
                   </span>
                 </div>
-                <span className="text-[7px] font-bold text-slate-300">
+                <span className="text-xs text-slate-500 font-medium tabular-nums">
                   {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-600 leading-relaxed font-medium bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50">
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium bg-slate-50/70 p-3 rounded-xl border border-slate-100">
                 {comment.content}
               </p>
             </div>
           ))
         ) : (
-          <div className="text-[9px] font-bold text-slate-300 italic uppercase tracking-widest py-4 text-center">
+          <div className="text-xs text-slate-400 italic uppercase tracking-wider py-4 text-center font-medium">
             No technical observations recorded.
           </div>
         )}
@@ -69,14 +69,15 @@ export function CommentThread({ imageId }: CommentThreadProps) {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Log observation..."
-          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-[10px] font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all pr-12"
+          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-base sm:text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all pr-12"
         />
         <button
           type="submit"
           disabled={!content.trim() || addComment.isPending}
-          className="absolute right-2 top-1.5 p-1.5 text-primary hover:bg-primary/5 rounded-lg transition-colors disabled:opacity-30"
+          aria-label="Send observation"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 min-w-9 min-h-9 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.768 0 013.27 20.876L5.999 12zm0 0h7.5" />
           </svg>
         </button>

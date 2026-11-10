@@ -383,22 +383,27 @@ export function useProfile() {
         throw authError ?? new Error('Not authenticated')
       }
 
-      const { data } = await getClient()
+      const { data, error } = await getClient()
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
         .maybeSingle()
 
-      const resolvedRole = (authData.user.user_metadata?.role || data?.role || 'viewer') as Role
+      if (error || !data) {
+        throw error ?? new Error('Profile not found')
+      }
+
+      // Authorization is driven by the profile row only. user_metadata is
+      // writable by the user and must not decide a role.
       return {
         id: authData.user.id,
-        role: resolvedRole,
-        full_name: data?.full_name || authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'User',
-        phone: data?.phone || '',
-        department: data?.department || authData.user.user_metadata?.department || 'Engineering & Inspection',
-        created_at: data?.created_at || authData.user.created_at || new Date().toISOString(),
+        role: data.role as Role,
+        full_name: data.full_name || authData.user.email?.split('@')[0] || 'User',
+        phone: data.phone || '',
+        department: data.department || 'Engineering & Inspection',
+        created_at: data.created_at || authData.user.created_at || new Date().toISOString(),
         email: authData.user.email ?? '',
-        is_active: data?.is_active !== false,
+        is_active: data.is_active !== false,
       }
     },
     staleTime: 0,

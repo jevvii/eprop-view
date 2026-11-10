@@ -1,5 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
+import sharp from 'sharp'
 import {
   calculateLetterbox,
   mapBBoxFromLetterbox,
@@ -92,68 +93,75 @@ describe('Phase A: Real-Time AI Damage Detection Pipeline Tests', () => {
   })
 
   describe('End-to-End Inference Worker', () => {
-    test('runDetection executes under 3 seconds and returns structured detections', async () => {
-      const mockModel: AIModel = {
-        id: 'test-model-1',
-        name: 'YOLOv8-Structural-V2',
-        version: '2.1.0',
-        task: 'detection',
-        format: 'onnx',
-        storage_path: null,
-        labels: ['crack', 'spalling', 'corrosion'],
-        is_active: true,
-        architecture: 'yolov8',
-        input_width: 640,
-        input_height: 640,
-        confidence_threshold: 0.25,
-        iou_threshold: 0.45,
-        created_at: new Date().toISOString(),
+    const heuristicModel: AIModel = {
+      id: 'test-model-1',
+      name: 'Edge-Gradient Heuristic',
+      version: '2.0.0',
+      task: 'detection',
+      format: 'heuristic',
+      storage_path: null,
+      labels: ['crack', 'spalling', 'corrosion'],
+      is_active: true,
+      architecture: 'heuristic',
+      input_width: 640,
+      input_height: 640,
+      confidence_threshold: 0.25,
+      iou_threshold: 0.45,
+      created_at: new Date().toISOString(),
+    }
+
+    test('a uniform image produces zero detections', async () => {
+      const blank = await sharp({
+        create: {
+          width: 640,
+          height: 480,
+          channels: 3,
+          background: { r: 150, g: 150, b: 150 },
+        },
+      })
+        .png()
+        .toBuffer()
+
+      const result = await runDetection(blank, heuristicModel)
+
+      assert.equal(result.detections.length, 0, 'Blank walls must not report defects')
+      assert.equal(result.modelArchitecture, 'heuristic')
+      assert.equal(result.modelVersion, '2.0.0')
+    })
+
+    test('a high-frequency image yields structurally valid heuristic detections', async () => {
+      const width = 256
+      const height = 256
+      const raw = Buffer.alloc(width * height * 3)
+      for (let i = 0; i < raw.length; i++) {
+        raw[i] = (i * 37) % 256
       }
 
-      const result = await runDetection('img_sample_inspection_001', mockModel)
+      const noisy = await sharp(raw, { raw: { width, height, channels: 3 } })
+        .png()
+        .toBuffer()
 
-      assert.ok(result.latencyMs < 3000, 'Inference latency must be under 3 seconds')
-      assert.ok(result.detections.length > 0, 'Detections array should not be empty')
-      assert.equal(result.modelArchitecture, 'yolov8')
-      assert.equal(result.modelVersion, '2.1.0')
+      const result = await runDetection(noisy, heuristicModel)
+
+      assert.deepEqual(result.tensorDimensions, [1, 3, 640, 640])
+      assert.ok(result.latencyMs < 3000)
 
       for (const d of result.detections) {
-        assert.ok(d.confidence >= 0.25)
+        assert.equal(d.provenance, 'heuristic')
+        assert.ok(d.confidence >= 0.25 && d.confidence <= 1)
         assert.ok(d.severity_score >= 0 && d.severity_score <= 100)
         assert.ok(['low', 'medium', 'high', 'critical'].includes(d.severity))
         assert.ok(d.bbox !== null)
       }
     })
 
-    test('runDetection accepts image Blob and produces CHW tensor dimensions [1, 3, H, W]', async () => {
-      const mockModel: AIModel = {
-        id: 'test-model-2',
-        name: 'YOLOv8-Blob-Detector',
-        version: '2.0.0',
-        task: 'detection',
-        format: 'onnx',
-        storage_path: null,
-        labels: ['crack', 'spalling'],
-        is_active: true,
-        architecture: 'yolov8',
-        input_width: 640,
-        input_height: 640,
-        confidence_threshold: 0.30,
-        iou_threshold: 0.40,
-        created_at: new Date().toISOString(),
+    test('arbitrary non-image bytes are rejected, never turned into detections', async () => {
+      const bytes = new Uint8Array(64 * 1024)
+      for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = (i * 17) % 256
       }
 
-      // Create a mock image byte payload
-      const mockImageBytes = new Uint8Array(1024 * 64)
-      for (let i = 0; i < mockImageBytes.length; i++) {
-        mockImageBytes[i] = (i * 17) % 256
-      }
-      const imageBlob = new Blob([mockImageBytes], { type: 'image/jpeg' })
-
-      const result = await runDetection(imageBlob, mockModel)
-      assert.ok(result.latencyMs < 3000)
-      assert.deepEqual(result.tensorDimensions, [1, 3, 640, 640])
-      assert.ok(result.detections.length > 0)
+      await assert.rejects(() => runDetection(bytes, heuristicModel))
     })
   })
 })

@@ -90,12 +90,12 @@ export function MaintenanceTable() {
 
   return (
     <div className="flex flex-col h-full space-y-4">
-      <div className="flex items-center justify-between px-2">
+      <div className="flex items-center justify-between px-1">
         <div>
-          <h3 className="text-[0.65rem] font-black text-slate-400 tracking-[0.15em] uppercase">
+          <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">
             Maintenance Prioritization
           </h3>
-          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
             Prioritized repairs & task assignments
           </p>
         </div>
@@ -106,12 +106,12 @@ export function MaintenanceTable() {
                 if (projects && projects.length > 0) setNewProjectId(projects[0].id)
                 setIsCreateOpen(true)
               }}
-              className="text-[9px] font-black text-primary uppercase tracking-widest bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-lg transition-colors"
+              className="text-xs font-bold text-primary uppercase tracking-wider bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors min-h-[36px]"
             >
               + Assign Task
             </button>
           )}
-          <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+          <div className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/60 tabular-nums">
             {items?.length || 0} Units
           </div>
         </div>
@@ -121,49 +121,59 @@ export function MaintenanceTable() {
         {items?.map((item) => (
           <div
             key={item.id}
+            role={canManage ? 'button' : undefined}
+            tabIndex={canManage ? 0 : undefined}
+            aria-label={canManage ? `Edit task: ${item.title}` : undefined}
             onClick={() => canManage && openEditModal(item)}
-            className={`p-4 rounded-2xl bg-white border border-slate-100 shadow-sm transition-all group ${
+            onKeyDown={(event) => {
+              if (!canManage) return
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                openEditModal(item)
+              }
+            }}
+            className={`p-4 rounded-2xl bg-white border border-slate-100 shadow-xs transition-colors group ${
               canManage ? 'cursor-pointer hover:shadow-md hover:border-primary/30' : ''
             }`}
           >
-            <div className="flex justify-between items-start mb-2">
-              <div className="font-black text-black uppercase tracking-tight text-xs leading-snug group-hover:text-primary transition-colors">
+            <div className="flex justify-between items-start gap-2 mb-2">
+              <div className="font-bold text-slate-900 uppercase tracking-tight text-xs leading-snug group-hover:text-primary transition-colors">
                 {item.title}
               </div>
               <span
-                className={`shrink-0 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
+                className={`shrink-0 px-2 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider border ${
                   item.status === 'completed'
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     : item.status === 'in_progress'
-                    ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
                     : item.status === 'deferred'
-                    ? 'bg-amber-50 text-amber-600 border-amber-100'
-                    : 'bg-rose-50 text-red-600 border-rose-100'
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : 'bg-rose-50 text-red-700 border-rose-200'
                 }`}
               >
                 {item.status.replace('_', ' ')}
               </span>
             </div>
 
-            <div className="flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+            <div className="flex items-center justify-between text-xs font-medium text-slate-500 mt-2">
               <div className="truncate max-w-[180px]">{item.location}</div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">Score</span>
-                <span className="text-xs font-black text-black">{item.risk_score}</span>
+                <span className="text-xs font-medium text-slate-400 uppercase">Score</span>
+                <span className="text-xs font-bold text-slate-900 tabular-nums">{item.risk_score}</span>
               </div>
             </div>
 
             {(item.assigned_to_name || item.due_date) && (
-              <div className="mt-2.5 pt-2 border-t border-slate-50 flex items-center justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="mt-2.5 pt-2 border-t border-slate-50 flex items-center justify-between text-xs text-slate-500">
                 <span>
                   Assignee:{' '}
-                  <strong className="text-slate-600 font-black">
+                  <strong className="text-slate-700 font-semibold">
                     {typeof item.assigned_to_name === 'object' && item.assigned_to_name !== null
                       ? (item.assigned_to_name as any).full_name
                       : item.assigned_to_name || 'Unassigned'}
                   </strong>
                 </span>
-                {item.due_date && <span>Due: {item.due_date}</span>}
+                {item.due_date && <span className="tabular-nums">Due: {item.due_date}</span>}
               </div>
             )}
           </div>
@@ -172,20 +182,21 @@ export function MaintenanceTable() {
 
       {/* Edit / Assign Modal */}
       {selectedTask && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-2xl space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
                   Manage Maintenance Task
                 </h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">
+                <p className="text-xs text-slate-500 font-medium">
                   {selectedTask.title}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedTask(null)}
-                className="text-slate-400 hover:text-slate-700 font-bold"
+                className="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -193,13 +204,13 @@ export function MaintenanceTable() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                   Task Status
                 </label>
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value as MaintenanceStatus)}
-                  className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                  className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="pending">PENDING (QUEUED)</option>
                   <option value="in_progress">IN PROGRESS (ACTIVE)</option>
@@ -209,13 +220,13 @@ export function MaintenanceTable() {
               </div>
 
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                   Assign Maintenance Personnel
                 </label>
                 <select
                   value={editAssignee}
                   onChange={(e) => setEditAssignee(e.target.value)}
-                  className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                  className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="">UNASSIGNED</option>
                   {staff?.map((person) => (
@@ -227,36 +238,36 @@ export function MaintenanceTable() {
               </div>
 
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                   Target Completion Due Date
                 </label>
                 <input
                   type="date"
                   value={editDueDate}
                   onChange={(e) => setEditDueDate(e.target.value)}
-                  className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                  className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                   Engineering Notes & Instructions
                 </label>
                 <textarea
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   placeholder="Enter repair directives, contractor specs, or status update..."
-                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none min-h-[80px]"
+                  className="w-full text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary min-h-[80px]"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedTask(null)}
-                className="text-[9px] font-bold uppercase"
+                className="text-xs font-bold uppercase min-h-[40px] px-4"
               >
                 Cancel
               </Button>
@@ -264,7 +275,7 @@ export function MaintenanceTable() {
                 size="sm"
                 disabled={updateTask.isPending}
                 onClick={handleSaveEdit}
-                className="text-[9px] font-black uppercase bg-primary text-white"
+                className="text-xs font-bold uppercase bg-primary text-white min-h-[40px] px-4"
               >
                 {updateTask.isPending ? 'Saving...' : 'Update Task'}
               </Button>
@@ -275,24 +286,25 @@ export function MaintenanceTable() {
 
       {/* Create Task Modal */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleCreate}
-            className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl space-y-6"
+            className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-2xl space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
                   Assign Maintenance Task
                 </h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">
+                <p className="text-xs text-slate-500 font-medium">
                   Create priority work ticket
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
-                className="text-slate-400 hover:text-slate-700 font-bold"
+                className="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -300,13 +312,13 @@ export function MaintenanceTable() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                   Target Building / Project
                 </label>
                 <select
                   value={newProjectId}
                   onChange={(e) => setNewProjectId(e.target.value)}
-                  className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                  className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary"
                   required
                 >
                   {projects?.map((p) => (
@@ -316,7 +328,7 @@ export function MaintenanceTable() {
               </div>
 
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                   Task Title
                 </label>
                 <input
@@ -324,14 +336,14 @@ export function MaintenanceTable() {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="e.g. Repair Column 4B Cracking & Spall"
-                  className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                  className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                     Location
                   </label>
                   <input
@@ -339,13 +351,13 @@ export function MaintenanceTable() {
                     value={newLocation}
                     onChange={(e) => setNewLocation(e.target.value)}
                     placeholder="Floor 2, Grid D3"
-                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                    className="w-full text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                     Risk Score (1-10)
                   </label>
                   <input
@@ -355,21 +367,21 @@ export function MaintenanceTable() {
                     step="0.1"
                     value={newScore}
                     onChange={(e) => setNewScore(e.target.value)}
-                    className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                    className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary tabular-nums"
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                     Assignee
                   </label>
                   <select
                     value={newAssignee}
                     onChange={(e) => setNewAssignee(e.target.value)}
-                    className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                    className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="">UNASSIGNED</option>
                     {staff?.map((person) => (
@@ -381,38 +393,38 @@ export function MaintenanceTable() {
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                     Due Date
                   </label>
                   <input
                     type="date"
                     value={newDueDate}
                     onChange={(e) => setNewDueDate(e.target.value)}
-                    className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                    className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary tabular-nums"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
                   Directives & Notes
                 </label>
                 <textarea
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
                   placeholder="Task instructions..."
-                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none min-h-[60px]"
+                  className="w-full text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-primary min-h-[60px]"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => setIsCreateOpen(false)}
-                className="text-[9px] font-bold uppercase"
+                className="text-xs font-bold uppercase min-h-[40px] px-4"
               >
                 Cancel
               </Button>
@@ -420,7 +432,7 @@ export function MaintenanceTable() {
                 type="submit"
                 size="sm"
                 disabled={createTask.isPending}
-                className="text-[9px] font-black uppercase bg-primary text-white"
+                className="text-xs font-bold uppercase bg-primary text-white min-h-[40px] px-4"
               >
                 {createTask.isPending ? 'Assigning...' : 'Confirm Assignment'}
               </Button>

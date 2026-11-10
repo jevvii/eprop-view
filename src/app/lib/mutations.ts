@@ -183,6 +183,12 @@ export function useRunAIAnalysis() {
       queryClient.invalidateQueries({ queryKey: ['inspections'] })
       queryClient.invalidateQueries({ queryKey: ['inspection'] })
     },
+    // A failed run still writes a failed job row. Refresh so the failure is
+    // visible instead of leaving the previous "completed" state on screen.
+    onSettled: (_, __, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ai-jobs', variables.imageId] })
+      queryClient.invalidateQueries({ queryKey: ['ai-detections', variables.imageId] })
+    },
   })
 }
 
@@ -258,7 +264,7 @@ export function useCreateARAnchor() {
       severity,
       detectionId,
       notes,
-      snapshotPath,
+      snapshotDataUrl,
     }: {
       sessionId: string
       inspectionId: string
@@ -269,7 +275,7 @@ export function useCreateARAnchor() {
       severity?: SeverityLevel
       detectionId?: string
       notes?: string
-      snapshotPath?: string
+      snapshotDataUrl?: string
     }) => {
       return createARAnchor({
         sessionId,
@@ -281,11 +287,34 @@ export function useCreateARAnchor() {
         severity,
         detectionId,
         notes,
-        snapshotPath,
+        snapshotDataUrl,
       })
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['ar-anchors', variables.inspectionId] })
+      queryClient.invalidateQueries({ queryKey: ['all-ar-anchors'] })
+      queryClient.invalidateQueries({ queryKey: ['inspections'] })
+    },
+  })
+}
+
+export function useDeleteARAnchor() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: { anchorId: string; inspectionId?: string } | string) => {
+      const anchorId = typeof input === 'string' ? input : input.anchorId
+      const supabase = getClient()
+      const { error } = await supabase.from('ar_anchors').delete().eq('id', anchorId)
+      if (error) throw error
+      return input
+    },
+    onSuccess: (input) => {
+      const inspectionId = typeof input === 'object' && input !== null ? input.inspectionId : undefined
+      if (inspectionId) {
+        queryClient.invalidateQueries({ queryKey: ['ar-anchors', inspectionId] })
+      }
+      queryClient.invalidateQueries({ queryKey: ['ar-anchors'] })
       queryClient.invalidateQueries({ queryKey: ['all-ar-anchors'] })
       queryClient.invalidateQueries({ queryKey: ['inspections'] })
     },

@@ -1,4 +1,5 @@
 'use client'
+import { ClipboardCheck } from 'lucide-react'
 
 import { useState } from 'react'
 import { useAIModels, useAIDetections, useAIAnalysisJobs, useProfile } from '@/app/lib/queries'
@@ -53,61 +54,58 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
   }
 
   return (
-    <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">AI Structural Diagnostics</h3>
-            {activeModel?.architecture && (
-              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100">
-                {activeModel.architecture}
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">AI Structural Diagnostics</h3>
+            {activeModel && (
+              <span className="text-xs font-semibold uppercase px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                {activeModel.format === 'heuristic' || activeModel.format === 'mock'
+                  ? 'Heuristic (non-ML)'
+                  : activeModel.format}
               </span>
             )}
-            <span className="text-[8px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+            <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 tabular-nums">
               {activeModel?.input_width || 640}×{activeModel?.input_height || 640}
             </span>
           </div>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+          <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
             {activeModel ? `Active Checkpoint: ${activeModel.name} (v${activeModel.version})` : 'No active AI models registered'}
           </p>
         </div>
         {isRunning ? (
-          <div className="flex items-center gap-1.5 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+          <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
-            <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Inference Active</span>
+            <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">Inference Active</span>
           </div>
         ) : latestJob?.completed_at ? (
           <div className="text-right">
-            <span className="text-[8px] font-mono text-slate-400 font-bold">
-              Latency: &lt;1.8s · NMS IoU: {activeModel?.iou_threshold ?? 0.45}
+            <span className="text-xs font-mono text-slate-500 font-medium">
+              Completed {new Date(latestJob.completed_at).toLocaleTimeString()}
             </span>
           </div>
         ) : null}
       </div>
 
       {isRunning && (
-        <div className="space-y-1">
-          <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider">
-            <span>Executing Computer Vision Pipeline</span>
-            <span>Preprocessing & NMS…</span>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-            <div className="h-full bg-primary animate-pulse rounded-full w-4/5" />
-          </div>
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 uppercase tracking-wide">
+          <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-primary animate-spin" aria-hidden="true" />
+          <span>Running heuristic analysis…</span>
         </div>
       )}
 
       {/* Model Selection and Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
         {canTriggerAI ? (
           <>
             {models && models.length > 1 && (
               <div className="flex items-center gap-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Model</label>
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Model</label>
                 <select
                   value={activeModel?.id ?? ''}
                   onChange={(e) => setSelectedModelId(e.target.value)}
-                  className="text-[10px] font-bold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none"
+                  className="text-base sm:text-sm font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   {models.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -121,8 +119,8 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
             <div className="flex items-center gap-3">
               <Button
                 onClick={handleRun}
-                disabled={!activeModel || isRunning}
-                className="text-[9px] font-black uppercase tracking-[0.2em] px-5 py-3 h-auto shadow-md shadow-primary/10"
+                disabled={!activeModel?.is_active || isRunning}
+                className="text-xs font-bold uppercase tracking-wider px-5 py-2.5 min-h-[44px] shadow-md shadow-primary/10"
               >
                 {isRunning ? 'Analyzing Image…' : detections && detections.length > 0 ? 'Re-Run Analysis' : 'Run AI Analysis'}
               </Button>
@@ -130,48 +128,54 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
           </>
         ) : (
           <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-100">
-            <span className="text-xs">🧑‍🔬</span>
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+            <ClipboardCheck className="h-4 w-4 text-slate-600" aria-hidden="true" />
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
               Review & Validation Mode
             </span>
           </div>
         )}
 
-          {damageScore !== null && (
-            <div className="flex flex-col gap-1">
-              <div className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Impact Score:</span>
-                <span className="text-xs font-black text-black">{damageScore.toFixed(1)}/10</span>
-                {riskLevel && (
-                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${
-                    riskLevel === 'critical' ? 'bg-red-100 text-red-700' :
-                    riskLevel === 'high' ? 'bg-orange-100 text-orange-700' :
-                    riskLevel === 'moderate' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                  }`}>
-                    {riskLevel}
-                  </span>
-                )}
-              </div>
-              <p className="text-[8px] text-slate-400 font-medium italic">
-                Score uses default structural (1.2×), exposure (1.0×), and location factors. Configurable weighting is a production follow-up.
-              </p>
+        {damageScore !== null && (
+          <div className="flex flex-col gap-1">
+            <div className="bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-100 flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Impact Score:</span>
+              <span className="text-sm font-bold text-slate-900 tabular-nums">{damageScore.toFixed(1)}/10</span>
+              {riskLevel && (
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                  riskLevel === 'critical' ? 'bg-severity-critical-soft text-severity-critical' :
+                  riskLevel === 'high' ? 'bg-severity-high-soft text-severity-high' :
+                  riskLevel === 'moderate' ? 'bg-severity-moderate-soft text-severity-moderate' : 'bg-severity-low-soft text-severity-low'
+                }`}>
+                  {riskLevel}
+                </span>
+              )}
             </div>
-          )}
+            <p className="text-xs text-slate-400 font-medium italic">
+              Score uses default structural (1.2×), exposure (1.0×), and location factors.
+            </p>
+          </div>
+        )}
       </div>
 
       {latestJob?.status === 'failed' && (
-        <p className="text-[9px] font-black text-red-600 bg-red-50 p-3 rounded-xl border border-red-100 uppercase tracking-wider">
+        <p className="text-xs font-bold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100 uppercase tracking-wide">
           {latestJob.error_message || 'AI analysis inference failed'}
+        </p>
+      )}
+
+      {runAnalysis.isError && (
+        <p className="text-xs font-bold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100 uppercase tracking-wide">
+          {runAnalysis.error instanceof Error ? runAnalysis.error.message : 'Analysis request failed'}
         </p>
       )}
 
       {detections && detections.length > 0 ? (
         <div className="space-y-4 pt-2">
-          <div className="flex items-center justify-between border-t border-slate-50 pt-4">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+          <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
               Identified Defects ({detections.length})
             </span>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {detections.map((d) => (
                 <SeverityBadge key={d.id} severity={d.severity} />
               ))}
@@ -180,8 +184,10 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
           <DetectionList detections={detections} />
         </div>
       ) : (
-        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider border-t border-slate-50 pt-4">
-          No automated detections recorded yet for this asset image.
+        <div className="text-xs text-slate-500 font-medium border-t border-slate-100 pt-4">
+          {latestJob?.status === 'completed'
+            ? 'No defect patterns detected in this image by the heuristic.'
+            : 'Not analyzed yet. Run analysis to inspect this image.'}
         </div>
       )}
     </div>

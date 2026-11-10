@@ -56,9 +56,9 @@ export function ProjectGrid() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="bg-white p-10 rounded-[2.5rem] shadow-xl h-64 animate-pulse border border-slate-100" />
+          <div key={index} className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm h-64 animate-pulse border border-slate-100" />
         ))}
       </div>
     )
@@ -66,7 +66,7 @@ export function ProjectGrid() {
 
   if (isError) {
     return (
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-red-100 text-red-600 font-black uppercase tracking-widest text-center">
+      <div className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-red-100 text-red-600 font-bold uppercase tracking-wider text-center text-xs sm:text-sm">
         Telemetry Error: Database unreachable.
       </div>
     )
@@ -74,20 +74,20 @@ export function ProjectGrid() {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 text-slate-400 font-bold uppercase tracking-widest text-center italic">
+      <div className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 text-slate-400 font-bold uppercase tracking-wider text-center italic text-xs sm:text-sm">
         System Status: No active projects on file.
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm w-fit">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Filter State</label>
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-slate-100 shadow-xs w-full sm:w-fit">
+        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Filter State</label>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          className="rounded-xl border border-slate-200 px-3.5 py-2 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 sm:flex-initial"
         >
           <option value="all">ALL_PROJECTS</option>
           <option value="active">ACTIVE_MONITORING</option>
@@ -96,7 +96,7 @@ export function ProjectGrid() {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {filteredProjects.map((project) => {
           const inspectionsCount = inspectionCounts.get(project.id) ?? 0
           const reportsCount = reportCounts.get(project.id) ?? 0
@@ -104,36 +104,36 @@ export function ProjectGrid() {
           const lastInspection = latestInspectionDate.get(project.id)
 
           return (
-            <div key={project.id} className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col group hover:shadow-2xl transition-all duration-300">
-              <div className="flex items-start justify-between gap-6 mb-8">
-                <div>
-                  <h3 className="text-xl font-koulen text-black tracking-wide leading-none mb-1 group-hover:text-primary transition-colors">{project.name}</h3>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{project.location}</p>
+            <div key={project.id} className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg border border-slate-100 flex flex-col group hover:shadow-xl transition-all duration-300 min-w-0">
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xl sm:text-2xl font-koulen text-black tracking-wide leading-tight mb-1 group-hover:text-primary transition-colors truncate">{project.name}</h3>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{project.location}</p>
                 </div>
                 <StatusBadge status={project.status} />
               </div>
               
-              <p className="text-[11px] font-bold text-slate-600 mb-10 leading-relaxed flex-1 italic">
+              <p className="text-xs sm:text-sm font-medium text-slate-600 mb-6 leading-relaxed flex-1 italic">
                 {project.description || 'No detailed technical overview provided for this designated unit.'}
               </p>
 
-              <div className="grid grid-cols-3 gap-4 border-t border-slate-100 pt-8">
+              <div className="grid grid-cols-3 gap-3 border-t border-slate-100 pt-6">
                 <div className="flex flex-col">
-                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Inspections</div>
-                  <div className="text-2xl font-koulen text-black">{inspectionsCount}</div>
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Inspections</div>
+                  <div className="text-xl sm:text-2xl font-koulen text-black tabular-nums">{inspectionsCount}</div>
                 </div>
                 <div className="flex flex-col">
-                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Reports</div>
-                  <div className="text-2xl font-koulen text-black">{reportsCount}</div>
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Reports</div>
+                  <div className="text-xl sm:text-2xl font-koulen text-black tabular-nums">{reportsCount}</div>
                 </div>
                 <div className="flex flex-col">
-                  <div className="text-[8px] font-black text-rose-400 uppercase tracking-widest mb-1.5">Critical</div>
-                  <div className="text-2xl font-koulen text-rose-600">{criticalCount}</div>
+                  <div className="text-xs font-semibold text-rose-500 uppercase tracking-wider mb-1">Critical</div>
+                  <div className="text-xl sm:text-2xl font-koulen text-rose-600 tabular-nums">{criticalCount}</div>
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col gap-2">
-                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+              <div className="mt-5 pt-5 border-t border-slate-100 flex flex-col gap-2">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Assigned Project Team & Engineers
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -141,12 +141,12 @@ export function ProjectGrid() {
                     staff.map((member) => (
                       <span
                         key={member.id}
-                        className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider border ${
+                        className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold uppercase tracking-wider border ${
                           member.role === 'engineer'
-                            ? 'bg-blue-50 text-blue-600 border-blue-100'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
                             : member.role === 'admin'
                             ? 'bg-slate-100 text-slate-700 border-slate-200'
-                            : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         }`}
                         title={`${member.full_name} (${member.department || member.role})`}
                       >
@@ -154,18 +154,18 @@ export function ProjectGrid() {
                       </span>
                     ))
                   ) : (
-                    <span className="text-[8px] font-bold text-slate-400 uppercase">
-                      Engr. Sarah Jenkins, PE · Engr. David Chen, SE · Alex Rivera
-                    </span>
+                    <span className="text-xs font-medium text-slate-500">No team assigned</span>
                   )}
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
-                <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">
-                  Last Telemetry: <span className="text-black">{lastInspection ? new Date(lastInspection).toLocaleDateString() : 'INITIAL_SCAN'}</span>
+              <div className="mt-4 flex items-center justify-between pt-2">
+                <div className="text-xs font-medium text-slate-500">
+                  Last inspection:{' '}
+                  <span className="text-slate-800 font-semibold">
+                    {lastInspection ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(lastInspection)) : 'None yet'}
+                  </span>
                 </div>
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               </div>
             </div>
           )

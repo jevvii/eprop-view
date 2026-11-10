@@ -1,9 +1,15 @@
 'use server'
 
+import sharp from 'sharp'
+import { z } from 'zod'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
+import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { computeFinalDamageScore, scoreToRiskLevel, severityToScore } from '@/app/lib/damage-score'
 import type { ARSession, ARAnchor, ARPose, Vector3, DamageType, SeverityLevel } from '@/app/types'
+
+const BUCKET = 'inspection-images'
+const MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024
 
 /**
  * Get the active AR session for an inspection, if any.
@@ -31,6 +37,9 @@ export async function getActiveARSession(inspectionId: string): Promise<ARSessio
  */
 export async function getARAnchorsForInspection(inspectionId: string): Promise<ARAnchor[]> {
   await requireRole(['inspector', 'engineer', 'admin'])
+  if (!z.string().uuid().safeParse(inspectionId).success) {
+    throw new Error('Invalid inspection id')
+  }
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('ar_anchors')
@@ -39,7 +48,21 @@ export async function getARAnchorsForInspection(inspectionId: string): Promise<A
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return (data || []) as ARAnchor[]
+
+  // Snapshots live in a private bucket. Return short-lived URLs rather than
+  // storing (or exposing) object paths as if they were image sources.
+  const anchors = (data || []) as ARAnchor[]
+  const signed = await Promise.all(
+    anchors.map(async (anchor) => {
+      if (!anchor.snapshot_path) return anchor
+      const { data: signedData } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrl(anchor.snapshot_path, 60 * 60)
+      return { ...anchor, image_url: signedData?.signedUrl ?? undefined }
+    })
+  )
+
+  return signed
 }
 
 /**
@@ -127,7 +150,61 @@ interface CreateARAnchorInput {
   severity?: SeverityLevel
   detectionId?: string
   notes?: string
-  snapshotPath?: string
+  snapshotDataUrl?: string
+}
+
+const createAnchorSchema = z
+  .object({
+    sessionId: z.string().uuid(),
+    inspectionId: z.string().uuid(),
+    label: z.string().trim().min(1).max(200),
+    pose: z
+      .object({
+        position: z.object({ x: z.number(), y: z.number(), z: z.number() }),
+        quaternion: z.object({ x: z.number(), y: z.number(), z: z.number(), w: z.number() }).optional(),
+      })
+      .passthrough(),
+    worldPosition: z.object({ x: z.number(), y: z.number(), z: z.number() }).optional(),
+    damageType: z.enum(['crack', 'corrosion', 'spalling', 'deformation', 'leakage', 'none']).optional(),
+    severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    detectionId: z.string().uuid().optional(),
+    notes: z.string().max(2000).optional(),
+    snapshotDataUrl: z.string().max(12_000_000).optional(),
+  })
+  .strict()
+
+async function storeSnapshot(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  dataUrl: string,
+  inspectionId: string,
+  userId: string
+): Promise<string> {
+  const match = /^data:image\/[a-z+.-]+;base64,/i.exec(dataUrl)
+  if (!match) throw new Error('Invalid snapshot payload')
+
+  const buffer = Buffer.from(dataUrl.slice(match[0].length), 'base64')
+  if (buffer.byteLength === 0 || buffer.byteLength > MAX_SNAPSHOT_BYTES) {
+    throw new Error('Snapshot is empty or exceeds 8 MB')
+  }
+
+  const metadata = await sharp(buffer).metadata()
+  if (!metadata.width || !metadata.height) {
+    throw new Error('Snapshot is not a readable image')
+  }
+
+  const normalized = await sharp(buffer)
+    .rotate()
+    .resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 85, mozjpeg: true })
+    .toBuffer()
+
+  const storagePath = `${inspectionId}/${userId}/ar-${crypto.randomUUID()}.jpg`
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(storagePath, normalized, { contentType: 'image/jpeg', upsert: false })
+
+  if (error) throw new Error(`Snapshot upload failed: ${error.message}`)
+  return storagePath
 }
 
 /**
@@ -136,10 +213,13 @@ interface CreateARAnchorInput {
  */
 export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnchor> {
   const { userId, role } = await requireRole(['inspector', 'admin'])
+  await enforceRateLimit(`ar-anchor:${userId}`, 60, 60)
 
-  if (!input.label || !input.label.trim()) {
-    throw new Error('Anchor label is required')
+  const parsed = createAnchorSchema.safeParse(input)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? 'Invalid anchor payload')
   }
+  const anchorInput = parsed.data
 
   const supabase = await createClient()
 
@@ -148,7 +228,7 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
     const { data: inspection, error: inspError } = await supabase
       .from('inspections')
       .select('id, lead_inspector_id')
-      .eq('id', input.inspectionId)
+      .eq('id', anchorInput.inspectionId)
       .single()
 
     if (inspError || !inspection) {
@@ -161,21 +241,26 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
   }
 
   const validSeverities: SeverityLevel[] = ['low', 'medium', 'high', 'critical']
-  const severity = input.severity && validSeverities.includes(input.severity) ? input.severity : null
+  const severity =
+    anchorInput.severity && validSeverities.includes(anchorInput.severity) ? anchorInput.severity : null
+
+  const snapshotPath = anchorInput.snapshotDataUrl
+    ? await storeSnapshot(supabase, anchorInput.snapshotDataUrl, anchorInput.inspectionId, userId)
+    : null
 
   const { data, error } = await supabase
     .from('ar_anchors')
     .insert({
-      session_id: input.sessionId,
-      inspection_id: input.inspectionId,
-      detection_id: input.detectionId ?? null,
-      label: input.label.trim(),
-      damage_type: input.damageType ?? null,
+      session_id: anchorInput.sessionId,
+      inspection_id: anchorInput.inspectionId,
+      detection_id: anchorInput.detectionId ?? null,
+      label: anchorInput.label,
+      damage_type: anchorInput.damageType ?? null,
       severity,
-      pose: input.pose,
-      world_position: input.worldPosition ?? null,
-      notes: input.notes ?? '',
-      snapshot_path: input.snapshotPath ?? null,
+      pose: anchorInput.pose,
+      world_position: anchorInput.worldPosition ?? null,
+      notes: anchorInput.notes ?? '',
+      snapshot_path: snapshotPath,
     })
     .select()
     .single()
@@ -193,9 +278,9 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
           risk_level: riskLevel,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', input.inspectionId)
+        .eq('id', anchorInput.inspectionId)
     } catch (e) {
-      console.warn('AR anchor inspection risk update failed:', e)
+      console.error('AR anchor inspection risk update failed:', e)
     }
   }
 

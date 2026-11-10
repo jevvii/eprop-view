@@ -93,23 +93,23 @@ export default function ReportsPage() {
   return (
     <>
       {/* ── Screen UI ── */}
-      <div className="space-y-10 no-print">
-        <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between px-2">
+      <div className="space-y-6 sm:space-y-8 no-print">
+        <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between px-1 sm:px-2">
           <div>
             <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Inspection Reports</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
               {selectedProjectName ? `Reports Archive · ${selectedProjectName}` : 'Generate and review technical inspection logs.'}
             </p>
           </div>
           
-          {/* Actions Container - Single Line on Desktop */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-sm">
-              <label className="hidden sm:block text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2">Site</label>
+          {/* Actions Container */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-xs">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Site</label>
               <select
                 value={projectId}
                 onChange={(event) => setProjectId(event.target.value)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all max-w-[150px] truncate"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all max-w-[170px] truncate"
               >
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>{project.name}</option>
@@ -117,12 +117,12 @@ export default function ReportsPage() {
               </select>
             </div>
 
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-sm">
-              <label className="hidden sm:block text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2">Status</label>
+            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-xs">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Status</label>
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               >
                 <option value="all">ALL</option>
                 <option value="open">OPEN</option>
@@ -137,7 +137,7 @@ export default function ReportsPage() {
                 variant="outline"
                 disabled={!hasReports}
                 onClick={handlePrintAll}
-                className="font-black uppercase tracking-[0.2em] text-[9px] px-4 h-10 border-slate-200"
+                className="font-bold uppercase tracking-wider text-xs px-4 h-11 border-slate-200"
               >
                 Print All
               </Button>
@@ -146,30 +146,30 @@ export default function ReportsPage() {
             {canCreateReport && (
               <Button 
                 onClick={() => setIsCreateModalOpen(true)} 
-                className="font-black uppercase tracking-[0.2em] text-[9px] px-6 h-10 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white"
+                className="font-bold uppercase tracking-wider text-xs px-5 h-11 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-white"
               >
-                Add New Log
+                + Add New Log
               </Button>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-[2rem] bg-white p-6 shadow-xl border border-slate-100 group hover:shadow-2xl transition-all">
-            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Active Logs</div>
-            <div className="text-4xl font-koulen text-black">{reportStats.open}</div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-4">
+          <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-md border border-slate-100 group hover:shadow-lg transition-all min-w-0">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Total Active Logs</div>
+            <div className="text-3xl sm:text-4xl font-koulen text-black tabular-nums">{reportStats.open}</div>
           </div>
-          <div className="rounded-[2rem] bg-indigo-50/50 p-6 shadow-xl border border-indigo-100 group hover:shadow-2xl transition-all">
-            <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Pending Review</div>
-            <div className="text-4xl font-koulen text-indigo-700">{reportStats.in_review}</div>
+          <div className="rounded-2xl sm:rounded-3xl bg-indigo-50/60 p-4 sm:p-6 shadow-md border border-indigo-100 group hover:shadow-lg transition-all min-w-0">
+            <div className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1 truncate">Pending Review</div>
+            <div className="text-3xl sm:text-4xl font-koulen text-indigo-700 tabular-nums">{reportStats.in_review}</div>
           </div>
-          <div className="rounded-[2rem] bg-rose-50/50 p-6 shadow-xl border border-rose-100 group hover:shadow-2xl transition-all">
-            <div className="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-2">Critical Priority</div>
-            <div className="text-4xl font-koulen text-rose-600">{reportStats.critical}</div>
+          <div className="rounded-2xl sm:rounded-3xl bg-rose-50/60 p-4 sm:p-6 shadow-md border border-rose-100 group hover:shadow-lg transition-all min-w-0">
+            <div className="text-xs font-bold text-rose-600 uppercase tracking-wider mb-1 truncate">Critical Priority</div>
+            <div className="text-3xl sm:text-4xl font-koulen text-rose-600 tabular-nums">{reportStats.critical}</div>
           </div>
-          <div className="rounded-[2rem] bg-emerald-50/50 p-6 shadow-xl border border-emerald-100 group hover:shadow-2xl transition-all">
-            <div className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-2">Verified Complete</div>
-            <div className="text-4xl font-koulen text-emerald-600">{reportStats.completed}</div>
+          <div className="rounded-2xl sm:rounded-3xl bg-emerald-50/60 p-4 sm:p-6 shadow-md border border-emerald-100 group hover:shadow-lg transition-all min-w-0">
+            <div className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1 truncate">Verified Complete</div>
+            <div className="text-3xl sm:text-4xl font-koulen text-emerald-600 tabular-nums">{reportStats.completed}</div>
           </div>
         </div>
 
@@ -195,8 +195,8 @@ export default function ReportsPage() {
       </div>
 
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm no-print">
-          <div className="w-full max-w-2xl rounded-[2.5rem] bg-white p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm no-print">
+          <div className="w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 md:p-10 shadow-2xl overflow-y-auto overscroll-contain max-h-[90dvh]">
             <ReportForm
               projectId={projectId}
               onClose={() => setIsCreateModalOpen(false)}

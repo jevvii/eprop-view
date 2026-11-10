@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/app/lib/supabase/server'
+import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -29,6 +30,8 @@ export async function login(prevState: unknown, formData: FormData) {
     return { error: firstError ?? 'Invalid form data' }
   }
 
+  await enforceRateLimit(`login:${validated.data.email.toLowerCase()}`, 10, 900)
+
   const { data: authData, error } = await supabase.auth.signInWithPassword({
     email: validated.data.email,
     password: validated.data.password,
@@ -39,24 +42,21 @@ export async function login(prevState: unknown, formData: FormData) {
   }
 
   if (authData?.user) {
-    // Check if account is active for this user
     const { data: profile } = await supabase
       .from('profiles')
       .select('is_active, role')
       .eq('id', authData.user.id)
       .maybeSingle()
 
-    if (profile && profile.is_active === false) {
+    if (!profile || profile.is_active === false) {
       await supabase.auth.signOut()
-      return { error: 'Your account has been deactivated. Please contact an administrator.' }
+      return { error: 'Your account is inactive. Please contact an administrator.' }
     }
 
-    const role = (authData.user.user_metadata?.role || profile?.role || authData.user.app_metadata?.role || 'viewer') as string
+    // Role comes from profiles only. user_metadata is user-writable.
+    const role = profile.role as string
     revalidatePath('/', 'layout')
-    if (role === 'inspector') {
-      redirect('/document')
-    }
-    redirect('/dashboard')
+    redirect(role === 'inspector' ? '/document' : '/dashboard')
   }
 
   revalidatePath('/', 'layout')
@@ -77,14 +77,14 @@ export async function signup(prevState: unknown, formData: FormData) {
     return { error: firstError ?? 'Invalid form data' }
   }
 
+  await enforceRateLimit(`signup:${validated.data.email.toLowerCase()}`, 5, 3600)
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   const { data, error } = await supabase.auth.signUp({
     email: validated.data.email,
     password: validated.data.password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/auth/callback`,
-      data: {
-        role: 'viewer',
-      },
+      emailRedirectTo: `${siteUrl}/auth/callback`,
     },
   })
 
@@ -92,17 +92,14 @@ export async function signup(prevState: unknown, formData: FormData) {
     return { error: error.message }
   }
 
-  if (data?.user) {
-    const { error: insertError } = await supabase.from('profiles').insert({
-      id: data.user.id,
-      role: 'viewer',
-    })
-    if (insertError) {
-      return { error: 'Account created but profile setup failed. Please contact support.' }
-    }
+  // The auth.users trigger creates the profile row as 'viewer'. Never insert it
+  // here as well: a duplicate insert races the trigger and reports a false error.
+  revalidatePath('/', 'layout')
+
+  if (data?.session) {
+    redirect('/dashboard')
   }
 
-  revalidatePath('/', 'layout')
   redirect('/?message=Check your email to confirm your account')
 }
 

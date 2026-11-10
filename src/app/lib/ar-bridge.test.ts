@@ -8,84 +8,66 @@ import {
   onARBridgeEvent,
   captureNativeSnapshot,
   isSessionActive,
+  emitEvent,
 } from './ar/native-bridge'
-import type { ARBridgeEvent } from '@/types/ar-bridge'
 
-describe('Phase B: Native ARKit / ARCore Bridge Tests', () => {
-  test('isNativeARAvailable reports platform and engine capabilities', async () => {
+/**
+ * These tests run in Node with no Capacitor plugin and no DOM. The contract is
+ * that a missing native capability reports unavailable and rejects; it must
+ * never invent planes, anchors or snapshot images.
+ */
+describe('Phase B: Native ARKit / ARCore bridge contract', () => {
+  test('isNativeARAvailable reports unavailable in a non-native environment', async () => {
     const status = await isNativeARAvailable()
-    assert.ok(typeof status.available === 'boolean')
-    assert.ok(['ios', 'android', 'web'].includes(status.platform))
-    assert.ok(['ARKit', 'ARCore', 'WebXR', 'mock'].includes(status.engine))
+    assert.equal(status.available, false)
+    assert.equal(status.platform, 'web')
+    assert.equal(status.engine, 'mock')
   })
 
-  test('startNativeARSession starts session and emits plane detection event', async () => {
-    const receivedEvents: ARBridgeEvent[] = []
-    const unsubscribe = onARBridgeEvent((event) => {
-      receivedEvents.push(event)
-    })
-
-    await startNativeARSession('test_inspection_123', {
-      enablePlaneDetection: true,
-      worldAlignment: 'gravity',
-    })
-
-    assert.equal(isSessionActive(), true)
-    assert.ok(receivedEvents.some((e) => e.type === 'planeDetected'))
-
-    unsubscribe()
+  test('startNativeARSession rejects without a native plugin', async () => {
+    await assert.rejects(() => startNativeARSession('test_inspection_123'), /not available/i)
+    assert.equal(isSessionActive(), false)
   })
 
-  test('placeNativeAnchor emits anchorPlaced event and returns native identifier', async () => {
-    const receivedEvents: ARBridgeEvent[] = []
-    const unsubscribe = onARBridgeEvent((event) => {
-      receivedEvents.push(event)
-    })
-
+  test('placeNativeAnchor rejects without a native plugin', async () => {
     const pose = {
       position: { x: 0.5, y: 1.2, z: -2.0 },
       quaternion: { x: 0, y: 0, z: 0, w: 1 },
     }
 
-    const nativeId = await placeNativeAnchor(pose, { label: 'Rebar Spall Target' })
-
-    assert.ok(nativeId.startsWith('native_') || nativeId.startsWith('arkit_') || nativeId.startsWith('arcore_'))
-    assert.ok(receivedEvents.some((e) => e.type === 'anchorPlaced'))
-
-    unsubscribe()
+    await assert.rejects(
+      () => placeNativeAnchor(pose, { label: 'Rebar Spall Target' }),
+      /require the AR plugin/i
+    )
   })
 
-  test('captureNativeSnapshot returns valid image URI payload', async () => {
-    const snapshot = await captureNativeSnapshot()
-    assert.ok(snapshot.startsWith('data:image/'))
+  test('captureNativeSnapshot rejects instead of returning a placeholder image', async () => {
+    await assert.rejects(() => captureNativeSnapshot(), /requires? the AR plugin/i)
   })
 
-  test('stopNativeARSession completes session lifecycle and notifies listeners', async () => {
-    const receivedEvents: ARBridgeEvent[] = []
-    const unsubscribe = onARBridgeEvent((event) => {
-      receivedEvents.push(event)
-    })
-
+  test('stopNativeARSession is a safe no-op without a native plugin', async () => {
     await stopNativeARSession()
     assert.equal(isSessionActive(), false)
-    assert.ok(receivedEvents.some((e) => e.type === 'sessionEnded'))
-
-    unsubscribe()
   })
 
-  test('onARBridgeEvent receives and normalizes structured bridge event payloads', (t, done) => {
+  test('onARBridgeEvent delivers structured events and unsubscribes cleanly', () => {
+    const received: string[] = []
     const unsubscribe = onARBridgeEvent((event) => {
-      assert.equal(event.type, 'planeDetected')
-      assert.ok(event.payload !== undefined)
-      unsubscribe()
-      done()
+      received.push(event.type)
     })
 
-    // Simulate event delivery
-    const { emitEvent } = require('./ar/native-bridge')
     emitEvent({
       type: 'planeDetected',
-      payload: { id: 'plane_mock_99', alignment: 'horizontal' },
+      payload: { id: 'plane_real_1', alignment: 'horizontal' },
     })
+
+    unsubscribe()
+
+    emitEvent({
+      type: 'sessionEnded',
+      payload: {},
+    })
+
+    assert.deepEqual(received, ['planeDetected'])
   })
 })
