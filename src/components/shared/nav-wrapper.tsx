@@ -25,7 +25,7 @@ export function NavWrapper({ children }: { children: ReactNode }) {
 
   return (
     <NavContext.Provider value={{ isOpen, toggle, close }}>
-      <div className="flex h-dvh min-h-dvh overflow-hidden print:h-auto print:overflow-visible bg-slate-50 overscroll-contain">
+      <div id="app-shell" className="flex h-dvh min-h-dvh overflow-hidden print:h-auto print:overflow-visible bg-slate-50 overscroll-contain">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-primary focus:shadow-lg"

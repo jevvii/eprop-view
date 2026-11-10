@@ -61,6 +61,7 @@ function ARPageContent() {
     hitPose,
     startSession: startProgressiveAR,
     endSession: endProgressiveAR,
+    prepareForAR,
     switchToCamera,
   } = useARSessionContext()
 
@@ -74,6 +75,7 @@ function ARPageContent() {
   const dbSessionIdRef = useRef<string | null>(null)
   const [deletingAnchorId, setDeletingAnchorId] = useState<string | null>(null)
   const [bannerDismissed, setBannerDismissed] = useState(false)
+  const [startError, setStartError] = useState<string | null>(null)
   const [nativeInfo, setNativeInfo] = useState<{ available: boolean; engine: string; platform: string }>({
     available: false,
     engine: 'Progressive AR',
@@ -160,10 +162,58 @@ function ARPageContent() {
     []
   )
 
+  // Immersive WebXR needs a transparent page; the compositor supplies the camera.
+  useEffect(() => {
+    const immersive = activeMode === 'webxr'
+    document.documentElement.classList.toggle('ar-immersive', immersive)
+    return () => document.documentElement.classList.remove('ar-immersive')
+  }, [activeMode])
+
+  // A session ended by the OS or browser must also close the DB row.
+  const wasActiveRef = useRef(false)
+  useEffect(() => {
+    if (wasActiveRef.current && !isActive) {
+      const sessionToClose = dbSessionIdRef.current
+      dbSessionIdRef.current = null
+      setDbSessionId(null)
+      if (sessionToClose) {
+        void endARSession
+          .mutateAsync({ sessionId: sessionToClose, inspectionId })
+          .catch((err) => console.error('Failed to close ended AR session:', err))
+      }
+    }
+    wasActiveRef.current = isActive
+  }, [isActive, inspectionId, endARSession])
+
   const handleStart = useCallback(async () => {
     if (!inspectionId) return
+    setStartError(null)
+
+    // Start the iOS motion permission request in the gesture before any await.
+    void prepareForAR()
+
     let createdSessionId: string | null = null
+    let arStarted = false
+
     try {
+      // Start AR first: WebXR requestSession needs the click's transient
+      // activation, which a preceding network await can consume.
+      const isNativeDevice = nativeInfo.platform !== 'web'
+      if (isNativeDevice) {
+        const { startNativeARSession, requestNativeCameraPermission } = await import(
+          '@/app/lib/ar/native-bridge'
+        )
+        const granted = await requestNativeCameraPermission()
+        if (!granted) {
+          throw new Error('Camera permission was denied')
+        }
+        await startNativeARSession(inspectionId)
+        arStarted = true
+      } else {
+        await startProgressiveAR()
+        arStarted = true
+      }
+
       // Reuse the rehydrated session instead of inserting a duplicate row.
       if (!dbSessionIdRef.current) {
         const created = await startARSession.mutateAsync({
@@ -177,22 +227,24 @@ function ARPageContent() {
         dbSessionIdRef.current = created.id
         setDbSessionId(created.id)
       }
-
-      const isNativeDevice = nativeInfo.platform !== 'web'
-      if (isNativeDevice) {
-        const { startNativeARSession, requestNativeCameraPermission } = await import(
-          '@/app/lib/ar/native-bridge'
-        )
-        const granted = await requestNativeCameraPermission()
-        if (!granted) {
-          throw new Error('Camera permission was denied')
-        }
-        await startNativeARSession(inspectionId)
-      } else {
-        await startProgressiveAR()
-      }
     } catch (err) {
       console.error('AR session start failure:', err)
+      setStartError(err instanceof Error ? err.message : 'Could not start the AR session')
+
+      if (arStarted) {
+        if (nativeInfo.platform !== 'web') {
+          try {
+            const { stopNativeARSession } = await import('@/app/lib/ar/native-bridge')
+            await stopNativeARSession()
+          } catch (cleanupErr) {
+            console.error('Failed to stop native AR after start failure:', cleanupErr)
+          }
+        }
+        await endProgressiveAR().catch((cleanupErr) =>
+          console.error('Failed to stop AR after start failure:', cleanupErr)
+        )
+      }
+
       if (createdSessionId) {
         dbSessionIdRef.current = null
         setDbSessionId(null)
@@ -209,6 +261,8 @@ function ARPageContent() {
     xrHardwareSupported,
     nativeInfo,
     startProgressiveAR,
+    prepareForAR,
+    endProgressiveAR,
     endARSession,
   ])
 
@@ -422,6 +476,15 @@ function ARPageContent() {
         </p>
       )}
 
+      {startError && (
+        <p
+          role="alert"
+          className="text-xs font-black text-red-600 bg-red-50 p-3.5 rounded-xl border border-red-100 uppercase tracking-wider"
+        >
+          {startError}
+        </p>
+      )}
+
       {error && (
         <p
           role="alert"
@@ -434,7 +497,10 @@ function ARPageContent() {
       {/* Main AR Workspace Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-6 sm:gap-8 items-start">
         {/* Camera & Spatial Viewport */}
-        <div className="relative min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border border-slate-100 bg-slate-950">
+        <div
+          id="ar-viewport"
+          className="relative min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border border-slate-100 bg-slate-950"
+        >
           <ARCameraView onTapToAnchor={handleTapToAnchor} />
           <AROverlay anchors={anchors} />
         </div>

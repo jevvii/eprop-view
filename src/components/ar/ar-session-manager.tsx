@@ -29,6 +29,8 @@ export interface XRSessionState {
   setTargetNormCoords: (nx: number, ny: number) => void
   startSession: () => Promise<void>
   endSession: () => Promise<void>
+  /** Requests motion permission inside a user gesture (iOS requirement). */
+  prepareForAR: () => Promise<void>
   /** Closes a WebXR session and starts the camera path. */
   switchToCamera: () => Promise<void>
   captureCurrentFrame: () => string | null
@@ -502,7 +504,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   // are never returned as evidence.
   const captureCurrentFrame = useCallback((): string | null => {
     const video = videoRef.current
-    const canvas = canvasRef.current
 
     if (activeMode === 'optical-camera' && video && video.readyState >= 2) {
       try {
@@ -524,14 +525,9 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
       }
     }
 
-    if (activeMode === 'webxr' && canvas && canvas.width > 0 && canvas.height > 0) {
-      try {
-        return canvas.toDataURL('image/jpeg', 0.85)
-      } catch (e) {
-        console.warn('WebXR canvas snapshot capture failed:', e)
-      }
-    }
-
+    // Immersive WebXR composites the camera outside the page canvas, so
+    // toDataURL() would return a transparent image. Evidence capture therefore
+    // requires camera mode; the UI disables it and offers "Use camera instead".
     return null
   }, [activeMode])
 
@@ -569,6 +565,10 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   // path and by the WebXR watchdog so a non-presenting XR session can fall back.
   const startCameraOrSimulated = useCallback(
     async (fallbackReason?: string) => {
+      // A camera session is a new lifecycle; an earlier XR end must not make
+      // its own end handler a no-op.
+      endedRef.current = false
+
       if (navigator?.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
         try {
           const motion = await requestMotionPermission()
@@ -658,6 +658,12 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     ]
   )
 
+  const prepareForAR = useCallback(async () => {
+    // Must be invoked from the click handler before any awaited work, or iOS
+    // rejects the DeviceOrientationEvent permission request.
+    await requestMotionPermission()
+  }, [requestMotionPermission])
+
   const switchToCamera = useCallback(async () => {
     if (xrFallbackTimerRef.current) {
       clearTimeout(xrFallbackTimerRef.current)
@@ -689,9 +695,21 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     try {
       // Tier 1 & 2: WebXR immersive-ar, only when the browser claims support.
       if (xrHardwareSupported && navigator?.xr) {
+        let pendingXRSession: XRSession | null = null
         try {
+          // requestSession must be the first await: it needs the click's
+          // transient activation, which makeXRCompatible or a network call
+          // can consume.
+          const xrSession = await navigator.xr.requestSession('immersive-ar', {
+            requiredFeatures: ['hit-test'],
+            optionalFeatures: ['dom-overlay', 'local-floor'],
+            domOverlay: typeof document !== 'undefined' ? { root: document.body } : undefined,
+          } as XRSessionInit)
+          pendingXRSession = xrSession
+
           const canvas = canvasRef.current
           if (!canvas) {
+            await xrSession.end().catch(() => {})
             throw new Error('AR canvas is not mounted.')
           }
 
@@ -701,17 +719,16 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
             preserveDrawingBuffer: true,
           }) as WebGLRenderingContext | null
 
+          if (!gl) {
+            await xrSession.end().catch(() => {})
+            throw new Error('WebGL is not available for WebXR.')
+          }
+
           if (gl) {
             if (gl.makeXRCompatible) {
               await gl.makeXRCompatible()
             }
             glRef.current = gl
-
-            const xrSession = await navigator.xr.requestSession('immersive-ar', {
-              requiredFeatures: ['hit-test'],
-              optionalFeatures: ['dom-overlay', 'local-floor'],
-              domOverlay: typeof document !== 'undefined' ? { root: document.body } : undefined,
-            } as XRSessionInit)
 
             const baseLayer = new XRWebGLLayer(xrSession, gl)
             await xrSession.updateRenderState({ baseLayer })
@@ -831,6 +848,9 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
             return
           }
         } catch (xrErr) {
+          if (pendingXRSession) {
+            await pendingXRSession.end().catch(() => {})
+          }
           console.warn('WebXR hardware session failed, falling back to the optical camera:', xrErr)
         }
       }
@@ -890,6 +910,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
         setTargetNormCoords,
         startSession,
         endSession,
+        prepareForAR,
         switchToCamera,
         captureCurrentFrame,
       }}

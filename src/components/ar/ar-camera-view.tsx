@@ -33,6 +33,14 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
       const target = e.target as HTMLElement
       if (target.closest('button')) return
 
+      const video = videoRef.current
+      if (video?.paused) {
+        void video.play().catch(() => {})
+      }
+
+      // In WebXR the hit-test is the viewer centre, so the reticle is fixed.
+      if (activeMode === 'webxr') return
+
       const rect = e.currentTarget.getBoundingClientRect()
       if (rect.width > 0 && rect.height > 0) {
         const rawNx = (e.clientX - rect.left) / rect.width
@@ -47,7 +55,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
         setTargetNormCoords(nx, ny)
       }
     },
-    [isActive, setTargetNormCoords]
+    [isActive, setTargetNormCoords, videoRef, activeMode]
   )
 
   const getModeBadge = () => {
@@ -87,9 +95,9 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
 
   return (
     <div
-      className={`relative w-full h-full bg-slate-950 overflow-hidden select-none ${
-        isActive ? 'touch-none' : 'touch-pan-y'
-      }`}
+      className={`relative w-full h-full overflow-hidden select-none ${
+        activeMode === 'webxr' ? 'bg-transparent' : 'bg-slate-950'
+      } ${isActive ? 'touch-none' : 'touch-pan-y'}`}
       onPointerDown={handlePointer}
       onPointerMove={(e) => {
         // Allow drag-aiming on mobile touch
@@ -153,12 +161,15 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
             )}
           </div>
 
-          {/* Interactive Dynamic Reticle */}
+          {/* Interactive Dynamic Reticle. In WebXR the hit test is the viewer
+              centre, so the reticle is fixed to the viewport centre. */}
           <div
-            className="absolute transition-transform duration-75 pointer-events-none"
+            className={`transition-transform duration-75 pointer-events-none ${
+              isSpatial ? 'fixed' : 'absolute'
+            }`}
             style={{
-              left: `${reticlePos.xPercent}%`,
-              top: `${reticlePos.yPercent}%`,
+              left: isSpatial ? '50%' : `${reticlePos.xPercent}%`,
+              top: isSpatial ? '50%' : `${reticlePos.yPercent}%`,
               transform: 'translate(-50%, -50%)',
             }}
           >
@@ -184,7 +195,9 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
           <div className="flex items-end justify-between gap-3 pointer-events-auto">
             {/* Helper Prompt */}
             <p className="text-xs font-black text-white/90 bg-black/70 backdrop-blur-md px-3 sm:px-4 py-2 rounded-xl border border-white/10 uppercase tracking-wider max-w-[260px] sm:max-w-md shadow-lg">
-              Tap screen to aim reticle · Point at concrete, beams, or columns
+              {isSpatial
+                ? 'Aim the centre reticle at a surface, then place a marker'
+                : 'Tap the view to aim, then place a marker'}
             </p>
 
             {/* Quick Anchor Drop Button */}

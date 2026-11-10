@@ -28,7 +28,8 @@ const labelMap: Record<DamageType, string> = {
 
 export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAnchorFormProps) {
   const createAnchor = useCreateARAnchor()
-  const { captureCurrentFrame } = useARSessionContext()
+  const { captureCurrentFrame, activeMode } = useARSessionContext()
+  const evidenceUnavailable = activeMode === 'webxr'
 
   const [label, setLabel] = useState('Structural Marker')
   const [damageType, setDamageType] = useState<DamageType>('crack')
@@ -47,15 +48,27 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
     const frame = captureCurrentFrame()
     if (frame) {
       setSnapshot(frame)
+      setScanError(null)
+      return
     }
-  }, [captureCurrentFrame])
+
+    setScanError(
+      evidenceUnavailable
+        ? 'Immersive WebXR does not expose the camera frame. Switch to camera mode to capture evidence.'
+        : 'No camera frame is available. Start the camera first.'
+    )
+  }, [captureCurrentFrame, evidenceUnavailable])
 
   const handleAICameraScan = async () => {
     setScanError(null)
     const frame = captureCurrentFrame()
 
     if (!frame) {
-      setScanError('No camera frame is available. Start the camera or a WebXR session first.')
+      setScanError(
+        evidenceUnavailable
+          ? 'Immersive WebXR cannot capture a frame for analysis. Switch to camera mode to run the heuristic.'
+          : 'No camera frame is available. Start the camera first.'
+      )
       return
     }
 
@@ -123,8 +136,8 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
         <button
           type="button"
           onClick={handleAICameraScan}
-          disabled={isScanningAI}
-          className="text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl uppercase tracking-wider transition-colors min-h-[44px]"
+          disabled={isScanningAI || evidenceUnavailable}
+          className="text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl uppercase tracking-wider transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isScanningAI ? 'Analyzing…' : 'Analyze Frame (heuristic)'}
         </button>
@@ -236,11 +249,20 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
             <button
               type="button"
               onClick={handleCaptureSnapshot}
-              className="text-xs font-black text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-3 py-1.5 rounded-lg uppercase tracking-wider transition-colors min-h-[36px]"
+              disabled={evidenceUnavailable}
+              className="text-xs font-black text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-3 py-1.5 rounded-lg uppercase tracking-wider transition-colors min-h-[36px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {snapshot ? 'Retake frame' : 'Capture frame'}
             </button>
           </div>
+
+          {evidenceUnavailable && (
+            <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+              Immersive WebXR does not expose the camera frame. Use{' '}
+              <span className="font-semibold">Use camera instead</span> above to capture evidence or run
+              analysis.
+            </p>
+          )}
 
           {snapshot ? (
             <div className="flex items-center gap-3 pt-1">

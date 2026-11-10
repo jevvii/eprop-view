@@ -202,6 +202,25 @@
   }
 }
 
+/* Immersive WebXR: Chrome composites the camera behind the page, so the app
+   shell and page chrome must be transparent and out of the way. */
+html.ar-immersive,
+html.ar-immersive body,
+html.ar-immersive #app-shell,
+html.ar-immersive #main-content {
+  background: transparent !important;
+}
+
+html.ar-immersive header,
+html.ar-immersive aside,
+html.ar-immersive nav {
+  display: none !important;
+}
+
+html.ar-immersive #ar-viewport {
+  background: transparent !important;
+}
+
 /* On narrow screens data tables scroll, but the action column stays visible. */
 @media (max-width: 767px) {
   .responsive-table {
