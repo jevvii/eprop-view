@@ -104,7 +104,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="px-4 py-4 lg:p-0 lg:absolute lg:bottom-5 lg:left-1/2 lg:-translate-x-1/2 lg:z-10 lg:w-full lg:max-w-4xl lg:px-6">
-          <DamageTrendChart className="h-64 lg:h-48" />
+          <DamageTrendChart className="h-72 lg:h-64" />
         </div>
       </section>
 

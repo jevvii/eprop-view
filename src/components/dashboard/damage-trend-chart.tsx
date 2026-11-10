@@ -49,7 +49,7 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
   const bgStyle = isFloating ? 'bg-white/95 backdrop-blur-md' : 'bg-white'
-  const shell = `${bgStyle} p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200/70 h-full flex flex-col ${className}`
+  const shell = `${bgStyle} p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200/70 flex flex-col min-h-0 overflow-hidden ${className}`
 
   if (isLoading) {
     return <div className={`${shell} animate-pulse`} aria-busy="true" aria-label="Loading damage trend" />
@@ -134,13 +134,13 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
 
   return (
     <div className={shell}>
-      <div className="mb-3">
+      <div className="mb-2">
         <h3 className="text-sm font-bold text-slate-900">Damage severity trend</h3>
         <p className="mt-0.5 text-sm text-slate-500">
           Average recorded severity per month ({rows.length} entr{rows.length === 1 ? 'y' : 'ies'}).
         </p>
       </div>
-      <div className="min-h-[180px] flex-1">
+      <div className="relative min-h-0 flex-1">
         <Line data={chartData} options={options} />
       </div>
     </div>
