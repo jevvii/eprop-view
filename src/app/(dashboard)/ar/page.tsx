@@ -61,6 +61,7 @@ function ARPageContent() {
     hitPose,
     startSession: startProgressiveAR,
     endSession: endProgressiveAR,
+    switchToCamera,
   } = useARSessionContext()
 
   const { data: anchors = [] } = useARAnchors(inspectionId || undefined)
@@ -302,13 +303,15 @@ function ARPageContent() {
               AR Inspection Mode
             </h2>
             <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-              {xrHardwareSupported
+              {activeMode === 'webxr'
                 ? 'WebXR (hit-test)'
-                : activeMode !== 'idle'
-                  ? activeMode === 'optical-camera'
-                    ? 'Camera + screen markers'
-                    : 'Simulated grid'
-                  : 'Camera + screen markers'}
+                : activeMode === 'optical-camera'
+                  ? 'Camera + screen markers'
+                  : activeMode === 'simulated'
+                    ? 'Simulated grid'
+                    : xrHardwareSupported
+                      ? 'WebXR available'
+                      : 'Camera + screen markers'}
             </span>
             {detectedPlanesCount > 0 && (
               <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -352,7 +355,16 @@ function ARPageContent() {
         </div>
 
         {/* Start / End AR Session Button */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {isActive && activeMode === 'webxr' && (
+            <Button
+              onClick={() => void switchToCamera()}
+              variant="outline"
+              className="text-xs font-semibold px-4 py-3 h-auto min-h-[44px] rounded-xl"
+            >
+              Use camera instead
+            </Button>
+          )}
           {isActive ? (
             <Button
               onClick={handleEnd}

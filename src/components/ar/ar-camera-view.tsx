@@ -76,6 +76,14 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
   }
 
   const badge = getModeBadge()
+  const isSpatial = activeMode === 'webxr'
+  const statusLabel = isSpatial
+    ? hitPose
+      ? 'Surface locked'
+      : 'Scanning planes…'
+    : hitPose
+      ? 'Screen marker ready'
+      : 'Tap to aim'
 
   return (
     <div
@@ -128,7 +136,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
                   }`}
                 />
                 <span className="text-xs font-black uppercase tracking-widest">
-                  {hitPose ? 'Surface Locked' : 'Scanning Physical Planes…'}
+                  {statusLabel}
                 </span>
               </div>
             </div>
@@ -136,7 +144,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
             {hitPose && (
               <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10 text-right text-white shadow-lg">
                 <div className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                  Spatial Pose (6-DOF)
+                  {isSpatial ? 'WebXR pose' : 'Estimated pose'}
                 </div>
                 <div className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
                   X:{hitPose.position.x.toFixed(2)} Y:{hitPose.position.y.toFixed(2)} Z:{hitPose.position.z.toFixed(2)}m
@@ -162,7 +170,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
                   <div className="absolute w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-md ring-2 ring-white/60" />
                 </div>
                 <span className="absolute -bottom-6 bg-black/85 backdrop-blur-md text-emerald-300 text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-emerald-500/40 whitespace-nowrap shadow-lg">
-                  Target Plane Locked · 1.45m
+                  {isSpatial ? 'Surface hit' : 'Screen-space target · ~1.45 m est.'}
                 </span>
               </div>
             ) : (
@@ -205,7 +213,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
                           </div>
             <div>
               <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-widest">
-                Progressive AR Pipeline Standby
+                AR camera standby
               </h3>
               <p className="text-xs sm:text-xs text-slate-400 font-bold uppercase tracking-wider mt-1.5 leading-relaxed">
                 Connect to an inspection and press Start AR Session to begin real-time optical tracking.
@@ -217,7 +225,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
                 Camera: Rear WebRTC
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
-                Tracking: 6-DOF Gyro & Raycast
+                Tracking: WebXR or tap-to-aim
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-emerald-400">
                 {xrHardwareSupported ? 'WebXR: Supported' : 'Fallback: Progressive Tier 3'}
