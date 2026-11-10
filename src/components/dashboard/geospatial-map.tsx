@@ -160,7 +160,7 @@ export function GeospatialMap() {
                     .setPopup(
                         new mapboxgl.Popup({ offset: 25 }).setHTML(`
             <div class="p-2">
-              <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Active Project</div>
+              <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Active Project</div>
               <div class="font-koulen text-lg text-primary tracking-wide">${p.name}</div>
             </div>
           `),

@@ -135,20 +135,20 @@ export function InspectionForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-8 flex flex-col h-full">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-6 px-2">
+    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6 flex flex-col h-full min-w-0">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-4 px-1">
         <div>
-          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Field Inspection Registry</h3>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Select Building, Floor, and Structural Element.</p>
+          <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-0.5">Field Inspection Registry</h3>
+          <p className="text-xs text-slate-500 font-medium">Select Building, Floor, and Structural Element.</p>
         </div>
         {createInspection.isPending && (
-          <span className="text-[9px] font-black text-primary animate-pulse uppercase tracking-[0.2em]">Syncing...</span>
+          <span className="text-xs font-bold text-primary animate-pulse uppercase tracking-wider">Syncing...</span>
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 flex-1">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 flex-1">
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Project</label>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Project</label>
           <select
             value={projectId}
             onChange={(event) => {
@@ -157,7 +157,7 @@ export function InspectionForm() {
               setSelectedFloorId('')
               setSelectedElementId('')
             }}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
             required
           >
             <option value="" disabled>SELECT_PROJECT</option>
@@ -168,7 +168,7 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Building</label>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Building</label>
           {buildings && buildings.length > 0 ? (
             <select
               value={selectedBuildingId}
@@ -177,7 +177,7 @@ export function InspectionForm() {
                 setSelectedFloorId('')
                 setSelectedElementId('')
               }}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
             >
               {buildings.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -186,14 +186,14 @@ export function InspectionForm() {
               ))}
             </select>
           ) : (
-            <div className="w-full rounded-xl border border-dashed border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-50">
+            <div className="w-full rounded-xl border border-dashed border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-medium text-slate-400 bg-slate-50">
               Main Structure (Single Building)
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Floor Level</label>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Floor Level</label>
           {floors && floors.length > 0 ? (
             <select
               value={selectedFloorId}
@@ -204,7 +204,7 @@ export function InspectionForm() {
                 if (matched) setFloor(matched.name)
                 setSelectedElementId('')
               }}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
             >
               {floors.map((f) => (
                 <option key={f.id} value={f.id}>{f.name} (Level {f.level ?? 0})</option>
@@ -214,7 +214,7 @@ export function InspectionForm() {
             <select
               value={floor}
               onChange={(event) => setFloor(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
             >
               {floorOptions.map((f) => (
                 <option key={f} value={f}>{f}</option>
@@ -224,7 +224,7 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Structural Element</label>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Structural Element</label>
           {elements && elements.length > 0 ? (
             <select
               value={selectedElementId}
@@ -234,7 +234,7 @@ export function InspectionForm() {
                 const matched = elements.find((e) => e.id === eid)
                 if (matched) setStructuralElement(matched.element_type)
               }}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
             >
               {elements.map((elem) => (
                 <option key={elem.id} value={elem.id}>
@@ -246,7 +246,7 @@ export function InspectionForm() {
             <select
               value={structuralElement}
               onChange={(event) => setStructuralElement(event.target.value as StructuralElement)}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
             >
               {structuralElementOptions.map((elem) => (
                 <option key={elem.value} value={elem.value}>{elem.label}</option>
@@ -256,29 +256,29 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Operation Date</label>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Operation Date</label>
           <input
             type="date"
             value={inspectionDate}
             onChange={(event) => setInspectionDate(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-medium bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             required
           />
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Precise Zone / Pin</label>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Precise Zone / Pin</label>
           <input
             value={location}
             onChange={(event) => setLocation(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-medium bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             placeholder="GRID_C4 / COLUMN_NORTH"
             required
           />
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Initial Risk Score (0-10)</label>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Initial Risk Score (0-10)</label>
           <input
             type="number"
             min="0"
@@ -286,17 +286,17 @@ export function InspectionForm() {
             step="0.1"
             value={riskScore}
             onChange={(event) => setRiskScore(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-black bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all tabular-nums"
             required
           />
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Status Protocol</label>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Status Protocol</label>
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value as any)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>
@@ -308,20 +308,20 @@ export function InspectionForm() {
       </div>
 
       <div>
-        <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 ml-1">Technical Notes</label>
+        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Technical Notes</label>
         <textarea
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-4 py-3 text-[10px] font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[90px] resize-none"
-          placeholder="ENTER_FIELD_OBSERVATIONS..."
+          className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-medium bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[90px] resize-none"
+          placeholder="Enter field observations, structural anomalies..."
         />
       </div>
 
-      {error && <p className="text-[10px] font-bold text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>}
-      {success && <p className="text-[10px] font-bold text-emerald-600 bg-emerald-50 p-3 rounded-lg border border-emerald-100">{success}</p>}
+      {error && <p className="text-xs font-semibold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>}
+      {success && <p className="text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">{success}</p>}
 
-      <div className="flex justify-end pt-4 border-t border-slate-100">
-        <Button type="submit" disabled={createInspection.isPending} className="font-black uppercase tracking-[0.2em] text-[10px] px-10 py-5 h-auto shadow-lg shadow-primary/20">
+      <div className="flex justify-end pt-3 border-t border-slate-100">
+        <Button type="submit" disabled={createInspection.isPending} className="font-bold uppercase tracking-wider text-xs px-8 min-h-[44px] shadow-md shadow-primary/20">
           {createInspection.isPending ? 'Syncing...' : 'Register Inspection'}
         </Button>
       </div>

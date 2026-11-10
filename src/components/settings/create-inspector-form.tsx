@@ -42,7 +42,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
               type="text"
               placeholder="Dr. Jane Smith"
               required
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 
@@ -55,7 +55,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
               name="role"
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value as Role)}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-base sm:text-sm font-semibold bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
             >
               <option value="inspector">INSPECTOR (FIELD CAPTURE & AR)</option>
               <option value="engineer">ENGINEER (ANALYSIS & VALIDATION)</option>
@@ -73,7 +73,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
               type="email"
               placeholder="user@eprop.local"
               required
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 
@@ -87,7 +87,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
               type="password"
               placeholder="Min. 8 characters"
               required
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 
@@ -100,7 +100,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
               name="department"
               type="text"
               defaultValue="Structural Assessment & Inspection"
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
         </div>
@@ -117,16 +117,16 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
           {onClose && (
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="min-h-[44px] text-xs font-bold uppercase">
               Cancel
             </Button>
           )}
           <button
             type="submit"
             disabled={pending}
-            className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 text-xs uppercase tracking-wider"
+            className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 text-xs uppercase tracking-wider min-h-[44px]"
           >
             {pending ? 'Provisioning...' : 'Create Account'}
           </button>

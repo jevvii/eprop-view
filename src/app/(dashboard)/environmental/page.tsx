@@ -82,19 +82,19 @@ export default function EnvironmentalPage() {
   }
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-2">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-1 sm:px-2">
         <div>
           <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Environmental Risk Assessment</h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Analyze hazard zones and update site suitability scores.</p>
+          <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">Analyze hazard zones and update site suitability scores.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Current Project</label>
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 rounded-2xl border border-slate-100 shadow-xs w-full sm:w-auto">
+            <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Current Project</label>
             <select
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="rounded-xl border border-slate-200 px-3.5 py-2 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 sm:flex-initial"
             >
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
@@ -106,11 +106,11 @@ export default function EnvironmentalPage() {
             variant="outline"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="font-black uppercase tracking-[0.2em] text-[10px] px-6 h-12 border-slate-200"
+            className="font-bold uppercase tracking-wider text-xs px-5 h-11 border-slate-200"
           >
             {isRefreshing ? (
               <span className="flex items-center gap-2">
-                <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
@@ -124,7 +124,7 @@ export default function EnvironmentalPage() {
       </div>
 
       {projectId && (
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.8fr_1fr]">
+        <div className="grid grid-cols-1 gap-6 lg:gap-8 xl:grid-cols-[1.8fr_1fr] items-start">
           <EnvMap
             projectId={projectId}
             center={
@@ -137,21 +137,21 @@ export default function EnvironmentalPage() {
         </div>
       )}
 
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100">
-        <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-8 ml-2">Sector Risk Hotspots</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-lg border border-slate-100">
+        <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-6 ml-1">Sector Risk Hotspots</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {hotspots && hotspots.length > 0 ? (
             hotspots.slice(0, 6).map((hotspot) => (
-              <div key={hotspot.id} className="flex flex-col gap-4 rounded-3xl border border-slate-100 p-6 bg-slate-50/50 hover:bg-white hover:shadow-lg transition-all group">
-                <div className="flex justify-between items-start">
-                  <div className="text-xs font-black text-black uppercase tracking-tight group-hover:text-primary transition-colors">{hotspot.title}</div>
+              <div key={hotspot.id} className="flex flex-col gap-3 rounded-2xl border border-slate-100 p-5 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="text-xs font-bold text-slate-900 uppercase tracking-tight group-hover:text-primary transition-colors">{hotspot.title}</div>
                   <StatusBadge status={hotspot.severity} />
                 </div>
-                <div className="text-[10px] text-slate-500 font-bold leading-relaxed line-clamp-2">{hotspot.description || 'No detailed analysis provided for this sector.'}</div>
+                <div className="text-xs text-slate-600 font-medium leading-relaxed line-clamp-2">{hotspot.description || 'No detailed analysis provided for this sector.'}</div>
               </div>
             ))
           ) : (
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest italic ml-2">No active hotspots recorded for this project.</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider italic ml-1">No active hotspots recorded for this project.</p>
           )}
         </div>
       </div>

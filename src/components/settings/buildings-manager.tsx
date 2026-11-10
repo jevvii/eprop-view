@@ -96,22 +96,22 @@ export function BuildingsManager() {
   }
 
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 px-2">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
-          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">
+          <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
             Building Master Registry
           </h3>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+          <p className="text-xs text-slate-500 font-medium">
             Define multi-structure complexes and physical buildings per project.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <select
             value={activeProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+            className="text-base sm:text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 min-h-[38px] outline-none"
           >
             {projects?.map((p) => (
               <option key={p.id} value={p.id}>
@@ -123,8 +123,7 @@ export function BuildingsManager() {
           <Button
             onClick={openAddModal}
             disabled={!activeProjectId}
-            size="sm"
-            className="text-[9px] font-black uppercase tracking-widest px-4 py-2"
+            className="text-xs font-bold uppercase tracking-wider px-4 py-2 min-h-[38px]"
           >
             + Add Building
           </Button>
@@ -135,10 +134,10 @@ export function BuildingsManager() {
         <div className="h-32 bg-slate-50 animate-pulse rounded-2xl" />
       ) : !buildings || buildings.length === 0 ? (
         <div className="text-center py-10 border border-dashed border-slate-200 rounded-2xl">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             No buildings defined for this project yet.
           </p>
-          <p className="text-[10px] text-slate-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             Click &quot;+ Add Building&quot; to establish master structural entities.
           </p>
         </div>
@@ -146,40 +145,40 @@ export function BuildingsManager() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left">
-                <th className="py-3 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] pl-2">Name & Code</th>
-                <th className="py-3 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">Description</th>
-                <th className="py-3 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">Coordinates</th>
-                <th className="py-3 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] text-right pr-2">Actions</th>
+              <tr className="border-b border-slate-200 text-left">
+                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Name & Code</th>
+                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Description</th>
+                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Coordinates</th>
+                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider text-right pr-2">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-100">
               {buildings.map((b) => (
-                <tr key={b.id} className="hover:bg-slate-50/50 transition-all">
+                <tr key={b.id} className="hover:bg-slate-50/70 transition-all">
                   <td className="py-4 pl-2">
-                    <div className="font-black text-slate-800 uppercase tracking-tight">{b.name}</div>
+                    <div className="font-bold text-slate-900 tracking-tight">{b.name}</div>
                     {b.code && (
-                      <span className="text-[9px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                      <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded mt-0.5 inline-block">
                         {b.code}
                       </span>
                     )}
                   </td>
-                  <td className="py-4 text-xs text-slate-500 max-w-xs truncate">
+                  <td className="py-4 text-xs text-slate-600 max-w-xs truncate">
                     {b.description || '—'}
                   </td>
-                  <td className="py-4 text-[10px] font-mono text-slate-500">
+                  <td className="py-4 text-xs font-mono tabular-nums text-slate-600">
                     {b.latitude && b.longitude ? `${b.latitude.toFixed(4)}, ${b.longitude.toFixed(4)}` : '—'}
                   </td>
-                  <td className="py-4 text-right pr-2 space-x-2">
+                  <td className="py-4 text-right pr-2 space-x-2 whitespace-nowrap">
                     <button
                       onClick={() => openEditModal(b)}
-                      className="text-[9px] font-black uppercase tracking-wider text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg"
+                      className="text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(b.id)}
-                      className="text-[9px] font-black uppercase tracking-wider text-red-600 hover:text-red-700 bg-red-50 px-2.5 py-1 rounded-lg"
+                      className="text-xs font-bold uppercase tracking-wider text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
                     >
                       Delete
                     </button>
@@ -193,73 +192,74 @@ export function BuildingsManager() {
 
       {/* Modal Dialog */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl space-y-4"
+            className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-7 shadow-2xl space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h4 className="text-sm font-black uppercase tracking-wider text-slate-800">
+              <h4 className="text-base font-bold uppercase tracking-wider text-slate-800">
                 {editingBuilding ? 'Edit Building Record' : 'Register New Building'}
               </h4>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 font-bold"
+                aria-label="Close modal"
+                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
               >
                 ✕
               </button>
             </div>
 
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Building Name *
               </label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Tower 1 (West Wing)"
-                className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Structure Code
                 </label>
                 <input
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   placeholder="e.g. BLD-W1"
-                  className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                  className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
 
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Latitude / Longitude
                 </label>
-                <div className="flex gap-1">
+                <div className="flex gap-1.5">
                   <input
                     value={latitude}
                     onChange={(e) => setLatitude(e.target.value)}
                     placeholder="Lat"
-                    className="w-1/2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 outline-none"
+                    className="w-1/2 text-base sm:text-sm font-mono tabular-nums bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   <input
                     value={longitude}
                     onChange={(e) => setLongitude(e.target.value)}
                     placeholder="Lng"
-                    className="w-1/2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 outline-none"
+                    className="w-1/2 text-base sm:text-sm font-mono tabular-nums bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Description & Structural Notes
               </label>
               <textarea
@@ -267,31 +267,29 @@ export function BuildingsManager() {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
                 placeholder="Reinforced concrete shear wall structure..."
-                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             {error && (
-              <p className="text-[9px] font-black text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-100 uppercase">
+              <p className="text-xs font-semibold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
                 {error}
               </p>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setIsModalOpen(false)}
-                className="text-[9px] font-bold uppercase"
+                className="text-xs font-bold uppercase min-h-[40px]"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                size="sm"
                 disabled={createBuilding.isPending || updateBuilding.isPending}
-                className="text-[9px] font-black uppercase bg-primary text-white"
+                className="text-xs font-bold uppercase bg-primary text-white min-h-[40px]"
               >
                 {createBuilding.isPending || updateBuilding.isPending ? 'Saving…' : 'Save Building'}
               </Button>

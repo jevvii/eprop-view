@@ -115,12 +115,12 @@ export function ReportsTable({
   }
 
   if (isLoading) {
-    return <div className="bg-white p-10 rounded-[2.5rem] shadow-xl h-80 animate-pulse border border-slate-100" />
+    return <div className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-3xl shadow-xl h-80 animate-pulse border border-slate-100" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-red-100 text-red-600 font-bold uppercase tracking-widest text-center">
+      <div className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-3xl border border-red-100 text-red-600 font-bold uppercase tracking-wider text-center text-xs sm:text-sm">
         Telemetry Error: Reports Archive Unreachable
       </div>
     )
@@ -128,33 +128,33 @@ export function ReportsTable({
 
   if (!reports || reports.length === 0) {
     return (
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 text-slate-400 font-bold uppercase tracking-widest text-center italic">
+      <div className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-3xl border border-slate-100 text-slate-400 font-bold uppercase tracking-wider text-center italic text-xs sm:text-sm">
         System Status: No technical logs on file for this site.
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.6fr_1fr]">
+    <div className="grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-[1.6fr_1fr] items-start">
       {/* 1. Log List (Compact) */}
-      <div className={`bg-white p-6 lg:p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col transition-all duration-300 ${
+      <div className={`bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 flex flex-col transition-all duration-300 min-w-0 ${
         mobileView === 'detail' ? 'hidden lg:flex' : 'flex'
       }`}>
-        <div className="flex items-center justify-between mb-8 px-2">
+        <div className="flex items-center justify-between mb-6 px-1">
           <div>
-            <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Technical Logs</h3>
+            <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">Technical Logs</h3>
           </div>
-          <div className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-full text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">
+          <div className="px-3 py-1 bg-slate-100 border border-slate-200/60 rounded-full text-xs font-semibold text-slate-600 uppercase tabular-nums">
             {reports.length} Units
           </div>
         </div>
 
-        <div className="overflow-x-auto flex-1 min-h-[400px]">
+        <div className="overflow-x-auto flex-1 min-h-[350px]">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100">
-                <th scope="col" className="text-left py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] pl-2">Designation</th>
-                <th scope="col" className="text-right py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] pr-2">System Score</th>
+                <th scope="col" className="text-left py-3.5 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Designation</th>
+                <th scope="col" className="text-right py-3.5 font-bold text-xs text-slate-600 uppercase tracking-wider pr-2">System Score</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -164,33 +164,33 @@ export function ReportsTable({
                   <tr
                     key={report.id}
                     className={`group cursor-pointer transition-all ${
-                      isSelected ? 'bg-primary/[0.03]' : 'hover:bg-slate-50/50'
+                      isSelected ? 'bg-primary/[0.04]' : 'hover:bg-slate-50/70'
                     }`}
                     onClick={() => handleSelectReport(report)}
                   >
-                    <td className="py-6 pl-2">
-                      <div className={`flex items-start gap-4 transition-all ${
-                        isSelected ? 'border-l-4 border-primary pl-4 scale-[1.01]' : 'pl-3 border-l-2 border-transparent'
+                    <td className="py-4 sm:py-5 pl-2">
+                      <div className={`flex items-start gap-3 transition-all ${
+                        isSelected ? 'border-l-4 border-primary pl-3' : 'pl-3 border-l-2 border-transparent'
                       }`}>
-                        <div className="flex-1">
-                          <div className={`font-black uppercase tracking-tight leading-tight transition-colors ${
-                            isSelected ? 'text-primary' : 'text-black'
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-bold uppercase tracking-tight leading-tight transition-colors text-xs sm:text-sm truncate ${
+                            isSelected ? 'text-primary' : 'text-slate-900'
                           }`}>
                             {report.title}
                           </div>
-                          <div className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">
+                          <div className="text-xs text-slate-500 font-medium tracking-wide uppercase mt-0.5">
                             {report.report_id}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-6 text-right pr-2">
-                      <div className="flex items-center justify-end gap-3">
+                    <td className="py-4 sm:py-5 text-right pr-2">
+                      <div className="flex items-center justify-end gap-2.5">
                         <RiskScore score={report.risk_score} />
                         <div className={`transition-all duration-300 ${
                           isSelected ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
                         }`}>
-                          <svg className="w-5 h-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                           </svg>
                         </div>
@@ -205,30 +205,30 @@ export function ReportsTable({
       </div>
 
       {/* 2. Detail View (Expanded) */}
-      <div className={`bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-full min-h-[600px] transition-all duration-300 ${
+      <div className={`bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 flex flex-col h-full min-h-[500px] transition-all duration-300 min-w-0 ${
         mobileView === 'list' ? 'hidden lg:flex' : 'flex'
       }`}>
         {selectedReport ? (
-          <div className="space-y-8 h-full flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-6 px-2">
-              <div className="flex items-center gap-3">
+          <div className="space-y-6 sm:space-y-8 h-full flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 px-1 gap-2 flex-wrap">
+              <div className="flex items-center gap-2.5">
                 <button 
                   onClick={() => setMobileView('list')}
-                  className="lg:hidden p-2 -ml-2 text-primary hover:bg-slate-50 rounded-full transition-colors"
-                  aria-label="Back to List"
+                  className="lg:hidden min-w-11 min-h-11 flex items-center justify-center p-2 -ml-2 text-primary hover:bg-slate-100 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  aria-label="Back to technical logs list"
                 >
-                  <svg className="w-5 h-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg className="w-5 h-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                   </svg>
                 </button>
                 <div className="hidden lg:block">
-                  <svg className="w-5 h-5 text-primary/30 shrink-0 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-5 h-5 text-primary/30 shrink-0 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Detail View</h3>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{selectedReport.report_id}</p>
+                  <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-0.5">Detail View</h3>
+                  <p className="text-xs text-slate-500 font-medium">{selectedReport.report_id}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ export function ReportsTable({
                   variant="outline"
                   disabled={!selectedReport}
                   onClick={onPrintSelected}
-                  className="font-black uppercase tracking-[0.2em] text-[9px] px-4 h-9 border-slate-200"
+                  className="font-bold uppercase tracking-wider text-xs px-3.5 h-9 border-slate-200"
                 >
                   Print Manifest
                 </Button>
@@ -244,7 +244,7 @@ export function ReportsTable({
                   <select
                     value={editStatus}
                     onChange={(event) => setEditStatus(event.target.value as (typeof statusOptions)[number])}
-                    className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-black uppercase tracking-[0.15em] bg-white"
+                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-base sm:text-xs font-bold uppercase tracking-wide bg-white"
                   >
                     {statusOptions.map((option) => (
                       <option key={option} value={option}>
@@ -258,27 +258,27 @@ export function ReportsTable({
               </div>
             </div>
 
-            <div className="flex-1 space-y-8">
+            <div className="flex-1 space-y-6 sm:space-y-8">
               <div>
-                <h4 className="text-xl font-koulen text-black tracking-wide leading-tight mb-1">{selectedReport.title}</h4>
-                <div className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">{selectedReport.project_name ?? 'UNIT_UNSPECIFIED'}</div>
+                <h4 className="text-xl sm:text-2xl font-koulen text-black tracking-wide leading-tight mb-1">{selectedReport.title}</h4>
+                <div className="text-xs font-bold text-primary uppercase tracking-wider">{selectedReport.project_name ?? 'UNIT_UNSPECIFIED'}</div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6 bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-inner">
                 <div>
-                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Date</div>
-                  <div className="text-xs font-black text-black">{new Date(selectedReport.date).toLocaleDateString()}</div>
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</div>
+                  <div className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">{new Date(selectedReport.date).toLocaleDateString()}</div>
                 </div>
                 <div>
-                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Sector</div>
-                  <div className="text-xs font-black text-black truncate">{selectedReport.location}</div>
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sector</div>
+                  <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">{selectedReport.location}</div>
                 </div>
                 <div>
-                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Lead Node</div>
-                  <div className="text-xs font-black text-black truncate">{selectedReport.lead_inspector_name ?? 'SYSTEM'}</div>
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Lead Node</div>
+                  <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">{selectedReport.lead_inspector_name ?? 'SYSTEM'}</div>
                 </div>
                 <div>
-                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Intensity</div>
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Intensity</div>
                   {isEditing ? (
                     <input
                       type="number"
@@ -287,7 +287,7 @@ export function ReportsTable({
                       step="0.1"
                       value={editRiskScore}
                       onChange={(event) => setEditRiskScore(event.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold bg-white"
+                      className="w-full rounded-lg border border-slate-200 px-2 py-1 text-base sm:text-xs font-bold bg-white tabular-nums"
                     />
                   ) : (
                     <RiskScore score={selectedReport.risk_score} />
@@ -295,43 +295,43 @@ export function ReportsTable({
                 </div>
               </div>
 
-              <div className="space-y-3 px-2">
-                <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Technical Findings</div>
+              <div className="space-y-2 px-1">
+                <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">Technical Findings</div>
                 {isEditing ? (
                   <textarea
                     value={editFindings}
                     onChange={(event) => setEditFindings(event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 min-h-[120px] focus:ring-2 focus:ring-primary/20 outline-none"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm font-medium text-slate-700 min-h-[120px] focus:ring-2 focus:ring-primary/20 outline-none"
                   />
                 ) : (
-                  <p className="text-[11px] font-bold text-slate-600 leading-relaxed italic whitespace-pre-line border-l-2 border-primary/20 pl-4 py-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-700 leading-relaxed italic whitespace-pre-line border-l-2 border-primary/30 pl-4 py-1 bg-slate-50/50 rounded-r-xl">
                     {selectedReport.key_findings || 'No formal observations recorded for this node.'}
                   </p>
                 )}
               </div>
 
               {canViewAudit && auditTrail && (
-                <div className="bg-slate-50/70 border border-slate-100 rounded-3xl p-6 space-y-4">
-                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Audit Trail</div>
-                  <div className="grid grid-cols-1 gap-3 text-[11px] font-bold text-slate-600">
-                    <div className="grid grid-cols-[minmax(90px,140px)_1fr_minmax(120px,180px)] items-center gap-2">
-                      <span className="uppercase tracking-widest text-[9px] text-slate-400">Submitted</span>
-                      <span className="text-center">{auditTrail.submittedBy}</span>
-                      <span className="text-[9px] text-slate-400 text-right">
+                <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 sm:p-6 space-y-3">
+                  <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">Audit Trail</div>
+                  <div className="space-y-2 text-xs font-medium text-slate-600">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-100 pb-1.5">
+                      <span className="uppercase tracking-wider font-bold text-slate-500">Submitted</span>
+                      <span className="font-semibold text-slate-800">{auditTrail.submittedBy}</span>
+                      <span className="text-slate-400 text-xs sm:text-right tabular-nums">
                         {new Date(auditTrail.submittedAt).toLocaleString()}
                       </span>
                     </div>
-                    <div className="grid grid-cols-[minmax(90px,140px)_1fr_minmax(120px,180px)] items-center gap-2">
-                      <span className="uppercase tracking-widest text-[9px] text-slate-400">Reviewed</span>
-                      <span className="text-center">{auditTrail.reviewedBy}</span>
-                      <span className="text-[9px] text-slate-400 text-right">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-100 pb-1.5">
+                      <span className="uppercase tracking-wider font-bold text-slate-500">Reviewed</span>
+                      <span className="font-semibold text-slate-800">{auditTrail.reviewedBy}</span>
+                      <span className="text-slate-400 text-xs sm:text-right tabular-nums">
                         {auditTrail.reviewedAt ? new Date(auditTrail.reviewedAt).toLocaleString() : '—'}
                       </span>
                     </div>
-                    <div className="grid grid-cols-[minmax(90px,140px)_1fr_minmax(120px,180px)] items-center gap-2">
-                      <span className="uppercase tracking-widest text-[9px] text-slate-400">Last Edited</span>
-                      <span className="text-center">{auditTrail.lastEditedBy}</span>
-                      <span className="text-[9px] text-slate-400 text-right">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <span className="uppercase tracking-wider font-bold text-slate-500">Last Edited</span>
+                      <span className="font-semibold text-slate-800">{auditTrail.lastEditedBy}</span>
+                      <span className="text-slate-400 text-xs sm:text-right tabular-nums">
                         {auditTrail.lastEditedAt ? new Date(auditTrail.lastEditedAt).toLocaleString() : '—'}
                       </span>
                     </div>
@@ -346,7 +346,7 @@ export function ReportsTable({
               )}
 
               {canEditReport && (
-                <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
                   {isEditing ? (
                     <>
                       <Button
@@ -354,10 +354,11 @@ export function ReportsTable({
                         variant="outline"
                         onClick={() => setIsEditing(false)}
                         disabled={updateReport.isPending}
+                        className="min-h-[40px] text-xs font-bold uppercase px-4"
                       >
                         Cancel
                       </Button>
-                      <Button type="button" onClick={handleSave} disabled={updateReport.isPending}>
+                      <Button type="button" onClick={handleSave} disabled={updateReport.isPending} className="min-h-[40px] text-xs font-bold uppercase px-4">
                         {updateReport.isPending ? 'Saving...' : 'Save Changes'}
                       </Button>
                     </>
@@ -367,6 +368,7 @@ export function ReportsTable({
                       variant="outline"
                       onClick={() => setIsEditing(true)}
                       disabled={selectedReport.status === 'completed'}
+                      className="min-h-[40px] text-xs font-bold uppercase px-4"
                     >
                       {selectedReport.status === 'completed' ? 'Completed' : 'Edit Log'}
                     </Button>
@@ -376,8 +378,8 @@ export function ReportsTable({
             </div>
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center text-[10px] font-black text-slate-300 uppercase tracking-widest italic text-center leading-relaxed">
-            SELECT_LOG_ENTRY<br/>FOR_DETAILED_ANALYSIS
+          <div className="flex h-full items-center justify-center text-xs font-bold text-slate-400 uppercase tracking-widest italic text-center leading-relaxed p-6">
+            SELECT LOG ENTRY FOR DETAILED ANALYSIS
           </div>
         )}
       </div>

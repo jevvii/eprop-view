@@ -21,7 +21,7 @@ export function RiskScore({ score, className }: RiskScoreProps) {
 
   return (
     <div className={cn('inline-flex items-center gap-2', className)}>
-      <span className="text-sm font-semibold text-slate-900">
+      <span className="text-sm font-semibold text-slate-900 tabular-nums">
         {normalized === null ? '—' : normalized.toFixed(1)}
       </span>
       <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', level.style)}>

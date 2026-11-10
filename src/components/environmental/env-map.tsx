@@ -230,20 +230,20 @@ export function EnvMap({ projectId, center }: EnvMapProps) {
   }
 
   return (
-    <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-full min-h-[500px]">
-      <div className="flex items-center justify-between mb-8">
+    <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 flex flex-col h-[400px] sm:h-[500px] lg:h-full lg:min-h-[550px]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">Geospatial Hazards</h3>
-          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Multi-layer risk visualization.</p>
+          <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-0.5">Geospatial Hazards</h3>
+          <p className="text-xs text-slate-500 font-medium">Multi-layer risk visualization.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <StatusBadge status="fault_line" label="Fault" />
           <StatusBadge status="liquefaction" label="Liquefaction" />
           <StatusBadge status="erosion" label="Erosion" />
           <StatusBadge status="flood" label="Flood" />
         </div>
       </div>
-      <div ref={mapContainer} className="flex-1 rounded-[1.8rem] overflow-hidden border border-slate-100 shadow-inner" />
+      <div ref={mapContainer} className="flex-1 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-100 shadow-inner min-h-[300px]" />
     </div>
   )
 }

@@ -107,14 +107,14 @@ export function RiskHotspots() {
 
   return (
     <div className="flex flex-col space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-2">
-        <h3 className="text-[0.65rem] font-black text-slate-400 tracking-[0.15em] uppercase">Sector Hotspots & Telemetry</h3>
-        <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">Sector Hotspots & Telemetry</h3>
+        <div className="flex items-center gap-1 flex-wrap">
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`text-[8px] font-black uppercase px-2 py-0.5 rounded transition-colors ${
-              activeTab === 'all' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'
+            className={`text-xs font-semibold uppercase px-2.5 py-1 rounded-lg transition-colors tabular-nums min-h-[32px] sm:min-h-[36px] ${
+              activeTab === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-slate-100/60'
             }`}
           >
             All ({mappedHotspots.length + mappedARAnchors.length + mappedAIDetections.length})
@@ -122,8 +122,8 @@ export function RiskHotspots() {
           <button
             type="button"
             onClick={() => setActiveTab('hotspots')}
-            className={`text-[8px] font-black uppercase px-2 py-0.5 rounded transition-colors ${
-              activeTab === 'hotspots' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'
+            className={`text-xs font-semibold uppercase px-2.5 py-1 rounded-lg transition-colors tabular-nums min-h-[32px] sm:min-h-[36px] ${
+              activeTab === 'hotspots' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-slate-100/60'
             }`}
           >
             Hotspots ({mappedHotspots.length})
@@ -131,8 +131,8 @@ export function RiskHotspots() {
           <button
             type="button"
             onClick={() => setActiveTab('ar')}
-            className={`text-[8px] font-black uppercase px-2 py-0.5 rounded transition-colors ${
-              activeTab === 'ar' ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:text-indigo-700'
+            className={`text-xs font-semibold uppercase px-2.5 py-1 rounded-lg transition-colors tabular-nums min-h-[32px] sm:min-h-[36px] ${
+              activeTab === 'ar' ? 'bg-indigo-600 text-white shadow-xs' : 'text-indigo-600 hover:text-indigo-800 bg-indigo-50/70'
             }`}
           >
             AR ({mappedARAnchors.length})
@@ -140,8 +140,8 @@ export function RiskHotspots() {
           <button
             type="button"
             onClick={() => setActiveTab('ai')}
-            className={`text-[8px] font-black uppercase px-2 py-0.5 rounded transition-colors ${
-              activeTab === 'ai' ? 'bg-blue-600 text-white' : 'text-blue-500 hover:text-blue-700'
+            className={`text-xs font-semibold uppercase px-2.5 py-1 rounded-lg transition-colors tabular-nums min-h-[32px] sm:min-h-[36px] ${
+              activeTab === 'ai' ? 'bg-blue-600 text-white shadow-xs' : 'text-blue-600 hover:text-blue-800 bg-blue-50/70'
             }`}
           >
             AI ({mappedAIDetections.length})
@@ -151,12 +151,12 @@ export function RiskHotspots() {
 
       <div
         ref={containerRef}
-        className="relative h-60 rounded-[1.8rem] border border-slate-100 bg-gradient-to-br from-slate-50 to-slate-100/50 overflow-hidden shadow-inner"
+        className="relative h-60 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-slate-100/50 overflow-hidden shadow-inner"
       >
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.1)_1px,transparent_1px)] bg-[size:24px_24px]" />
         
         {visibleItems.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-300 uppercase tracking-widest">
+          <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-400 uppercase tracking-widest">
             Scanning for Telemetry...
           </div>
         ) : (
@@ -168,12 +168,13 @@ export function RiskHotspots() {
               <button
                 key={item.id}
                 type="button"
-                className={`absolute transition-transform hover:scale-150 ${
+                aria-label={`${item.title} - ${item.subtitle || ''}`}
+                className={`absolute transition-transform hover:scale-150 focus-visible:scale-150 focus-visible:outline-none ${
                   isAR
-                    ? 'h-3 w-3 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] ring-2 ring-indigo-200'
+                    ? 'h-3.5 w-3.5 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] ring-2 ring-indigo-200'
                     : isAI
-                    ? 'h-3 w-3 rounded-sm bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] ring-2 ring-blue-200'
-                    : `h-2.5 w-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] ring-2 ring-white/50 ${
+                    ? 'h-3.5 w-3.5 rounded-sm bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] ring-2 ring-blue-200'
+                    : `h-3 w-3 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] ring-2 ring-white/50 ${
                         severityStyles[item.severity] ?? 'bg-amber-400'
                       }`
                 }`}
@@ -184,6 +185,7 @@ export function RiskHotspots() {
                 }}
                 onMouseMove={(event) => handleMouseMove(event, item)}
                 onMouseLeave={handleMouseLeave}
+                onClick={(event) => handleMouseMove(event, item)}
               />
             )
           })
@@ -191,14 +193,14 @@ export function RiskHotspots() {
 
         {tooltip && (
           <div
-            className="absolute z-10 max-w-[200px] rounded-xl bg-black/90 px-3 py-2 text-[10px] text-white shadow-2xl backdrop-blur-sm pointer-events-none"
+            className="absolute z-10 max-w-[220px] rounded-xl bg-slate-900/95 px-3 py-2 text-xs text-white shadow-2xl backdrop-blur-sm pointer-events-none"
             style={{ left: tooltip.x, top: tooltip.y }}
           >
-            <div className="font-black uppercase tracking-tight mb-0.5 text-white">{tooltip.title}</div>
+            <div className="font-bold uppercase tracking-tight mb-0.5 text-white">{tooltip.title}</div>
             {tooltip.subtitle && (
-              <div className="text-[9px] font-bold text-blue-300 uppercase tracking-wider mb-0.5">{tooltip.subtitle}</div>
+              <div className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-0.5">{tooltip.subtitle}</div>
             )}
-            <div className="text-slate-300 font-medium leading-tight text-[9px]">{tooltip.description}</div>
+            <div className="text-slate-300 font-medium leading-tight text-xs">{tooltip.description}</div>
           </div>
         )}
       </div>

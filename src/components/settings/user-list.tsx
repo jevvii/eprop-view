@@ -56,19 +56,19 @@ export function UserList() {
   }
 
   return (
-    <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 px-2">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 flex flex-col h-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">User Management & Access Control</h3>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Configure roles, permissions, and account statuses.</p>
+          <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">User Management & Access Control</h3>
+          <p className="text-xs text-slate-500 font-medium">Configure roles, permissions, and account statuses.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <select 
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="text-[9px] font-black uppercase tracking-widest bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 outline-none"
+            className="text-base sm:text-xs font-bold uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 min-h-[38px] outline-none"
           >
-            <option value="all">ALL_ROLES</option>
+            <option value="all">ALL ROLES</option>
             <option value="admin">ADMIN</option>
             <option value="engineer">ENGINEER</option>
             <option value="inspector">INSPECTOR</option>
@@ -76,14 +76,14 @@ export function UserList() {
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-[9px] font-black uppercase tracking-widest bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 outline-none"
+            className="text-base sm:text-xs font-bold uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 min-h-[38px] outline-none"
           >
-            <option value="all">ALL_STATUS</option>
-            <option value="active">ONLINE</option>
+            <option value="all">ALL STATUS</option>
+            <option value="active">ACTIVE</option>
             <option value="inactive">DEACTIVATED</option>
           </select>
-          <div className="px-4 py-1.5 bg-slate-50 border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
-            {filteredUsers.length} Units
+          <div className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 uppercase tracking-wider tabular-nums">
+            {filteredUsers.length} Users
           </div>
         </div>
       </div>
@@ -91,26 +91,26 @@ export function UserList() {
       <div className="overflow-x-auto flex-1 min-h-[350px]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-100">
-              <th className="text-left py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] pl-2">Designation & Contact</th>
-              <th className="text-left py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">RBAC Role</th>
-              <th className="text-left py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">Status</th>
-              <th className="text-right py-4 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] pr-2">Actions</th>
+            <tr className="border-b border-slate-200">
+              <th className="text-left py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Designation & Contact</th>
+              <th className="text-left py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">RBAC Role</th>
+              <th className="text-left py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Status</th>
+              <th className="text-right py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pr-2">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-slate-100">
             {filteredUsers.map((user) => (
-              <tr key={user.id} className="group hover:bg-slate-50/50 transition-all">
-                <td className="py-5 pl-2">
-                  <div className="font-black text-black uppercase tracking-tight leading-tight">{user.full_name || 'UNNAMED_USER'}</div>
-                  <div className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">{user.email || 'SYSTEM_ACCOUNT'}</div>
-                  {user.department && <div className="text-[9px] text-slate-400 font-medium">{user.department}</div>}
+              <tr key={user.id} className="group hover:bg-slate-50/70 transition-all">
+                <td className="py-4 pl-2">
+                  <div className="font-bold text-slate-900 tracking-tight leading-tight">{user.full_name || 'UNNAMED USER'}</div>
+                  <div className="text-xs text-slate-500 font-medium mt-0.5">{user.email || 'SYSTEM ACCOUNT'}</div>
+                  {user.department && <div className="text-xs text-slate-400 font-medium mt-0.5">{user.department}</div>}
                 </td>
-                <td className="py-5">
+                <td className="py-4">
                   <select
                     value={user.role}
                     onChange={(e) => handleRoleChange(user.id, e.target.value as Role)}
-                    className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.15em] border outline-none cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border outline-none cursor-pointer min-h-[36px] ${
                       user.role === 'admin'
                         ? 'bg-purple-50 text-purple-700 border-purple-200'
                         : user.role === 'engineer'
@@ -123,27 +123,27 @@ export function UserList() {
                     <option value="admin">ADMIN</option>
                   </select>
                 </td>
-                <td className="py-5">
-                  <div className="flex items-center gap-2.5">
+                <td className="py-4">
+                  <div className="flex items-center gap-2">
                     <span className={`h-2 w-2 rounded-full ${
-                      user.is_active !== false ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]'
+                      user.is_active !== false ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]'
                     }`} />
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${
-                      user.is_active !== false ? 'text-emerald-600' : 'text-rose-600'
+                    <span className={`text-xs font-bold uppercase tracking-wider ${
+                      user.is_active !== false ? 'text-emerald-700' : 'text-rose-700'
                     }`}>
                       {user.is_active !== false ? 'Active' : 'Deactivated'}
                     </span>
                   </div>
                 </td>
-                <td className="py-5 text-right pr-2">
+                <td className="py-4 text-right pr-2">
                   <button
                     onClick={() => handleToggle(user.id, user.is_active !== false)}
                     disabled={isToggling === user.id}
-                    className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl transition-all border ${
+                    className={`text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 min-h-[36px] rounded-xl transition-all border ${
                       user.is_active !== false 
                         ? 'text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300' 
                         : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300'
-                    } disabled:opacity-50 active:scale-95 shadow-sm hover:shadow-md`}
+                    } disabled:opacity-50 active:scale-95 shadow-sm`}
                   >
                     {isToggling === user.id ? '...' : user.is_active !== false ? 'Deactivate' : 'Authorize'}
                   </button>

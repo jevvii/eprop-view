@@ -25,7 +25,7 @@ export function NavWrapper({ children }: { children: ReactNode }) {
 
   return (
     <NavContext.Provider value={{ isOpen, toggle, close }}>
-      <div className="flex h-screen overflow-hidden print:h-auto print:overflow-visible bg-slate-50">
+      <div className="flex h-dvh min-h-dvh overflow-hidden print:h-auto print:overflow-visible bg-slate-50 overscroll-contain">
         <Sidebar />
         
         {/* Mobile Overlay */}
@@ -33,10 +33,11 @@ export function NavWrapper({ children }: { children: ReactNode }) {
           <div 
             className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden transition-opacity no-print"
             onClick={close}
+            aria-hidden="true"
           />
         )}
 
-        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto print:overflow-visible relative">
+        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto print:overflow-visible relative scroll-pt-16 lg:scroll-pt-20 overscroll-contain">
           {children}
         </main>
       </div>

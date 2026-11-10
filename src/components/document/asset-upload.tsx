@@ -59,19 +59,19 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
   }
 
   return (
-    <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-5">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
-          <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">Asset Injection</h3>
+          <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">Asset Injection</h3>
         </div>
-        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+        <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-all group"
+          className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50/70 hover:bg-slate-100/70 transition-all group min-h-[72px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <input
             ref={fileInputRef}
@@ -81,14 +81,14 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
             className="hidden"
             onChange={(e) => handleFileChange(e.target.files)}
           />
-          <span className="text-lg mb-1 grayscale group-hover:grayscale-0">📂</span>
-          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Browse</span>
+          <span className="text-2xl mb-1 grayscale group-hover:grayscale-0 transition-transform group-hover:scale-110" aria-hidden="true">📂</span>
+          <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Browse</span>
         </button>
 
         <button
           type="button"
           onClick={() => cameraInputRef.current?.click()}
-          className="md:hidden lg:hidden flex flex-col items-center justify-center border-2 border-slate-100 rounded-2xl p-4 bg-primary/[0.02] hover:bg-primary/[0.05] transition-all group"
+          className="flex flex-col items-center justify-center border-2 border-slate-200 rounded-2xl p-4 bg-primary/[0.03] hover:bg-primary/[0.08] transition-all group min-h-[72px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <input
             ref={cameraInputRef}
@@ -98,31 +98,31 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
             className="hidden"
             onChange={(e) => handleFileChange(e.target.files)}
           />
-          <span className="text-lg mb-1 grayscale group-hover:grayscale-0">📸</span>
-          <span className="text-[8px] font-black text-primary uppercase tracking-widest">Capture</span>
+          <span className="text-2xl mb-1 grayscale group-hover:grayscale-0 transition-transform group-hover:scale-110" aria-hidden="true">📸</span>
+          <span className="text-xs font-bold text-primary uppercase tracking-wide">Capture</span>
         </button>
       </div>
 
       {files.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between bg-primary/5 p-2.5 rounded-xl border border-primary/10">
-            <span className="text-[8px] font-black text-primary uppercase tracking-widest truncate flex-1">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10">
+            <span className="text-xs font-bold text-primary uppercase tracking-wider truncate flex-1 tabular-nums">
               {files.length} Assets Staged
             </span>
-            <button onClick={() => setFiles([])} className="text-[8px] font-black text-slate-400 hover:text-red-500 transition-colors uppercase">Clear</button>
+            <button onClick={() => setFiles([])} className="text-xs font-bold text-slate-500 hover:text-red-600 transition-colors uppercase px-2 py-1">Clear</button>
           </div>
           <Button 
             onClick={handleUpload} 
             disabled={uploading} 
-            className="w-full py-3 h-auto text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/10"
+            className="w-full min-h-[44px] py-3 text-xs font-bold uppercase tracking-wider shadow-md shadow-primary/10"
           >
             {uploading ? 'Injecting...' : 'Confirm Upload'}
           </Button>
         </div>
       )}
 
-      {error && <p className="text-[8px] font-black text-red-600 bg-red-50 p-2 rounded-lg border border-red-100 uppercase tracking-widest">{error}</p>}
-      {success && <p className="text-[8px] font-black text-emerald-600 bg-emerald-50 p-2 rounded-lg border border-emerald-100 uppercase tracking-widest">{success}</p>}
+      {error && <p className="text-xs font-semibold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100 uppercase tracking-wide">{error}</p>}
+      {success && <p className="text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100 uppercase tracking-wide">{success}</p>}
     </div>
   )
 }

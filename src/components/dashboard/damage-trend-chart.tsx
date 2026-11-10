@@ -149,45 +149,45 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
     },
   }
 
-  const bgStyle = isFloating ? 'bg-white/90 backdrop-blur-md' : 'bg-white'
+  const bgStyle = isFloating ? 'bg-white/95 backdrop-blur-md' : 'bg-white'
 
   return (
-    <div className={`${bgStyle} p-8 rounded-[2.5rem] shadow-xl border border-white/20 h-full flex flex-col ${className}`}>
+    <div className={`${bgStyle} p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 h-full flex flex-col ${className}`}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <div>
-          <h3 className="text-[0.7rem] font-black text-black tracking-wide uppercase">DAMAGE SEVERITY TREND & AI TELEMETRY</h3>
-          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+          <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-wider uppercase">DAMAGE SEVERITY TREND & AI TELEMETRY</h3>
+          <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
             {aiDetections.length > 0
               ? `AI Telemetry: ${aiDetections.length} total defects detected across vault assets`
               : 'Synchronized with real-time inspection feeds'}
           </p>
         </div>
         {aiDetections.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {aiStats.crack > 0 && (
-              <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 uppercase tabular-nums">
                 {aiStats.crack} Crack
               </span>
             )}
             {aiStats.corrosion > 0 && (
-              <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 uppercase tabular-nums">
                 {aiStats.corrosion} Corrosion
               </span>
             )}
             {aiStats.spalling > 0 && (
-              <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 uppercase tabular-nums">
                 {aiStats.spalling} Spalling
               </span>
             )}
             {aiStats.leakage > 0 && (
-              <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 uppercase tabular-nums">
                 {aiStats.leakage} Leakage
               </span>
             )}
           </div>
         )}
       </div>
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-[160px]">
         <Line data={chartData} options={options} />
       </div>
     </div>

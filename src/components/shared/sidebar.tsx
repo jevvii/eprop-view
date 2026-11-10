@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -18,6 +18,16 @@ export function Sidebar() {
   const { data: unreadCount } = useUnreadAssetNotifications()
   const { isOpen, close } = useNav()
   const isAdmin = profile?.role === 'admin'
+
+  // Close drawer on Escape key when open on mobile
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, close])
 
   const handleLogout = async () => {
     if (isLoggingOut) return
@@ -54,14 +64,17 @@ export function Sidebar() {
   const visibleNavItems = navItems.filter((item) => item.roles.includes(userRole))
 
   return (
-    <aside className={`
-      fixed inset-y-0 left-0 z-50 w-64 bg-white 
-      flex flex-col p-6 border-r border-slate-100 transition-transform duration-300 ease-in-out
-      lg:relative lg:translate-x-0
-      ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-    `}>
-      <div className="flex items-center justify-between mb-12 px-2">
-        <div className="flex items-center gap-4">
+    <aside 
+      className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-white overscroll-contain
+        flex flex-col p-6 border-r border-slate-100 transition-transform duration-300 ease-in-out
+        lg:relative lg:translate-x-0
+        ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+      `}
+      aria-label="Main Navigation Drawer"
+    >
+      <div className="flex items-center justify-between mb-8 sm:mb-12 px-2">
+        <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 relative drop-shadow-sm">
             <Image 
               src="/logo-blue.png" 
@@ -76,18 +89,19 @@ export function Sidebar() {
           <span className="text-black font-koulen text-2xl tracking-wider leading-none pt-1">EPROP VIEW</span>
         </div>
         
-        {/* Mobile Close Button */}
+        {/* Mobile Close Button - 44x44px accessible hit target */}
         <button 
           onClick={close}
-          className="lg:hidden p-2 text-slate-400 hover:text-black"
+          className="lg:hidden min-w-11 min-h-11 flex items-center justify-center p-2 text-slate-500 hover:text-black hover:bg-slate-100 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          aria-label="Close navigation menu"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
-      <nav className="flex-1 flex flex-col gap-2">
+      <nav className="flex-1 flex flex-col gap-1.5" aria-label="Main Navigation">
         {visibleNavItems.map((item) => {
           const isActive = pathname === item.href
           return (
@@ -98,18 +112,18 @@ export function Sidebar() {
                 if (window.innerWidth < 1024) close()
               }}
               aria-current={isActive ? 'page' : undefined}
-              className={`group flex items-center justify-between px-5 py-3.5 rounded-2xl text-xs font-black uppercase tracking-[0.1em] transition-all duration-200 ${
+              className={`group flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black uppercase tracking-[0.08em] transition-all duration-200 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 isActive
-                  ? 'bg-slate-50 text-primary shadow-sm ring-1 ring-slate-200/50'
-                  : 'text-black hover:bg-slate-50 hover:text-primary'
+                  ? 'bg-primary/10 text-primary border-l-4 border-primary font-black shadow-xs pl-3.5'
+                  : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 border-l-4 border-transparent'
               }`}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3.5">
                 <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'grayscale opacity-70'}`} aria-hidden="true">{item.icon}</span>
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full shadow-lg shadow-red-200 animate-in zoom-in duration-300">
+                <span className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full shadow-md shadow-red-200 tabular-nums">
                   {item.badge}
                 </span>
               )}
@@ -123,7 +137,7 @@ export function Sidebar() {
           type="button"
           disabled={isLoggingOut}
           onClick={handleLogout}
-          className="w-full py-4 bg-primary text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:translate-y-[-1px] transition-all active:scale-[0.98] shadow-xl shadow-primary/20 disabled:opacity-50"
+          className="w-full min-h-[44px] py-3.5 bg-primary text-white font-black text-xs uppercase tracking-[0.18em] rounded-xl hover:translate-y-[-1px] transition-all active:scale-[0.98] shadow-lg shadow-primary/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           {isLoggingOut ? 'Logging out...' : 'Logout'}
         </button>

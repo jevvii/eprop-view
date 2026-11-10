@@ -12,10 +12,10 @@ interface StatCardProps {
 
 export function StatCard({ label, value, variant = 'default', className = '', isFloating = false }: StatCardProps) {
   const bgColor = {
-    default: isFloating ? 'bg-white/90 backdrop-blur-md' : 'bg-white',
-    critical: isFloating ? 'bg-red-50/90 backdrop-blur-md' : 'bg-red-50',
-    info: isFloating ? 'bg-indigo-50/90 backdrop-blur-md' : 'bg-indigo-50',
-    success: isFloating ? 'bg-emerald-50/90 backdrop-blur-md' : 'bg-emerald-50'
+    default: isFloating ? 'bg-white/95 backdrop-blur-md' : 'bg-white',
+    critical: isFloating ? 'bg-red-50/95 backdrop-blur-md' : 'bg-red-50',
+    info: isFloating ? 'bg-indigo-50/95 backdrop-blur-md' : 'bg-indigo-50',
+    success: isFloating ? 'bg-emerald-50/95 backdrop-blur-md' : 'bg-emerald-50'
   }[variant]
 
   const textColor = {
@@ -26,9 +26,9 @@ export function StatCard({ label, value, variant = 'default', className = '', is
   }[variant]
 
   return (
-    <div className={`px-6 py-4 rounded-[1.8rem] shadow-xl border border-white/20 flex flex-col justify-between ${bgColor} ${className}`}>
-      <div className="text-[0.55rem] font-black text-slate-400 mb-0.5 tracking-[0.15em] uppercase">{label}</div>
-      <div className={`text-3xl font-koulen tracking-wider leading-none ${textColor}`}>
+    <div className={`px-4 py-3.5 sm:px-5 sm:py-4 rounded-2xl shadow-md sm:shadow-lg border border-white/40 flex flex-col justify-between min-w-0 ${bgColor} ${className}`}>
+      <div className="text-xs font-bold text-slate-600 mb-1 tracking-wider uppercase truncate" title={label}>{label}</div>
+      <div className={`text-2xl sm:text-3xl font-koulen tracking-wider leading-none tabular-nums ${textColor}`}>
         {value}
       </div>
     </div>
@@ -40,9 +40,9 @@ export function StatsCards() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 px-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8 px-4 sm:px-6 lg:px-8">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white p-8 rounded-[2rem] shadow-sm animate-pulse h-32" />
+          <div key={i} className="bg-white p-5 sm:p-6 rounded-2xl shadow-xs animate-pulse h-24 sm:h-28" />
         ))}
       </div>
     )
@@ -50,14 +50,14 @@ export function StatsCards() {
 
   if (isError) {
     return (
-      <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-red-100 text-red-600 mb-8 font-bold mx-8">
-        ERROR_FETCHING_METRICS
+      <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-xs border border-red-100 text-red-600 mb-6 sm:mb-8 font-bold mx-4 sm:mx-6 lg:mx-8 text-xs sm:text-sm">
+        Error loading telemetry metrics
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 px-8">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8 px-4 sm:px-6 lg:px-8">
       <StatCard label="Active Projects" value={stats?.active_projects ?? 0} />
       <StatCard label="Critical Risk" value={stats?.critical_risk_reports ?? 0} variant="critical" />
       <StatCard label="In Review" value={stats?.reports_in_review ?? 0} variant="info" />

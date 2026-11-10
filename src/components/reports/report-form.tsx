@@ -174,7 +174,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="Geotechnical inspection summary"
             required
           />
@@ -184,7 +184,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           <select
             value={selectedProjectId}
             onChange={(event) => setSelectedProjectId(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
             required
           >
             <option value="" disabled>Select a project</option>
@@ -198,7 +198,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           <select
             value={inspectionId}
             onChange={(event) => setInspectionId(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
           >
             <option value="">No linked inspection</option>
             {filteredInspections.map((inspection) => (
@@ -214,7 +214,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             required
           />
         </div>
@@ -223,7 +223,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value as (typeof statusOptions)[number])}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>
@@ -237,7 +237,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           <input
             value={location}
             onChange={(event) => setLocation(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="Zone / building"
             required
           />
@@ -251,17 +251,17 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
             step="0.1"
             value={riskScore}
             onChange={(event) => setRiskScore(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm tabular-nums focus:ring-2 focus:ring-blue-500 outline-none"
             required
           />
         </div>
       </div>
 
       {inspectionId && (
-        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50/40 p-4 space-y-3">
+        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50/40 p-4 sm:p-5 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="flex h-2.5 w-2.5 rounded-full bg-blue-600 animate-pulse" />
               <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
                 AI & AR Intelligence Feed
               </span>
@@ -270,7 +270,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
               <button
                 type="button"
                 onClick={handleApplyAISuggestions}
-                className="text-[10px] font-black uppercase tracking-wider text-blue-600 hover:text-blue-700 bg-blue-100/60 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors self-start sm:self-auto"
+                className="text-xs font-bold uppercase tracking-wider text-blue-700 hover:text-blue-800 bg-blue-100 hover:bg-blue-200/80 px-3.5 py-2 min-h-[38px] rounded-xl transition-colors self-start sm:self-auto shadow-sm"
               >
                 Auto-Populate Findings & Score 🪄
               </button>
@@ -280,16 +280,16 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           {aiSummary || arAnchors.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               {aiSummary && (
-                <div className="bg-white/80 rounded-xl p-3 border border-slate-100 space-y-1.5">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">AI Detections ({aiSummary.total})</div>
+                <div className="bg-white/90 rounded-xl p-3.5 border border-slate-100 space-y-2">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-600">AI Detections (<span className="tabular-nums">{aiSummary.total}</span>)</div>
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(aiSummary.countsByType).map(([type, count]) => (
-                      <span key={type} className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px] uppercase">
+                      <span key={type} className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-semibold text-xs uppercase tabular-nums">
                         {count} {type}
                       </span>
                     ))}
                   </div>
-                  <div className="flex gap-2 text-[9px] font-black uppercase tracking-wider text-slate-500 pt-1">
+                  <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider pt-1 tabular-nums">
                     {aiSummary.countsBySeverity.critical > 0 && (
                       <span className="text-red-600">{aiSummary.countsBySeverity.critical} Critical</span>
                     )}
@@ -307,27 +307,27 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
               )}
 
               {arAnchors.length > 0 ? (
-                <div className="bg-white/80 rounded-xl p-3 border border-slate-100 space-y-1.5">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">AR Spatial Anchors ({arAnchors.length})</div>
+                <div className="bg-white/90 rounded-xl p-3.5 border border-slate-100 space-y-2">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-600">AR Spatial Anchors (<span className="tabular-nums">{arAnchors.length}</span>)</div>
                   <div className="flex flex-wrap gap-1.5">
                     {arAnchors.slice(0, 3).map((anchor) => (
-                      <span key={anchor.id} className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 font-bold text-[10px] uppercase">
+                      <span key={anchor.id} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 font-semibold text-xs uppercase">
                         📍 {anchor.label}
                       </span>
                     ))}
                     {arAnchors.length > 3 && (
-                      <span className="text-[10px] font-bold text-slate-400 self-center">+{arAnchors.length - 3} more</span>
+                      <span className="text-xs font-semibold text-slate-500 self-center tabular-nums">+{arAnchors.length - 3} more</span>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="bg-white/50 rounded-xl p-3 border border-dashed border-slate-200 flex items-center text-[10px] font-bold text-slate-400 uppercase">
+                <div className="bg-white/60 rounded-xl p-3.5 border border-dashed border-slate-200 flex items-center text-xs font-medium text-slate-500">
                   No AR anchors placed for this inspection.
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-medium text-slate-600">
               No AI detections or AR anchors yet for this inspection. Run AI analysis in the Asset Vault or drop anchors in AR Mode.
             </p>
           )}
@@ -339,7 +339,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
         <textarea
           value={keyFindings}
           onChange={(event) => setKeyFindings(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm min-h-[120px] focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm min-h-[120px] focus:ring-2 focus:ring-blue-500 outline-none"
           placeholder="Summary of critical observations..."
         />
       </div>
@@ -356,13 +356,13 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
         </div>
       )}
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
         {onClose && (
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} className="min-h-[44px] text-sm">
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={createReport.isPending}>
+        <Button type="submit" disabled={createReport.isPending} className="min-h-[44px] text-sm font-semibold">
           {createReport.isPending ? 'Saving...' : 'Create Report'}
         </Button>
       </div>

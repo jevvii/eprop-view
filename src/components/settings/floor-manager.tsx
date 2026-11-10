@@ -100,13 +100,13 @@ export function FloorManager() {
   }
 
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 px-2">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
-          <h3 className="text-xs font-black text-slate-400 tracking-[0.2em] uppercase mb-1">
+          <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
             Floor & Level Hierarchy
           </h3>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+          <p className="text-xs text-slate-500 font-medium">
             Define vertical levels, basements, and decks nested under each building.
           </p>
         </div>
@@ -118,7 +118,7 @@ export function FloorManager() {
               setSelectedProjectId(e.target.value)
               setSelectedBuildingId('')
             }}
-            className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+            className="text-base sm:text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 min-h-[38px] outline-none"
           >
             {projects?.map((p) => (
               <option key={p.id} value={p.id}>
@@ -131,7 +131,7 @@ export function FloorManager() {
             value={activeBuildingId}
             onChange={(e) => setSelectedBuildingId(e.target.value)}
             disabled={!buildings || buildings.length === 0}
-            className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+            className="text-base sm:text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 min-h-[38px] outline-none"
           >
             {buildings?.length === 0 ? (
               <option value="">No Buildings Available</option>
@@ -147,8 +147,7 @@ export function FloorManager() {
           <Button
             onClick={openAddModal}
             disabled={!activeBuildingId}
-            size="sm"
-            className="text-[9px] font-black uppercase tracking-widest px-4 py-2"
+            className="text-xs font-bold uppercase tracking-wider px-4 py-2 min-h-[38px]"
           >
             + Add Floor
           </Button>
@@ -159,16 +158,16 @@ export function FloorManager() {
         <div className="h-32 bg-slate-50 animate-pulse rounded-2xl" />
       ) : !activeBuildingId ? (
         <div className="text-center py-8 border border-dashed border-slate-200 rounded-2xl">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             Select or register a building first to manage floors.
           </p>
         </div>
       ) : !floors || floors.length === 0 ? (
         <div className="text-center py-8 border border-dashed border-slate-200 rounded-2xl">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             No floor levels defined for this building.
           </p>
-          <p className="text-[10px] text-slate-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             Click &quot;+ Add Floor&quot; to define ground level, basements, or upper stories.
           </p>
         </div>
@@ -176,50 +175,52 @@ export function FloorManager() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left">
-                <th className="py-3 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] pl-2">Floor Name</th>
-                <th className="py-3 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">Elevation / Level</th>
-                <th className="py-3 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">Order</th>
-                <th className="py-3 font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] text-right pr-2">Actions</th>
+              <tr className="border-b border-slate-200 text-left">
+                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Floor Name</th>
+                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Elevation / Level</th>
+                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Order</th>
+                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider text-right pr-2">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-100">
               {floors.map((floor, idx) => (
-                <tr key={floor.id} className="hover:bg-slate-50/50 transition-all">
-                  <td className="py-4 pl-2 font-black text-slate-800 uppercase tracking-tight">
+                <tr key={floor.id} className="hover:bg-slate-50/70 transition-all">
+                  <td className="py-4 pl-2 font-bold text-slate-900 tracking-tight">
                     {floor.name}
                   </td>
-                  <td className="py-4 text-xs font-bold text-slate-600">
+                  <td className="py-4 text-xs font-semibold text-slate-700 tabular-nums">
                     Level {floor.level ?? '0'}
                   </td>
                   <td className="py-4">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleMove(idx, 'up')}
                         disabled={idx === 0}
-                        className="px-2 py-1 bg-slate-100 disabled:opacity-30 rounded hover:bg-slate-200 text-xs font-bold"
+                        aria-label="Move floor up"
+                        className="w-8 h-8 flex items-center justify-center bg-slate-100 disabled:opacity-30 rounded-lg hover:bg-slate-200 text-xs font-bold transition-colors"
                       >
                         ↑
                       </button>
                       <button
                         onClick={() => handleMove(idx, 'down')}
                         disabled={idx === floors.length - 1}
-                        className="px-2 py-1 bg-slate-100 disabled:opacity-30 rounded hover:bg-slate-200 text-xs font-bold"
+                        aria-label="Move floor down"
+                        className="w-8 h-8 flex items-center justify-center bg-slate-100 disabled:opacity-30 rounded-lg hover:bg-slate-200 text-xs font-bold transition-colors"
                       >
                         ↓
                       </button>
                     </div>
                   </td>
-                  <td className="py-4 text-right pr-2 space-x-2">
+                  <td className="py-4 text-right pr-2 space-x-2 whitespace-nowrap">
                     <button
                       onClick={() => openEditModal(floor)}
-                      className="text-[9px] font-black uppercase tracking-wider text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg"
+                      className="text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(floor.id)}
-                      className="text-[9px] font-black uppercase tracking-wider text-red-600 hover:text-red-700 bg-red-50 px-2.5 py-1 rounded-lg"
+                      className="text-xs font-bold uppercase tracking-wider text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
                     >
                       Delete
                     </button>
@@ -233,39 +234,40 @@ export function FloorManager() {
 
       {/* Modal Dialog */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-sm rounded-[2rem] bg-white p-8 shadow-2xl space-y-4"
+            className="w-full max-w-sm rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-7 shadow-2xl space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h4 className="text-sm font-black uppercase tracking-wider text-slate-800">
+              <h4 className="text-base font-bold uppercase tracking-wider text-slate-800">
                 {editingFloor ? 'Edit Floor Level' : 'Add Floor Level'}
               </h4>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 font-bold"
+                aria-label="Close modal"
+                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
               >
                 ✕
               </button>
             </div>
 
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Floor Designation *
               </label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Ground Floor, Level 2, Basement 1"
-                className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Level Index (Numeric)
               </label>
               <input
@@ -273,31 +275,29 @@ export function FloorManager() {
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
                 placeholder="0"
-                className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none"
+                className="w-full text-base sm:text-sm font-medium tabular-nums bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             {error && (
-              <p className="text-[9px] font-black text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-100 uppercase">
+              <p className="text-xs font-semibold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
                 {error}
               </p>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setIsModalOpen(false)}
-                className="text-[9px] font-bold uppercase"
+                className="text-xs font-bold uppercase min-h-[40px]"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                size="sm"
                 disabled={createFloor.isPending || updateFloor.isPending}
-                className="text-[9px] font-black uppercase bg-primary text-white"
+                className="text-xs font-bold uppercase bg-primary text-white min-h-[40px]"
               >
                 {createFloor.isPending || updateFloor.isPending ? 'Saving…' : 'Save Floor'}
               </Button>

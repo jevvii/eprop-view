@@ -15,7 +15,7 @@ interface SeverityBadgeProps {
 export function SeverityBadge({ severity, className = '' }: SeverityBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${severityStyles[severity]} ${className}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${severityStyles[severity]} ${className}`}
     >
       {severity}
     </span>
