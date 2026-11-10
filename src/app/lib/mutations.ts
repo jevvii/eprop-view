@@ -292,6 +292,29 @@ export function useCreateARAnchor() {
   })
 }
 
+export function useDeleteARAnchor() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: { anchorId: string; inspectionId?: string } | string) => {
+      const anchorId = typeof input === 'string' ? input : input.anchorId
+      const supabase = getClient()
+      const { error } = await supabase.from('ar_anchors').delete().eq('id', anchorId)
+      if (error) throw error
+      return input
+    },
+    onSuccess: (input) => {
+      const inspectionId = typeof input === 'object' && input !== null ? input.inspectionId : undefined
+      if (inspectionId) {
+        queryClient.invalidateQueries({ queryKey: ['ar-anchors', inspectionId] })
+      }
+      queryClient.invalidateQueries({ queryKey: ['ar-anchors'] })
+      queryClient.invalidateQueries({ queryKey: ['all-ar-anchors'] })
+      queryClient.invalidateQueries({ queryKey: ['inspections'] })
+    },
+  })
+}
+
 export function useUpdateAIDetection() {
   const queryClient = useQueryClient()
 
