@@ -51,3 +51,5 @@ native/android/app/build/
 native/android/local.properties
 native/node_modules/
 native/ios/App/Pods/
+.env*
+!.env.example

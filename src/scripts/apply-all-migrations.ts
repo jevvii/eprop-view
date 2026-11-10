@@ -10,23 +10,32 @@ if (fs.existsSync(envLocalPath)) {
   dotenv.config({ path: envLocalPath })
 }
 
-const PENDING_MIGRATIONS = [
-  '002_add_user_status.sql',
-  '002_reports_audit_trail.sql',
-  '003_setup_storage.sql',
-  '004_image_ownership.sql',
-  '005_asset_commenting.sql',
-  '006_ai_module.sql',
-  '007_ar_module.sql',
-  '008_rbac_and_usecase_parity.sql',
-  '009_rbac_enforcement.sql',
-  '010_ai_model_registry_v2.sql',
-  '011_building_master_data.sql',
-  '012_geohazard_layers.sql',
-  '013_storage_audit.sql',
-  '014_fix_profiles_rls_recursion.sql',
-  '015_security_hardening.sql',
-]
+const MIGRATIONS_DIR = path.resolve(process.cwd(), 'supabase', 'migrations')
+const MIGRATION_FILENAME_PATTERN = /^\d{3}_[a-z0-9_]+\.sql$/
+
+/**
+ * Discover migrations from disk rather than maintaining a hand-written list.
+ *
+ * The previous hardcoded array started at 002 and stopped at 015, so this runner
+ * could not bootstrap a fresh database: it skipped 001 (the base schema) and 016.
+ * Sorting is lexical, which is correct because every filename is zero-padded.
+ */
+function discoverMigrations(): string[] {
+  if (!fs.existsSync(MIGRATIONS_DIR)) {
+    throw new Error(`Migrations directory not found: ${MIGRATIONS_DIR}`)
+  }
+
+  const migrations = fs
+    .readdirSync(MIGRATIONS_DIR)
+    .filter((name) => MIGRATION_FILENAME_PATTERN.test(name))
+    .sort((a, b) => a.localeCompare(b, 'en'))
+
+  if (migrations.length === 0) {
+    throw new Error(`No migration files matched in ${MIGRATIONS_DIR}`)
+  }
+
+  return migrations
+}
 
 async function promptPassword(): Promise<string> {
   const rl = readline.createInterface({
@@ -124,8 +133,11 @@ async function main() {
   let successCount = 0
   let skippedCount = 0
 
-  for (const filename of PENDING_MIGRATIONS) {
-    const filePath = path.resolve(process.cwd(), 'supabase', 'migrations', filename)
+  const migrations = discoverMigrations()
+  console.log(`Discovered ${migrations.length} migration files.\n`)
+
+  for (const filename of migrations) {
+    const filePath = path.join(MIGRATIONS_DIR, filename)
 
     if (!fs.existsSync(filePath)) {
       console.warn(`⚠️ Warning: Migration file not found: ${filePath}`)

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "tsx --test src/app/lib/*.test.ts",
     "migrate": "tsx --env-file=.env.local src/scripts/migrate.ts",
     "db:migrate": "tsx src/scripts/apply-all-migrations.ts"
