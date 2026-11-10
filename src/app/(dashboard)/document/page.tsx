@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { ScanLine, Microscope } from 'lucide-react'
 import { InspectionForm } from '@/components/document/inspection-form'
 import { AssetFeed } from '@/components/document/asset-feed'
 import { AssetUpload } from '@/components/document/asset-upload'
@@ -64,23 +65,23 @@ export default function DocumentPage() {
           {canUseAR && inspectionId && (
             <Link
               href={`/ar?inspectionId=${encodeURIComponent(inspectionId)}`}
-              className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/95 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-2xl shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all min-h-[44px]"
+              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-sm transition-colors min-h-[44px]"
             >
-              <span className="text-base" aria-hidden="true">🥽</span>
-              <span>Launch AR Mode</span>
+              <ScanLine className="h-4 w-4" aria-hidden="true" />
+              <span>Launch AR inspection</span>
             </Link>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1.6fr_1fr]">
-        {/* Left Column: Asset Feed (Primary) */}
-        <div className="order-2 lg:order-1 min-w-0">
+        {/* Feed first on mobile: inspectors open the vault to review evidence. */}
+        <div className="order-1 lg:order-1 min-w-0">
           <AssetFeed inspectionId={inspectionId} label={selectedInspectionLabel} />
         </div>
 
-        {/* Right Column: Controls & Forms (Supporting) */}
-        <div className="space-y-6 sm:space-y-8 order-1 lg:order-2 min-w-0">
+        {/* Controls and forms second. */}
+        <div className="space-y-6 sm:space-y-8 order-2 lg:order-2 min-w-0">
           {canUpload && <AssetUpload inspectionId={inspectionId} />}
           {canCreateInspection && (
             <div className="opacity-95 hover:opacity-100 transition-opacity">
@@ -90,7 +91,7 @@ export default function DocumentPage() {
           {!canUpload && !canCreateInspection && (
             <div className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-2xl" aria-hidden="true">🧑‍🔬</span>
+                <Microscope className="h-6 w-6 text-slate-500" aria-hidden="true" />
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Engineering Review Mode</h3>
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Inspection Vault Read-Only</p>

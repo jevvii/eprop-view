@@ -165,7 +165,7 @@ export function StructuralElementManager() {
             variant="outline"
             className="text-xs font-bold uppercase tracking-wider px-3.5 py-2 min-h-[38px]"
           >
-            📋 Import CSV
+            Import CSV
           </Button>
 
           <Button
@@ -286,7 +286,7 @@ export function StructuralElementManager() {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="responsive-table w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left">
                 <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Identifier</th>

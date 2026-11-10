@@ -30,8 +30,6 @@ export function SettingsCards() {
   const [department, setDepartment] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
-  const [digestEnabled, setDigestEnabled] = useState(false)
 
   // Register Model State
   const [isRegisterModelOpen, setIsRegisterModelOpen] = useState(false)
@@ -55,15 +53,6 @@ export function SettingsCards() {
     return projects.find((project) => project.status === 'active') ?? projects[0]
   }, [projects])
 
-  const zoneRiskLevel = useMemo(() => {
-    if (!zones || zones.length === 0) return { label: 'Low', color: 'bg-emerald-100 text-emerald-700' }
-    const hasZoneA = zones.some((zone) => zone.risk_level === 'zone_a')
-    const hasZoneB = zones.some((zone) => zone.risk_level === 'zone_b')
-    if (hasZoneA) return { label: 'Critical', color: 'bg-red-100 text-red-700' }
-    if (hasZoneB) return { label: 'Moderate', color: 'bg-amber-100 text-amber-700' }
-    return { label: 'Low', color: 'bg-emerald-100 text-emerald-700' }
-  }, [zones])
-
   const handleSave = async () => {
     setError(null)
     setSuccess(null)
@@ -73,7 +62,7 @@ export function SettingsCards() {
         phone: phone.trim(),
         department: department.trim(),
       })
-      setSuccess('Profile updated successfully.')
+      setSuccess('Profile updated.')
     } catch (mutationError) {
       setError(mutationError instanceof Error ? mutationError.message : 'Failed to update profile.')
     }
@@ -176,37 +165,6 @@ export function SettingsCards() {
         {success && <p className="text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100 mt-4">{success}</p>}
       </div>
 
-      {/* 2. Preferences */}
-      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6">
-        <div>
-          <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">Configuration</h3>
-          <p className="text-xs text-slate-500 font-medium">Alert and telemetry logic.</p>
-        </div>
-        <div className="space-y-4">
-          <label className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200 group cursor-pointer hover:border-primary/40 transition-all min-h-[48px]">
-            <span className="text-xs font-bold text-slate-800 uppercase tracking-tight">Real-time alerts</span>
-            <input
-              type="checkbox"
-              checked={notificationsEnabled}
-              onChange={(event) => setNotificationsEnabled(event.target.checked)}
-              className="h-5 w-5 accent-primary rounded-lg cursor-pointer"
-            />
-          </label>
-          <label className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200 group cursor-pointer hover:border-primary/40 transition-all min-h-[48px]">
-            <span className="text-xs font-bold text-slate-800 uppercase tracking-tight">System digest</span>
-            <input
-              type="checkbox"
-              checked={digestEnabled}
-              onChange={(event) => setDigestEnabled(event.target.checked)}
-              className="h-5 w-5 accent-primary rounded-lg cursor-pointer"
-            />
-          </label>
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center leading-relaxed">
-            Local telemetry operational.<br/>Encrypted sync active.
-          </div>
-        </div>
-      </div>
-
       {/* 3. AI Model Management (Admin Section) */}
       {isAdmin && (
         <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6 lg:col-span-2 xl:col-span-3">
@@ -228,7 +186,7 @@ export function SettingsCards() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="responsive-table w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Model Name & Task</th>
@@ -274,51 +232,30 @@ export function SettingsCards() {
         </div>
       )}
 
-      {/* 4. Storage & System Health (Admin & Global) */}
-      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6 lg:col-span-2 xl:col-span-3">
+      {/* 4. Storage & system health */}
+      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-200/70 space-y-6 lg:col-span-2 xl:col-span-3">
         <div className="flex items-center justify-between border-b border-slate-100 pb-5">
           <div>
-            <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
-              Storage, Retention & System Telemetry
-            </h3>
+            <h3 className="text-sm font-bold text-slate-900">Storage and layers</h3>
             <p className="text-xs text-slate-500 font-medium">
-              Cloud object storage status, geohazard layers, and tamper-evident audit logs.
+              Geohazard layers currently loaded. Storage objects are managed below.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 group hover:border-primary/20 transition-all">
-            <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Cloud Storage (S3)</div>
-            <div className="text-sm font-bold text-emerald-600 uppercase tracking-tight flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              Connected
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+            <div className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Geohazard layers</div>
+            <div className="text-sm font-bold uppercase tracking-tight text-slate-900">
+              <span className="tabular-nums">{zones?.length || 0}</span> layers
             </div>
-            <div className="text-xs text-slate-500 mt-1 font-medium">Bucket: inspection-images</div>
+            <div className="text-xs text-slate-500 mt-1 font-medium">Faults, liquefaction and flood zones</div>
           </div>
 
-          <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 group hover:border-primary/20 transition-all">
-            <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Geohazard Layers</div>
-            <div className={`text-sm font-bold uppercase tracking-tight ${zoneRiskLevel.color.split(' ')[1]}`}>
-              <span className="tabular-nums">{zones?.length || 0}</span> GIS Zones
-            </div>
-            <div className="text-xs text-slate-500 mt-1 font-medium">Faults & Floods Mapped</div>
-          </div>
-
-          <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 group hover:border-primary/20 transition-all">
-            <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Data Retention</div>
-            <div className="text-sm font-bold text-slate-800 uppercase tracking-tight">
-              7 Year Archival
-            </div>
-            <div className="text-xs text-slate-500 mt-1 font-medium">Cold storage policy enabled</div>
-          </div>
-
-          <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 group hover:border-primary/20 transition-all">
-            <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Audit Logs & Integrity</div>
-            <div className="text-sm font-bold text-emerald-600 uppercase tracking-tight">
-              Verified
-            </div>
-            <div className="text-xs text-slate-500 mt-1 font-medium">Cryptographic sign-offs</div>
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+            <div className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Inspection bucket</div>
+            <div className="text-sm font-bold uppercase tracking-tight text-slate-900">inspection-images</div>
+            <div className="text-xs text-slate-500 mt-1 font-medium">Private, signed URLs, 10 MB cap</div>
           </div>
         </div>
       </div>
@@ -358,7 +295,7 @@ export function SettingsCards() {
                   type="text"
                   value={modelName}
                   onChange={(e) => setModelName(e.target.value)}
-                  placeholder="e.g. YOLOv8-DamageDetector-v3"
+                  placeholder="e.g. Edge-Gradient Heuristic"
                   className="w-full text-base sm:text-sm font-medium bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
                   required
                 />
@@ -405,7 +342,7 @@ export function SettingsCards() {
                   >
                     <option value="onnx">ONNX</option>
                     <option value="tfjs">TFJS</option>
-                    <option value="mock">Mock / Demo</option>
+                    <option value="heuristic">Heuristic (non-ML)</option>
                   </select>
                 </div>
               </div>

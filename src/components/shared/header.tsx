@@ -20,42 +20,43 @@ export function Header() {
     '/reports': 'Reports',
     '/document': 'Documents',
     '/settings': 'Settings',
-    '/ar': 'AR Inspection Mode',
+    '/ar': 'AR Inspection',
   }
   const currentPage = pageTitles[pathname] ?? 'Dashboard'
 
   const role = profile?.role ?? 'viewer'
   const roleBadgeStyles: Record<string, string> = {
-    admin: 'bg-purple-100 text-purple-800 border-purple-200',
-    engineer: 'bg-blue-100 text-blue-800 border-blue-200',
-    inspector: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    admin: 'bg-primary/10 text-primary border-primary/20',
+    engineer: 'bg-blue-50 text-blue-800 border-blue-200',
+    inspector: 'bg-emerald-50 text-emerald-800 border-emerald-200',
     viewer: 'bg-slate-100 text-slate-700 border-slate-200',
   }
   const roleBadgeClass = roleBadgeStyles[role] ?? roleBadgeStyles.viewer
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1)
 
   return (
-    <header className="flex items-center justify-between px-4 lg:px-8 py-3.5 lg:py-5 bg-white border-b border-slate-200/50 shadow-sm sticky top-0 z-30">
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Mobile Menu Button - 44x44px touch target with visible focus ring */}
-        <button 
+    <header className="flex items-center justify-between gap-2 px-4 lg:px-8 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 lg:py-5 bg-white border-b border-slate-200/50 shadow-sm sticky top-0 z-30">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        {/* Mobile Menu Button - 44x44px touch target */}
+        <button
           onClick={toggle}
-          className="lg:hidden min-w-11 min-h-11 flex items-center justify-center p-2.5 -ml-2 text-primary hover:bg-slate-100 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          aria-label="Toggle navigation menu"
+          className="lg:hidden shrink-0 min-w-11 min-h-11 flex items-center justify-center p-2.5 -ml-2 text-primary hover:bg-slate-100 rounded-xl transition-colors"
+          aria-label="Open navigation menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        
-        <span className="font-koulen text-primary text-xl lg:text-2xl tracking-wide uppercase leading-none pt-1">{currentPage}</span>
+
+        <h1 className="font-koulen text-primary text-lg sm:text-xl lg:text-2xl tracking-wide uppercase leading-none pt-1 truncate min-w-0">
+          {currentPage}
+        </h1>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Role Badge (Mobile & Desktop) */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Role badge is redundant on the narrowest screens; the avatar remains. */}
         <span
-          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-xs ${roleBadgeClass}`}
-          title={`Role: ${roleLabel}`}
+          className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-xs ${roleBadgeClass}`}
         >
           {roleLabel}
         </span>

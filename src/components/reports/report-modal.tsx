@@ -1,4 +1,5 @@
 'use client'
+import { MapPin } from 'lucide-react'
 
 import { useEffect } from 'react'
 import type { Report } from '@/app/types'
@@ -113,7 +114,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
                   <div className="flex flex-wrap gap-2">
                     {anchors.map((a) => (
                       <div key={a.id} className="bg-white px-3 py-1.5 rounded-lg border border-indigo-100 text-xs font-semibold text-indigo-900 shadow-sm">
-                        📍 {a.label} <span className="text-slate-500 font-medium text-xs">({a.damage_type ?? 'defect'})</span>
+                        <MapPin className="inline h-3.5 w-3.5" aria-hidden="true" /> {a.label} <span className="text-slate-500 font-medium text-xs">({a.damage_type ?? 'defect'})</span>
                       </div>
                     ))}
                   </div>

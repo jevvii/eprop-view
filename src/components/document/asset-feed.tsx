@@ -1,4 +1,5 @@
 'use client'
+import { ImageOff, FolderOpen, WifiOff } from 'lucide-react'
 
 import { useInspectionImages, useProfile } from '@/app/lib/queries'
 import { CommentThread } from './comment-thread'
@@ -41,7 +42,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
     return (
       <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl h-[450px] sm:h-[600px] flex items-center justify-center text-center p-6 sm:p-10">
         <div className="max-w-xs">
-          <div className="text-4xl mb-4 grayscale opacity-30" aria-hidden="true">📂</div>
+          <FolderOpen className="mx-auto mb-4 h-10 w-10 text-slate-400" aria-hidden="true" />
           <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Registry Initialized</h3>
           <p className="text-xs text-slate-500 font-medium leading-relaxed">
             Select a technical inspection entry from the dropdown above to view the associated asset vault and discussion threads.
@@ -62,7 +63,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
           {[1, 2].map((i) => (
             <div key={i} className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 overflow-hidden flex flex-col lg:flex-row h-auto lg:h-[350px] animate-pulse">
               <div className="lg:w-1/2 bg-slate-100 h-64 lg:h-full flex items-center justify-center relative">
-                <div className="text-4xl grayscale opacity-10">🎞️</div>
+                <ImageOff className="h-10 w-10 text-slate-400" aria-hidden="true" />
               </div>
               <div className="lg:w-1/2 p-5 sm:p-6 space-y-4 flex flex-col">
                 <div className="h-4 w-28 bg-slate-200 rounded" />
@@ -79,7 +80,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
   if (isError) {
     return (
       <div className="bg-red-50 border border-red-100 rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center">
-        <div className="text-4xl mb-4 grayscale opacity-20" aria-hidden="true">📡</div>
+        <WifiOff className="mx-auto mb-4 h-10 w-10 text-slate-400" aria-hidden="true" />
         <h3 className="text-sm font-bold text-red-700 uppercase tracking-wider mb-2">Telemetry Failure</h3>
         <p className="text-xs text-red-600 font-medium">
           System was unable to synchronize with the asset vault. Ensure technical database migrations have been deployed.
@@ -175,7 +176,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
           })
         ) : (
           <div className="bg-white p-10 sm:p-16 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 text-center">
-            <div className="text-4xl mb-4 opacity-20 grayscale" aria-hidden="true">🎞️</div>
+            <ImageOff className="mx-auto mb-4 h-10 w-10 text-slate-400" aria-hidden="true" />
             <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">No assets found in vault.</p>
           </div>
         )}

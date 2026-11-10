@@ -27,6 +27,17 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  /* One severity vocabulary for badges, borders, charts and maps. */
+  --color-severity-critical: var(--severity-critical);
+  --color-severity-critical-soft: var(--severity-critical-soft);
+  --color-severity-high: var(--severity-high);
+  --color-severity-high-soft: var(--severity-high-soft);
+  --color-severity-moderate: var(--severity-moderate);
+  --color-severity-moderate-soft: var(--severity-moderate-soft);
+  --color-severity-low: var(--severity-low);
+  --color-severity-low-soft: var(--severity-low-soft);
+  --color-severity-none: var(--severity-none);
+  --color-severity-none-soft: var(--severity-none-soft);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -69,8 +80,20 @@
   --accent-foreground: #FFFFFF;
   --destructive: oklch(0.577 0.245 27.325);
   --border: #E5E7EB;
-  --input: #E5E7EB;
+  /* Form boundaries need 3:1 against their surface (WCAG 1.4.11). */
+  --input: #64748B;
   --ring: #346BDA;
+  /* Severity roles: text colour + soft surface, measured pairs. */
+  --severity-critical: #B91C1C;
+  --severity-critical-soft: #FEE2E2;
+  --severity-high: #C2410C;
+  --severity-high-soft: #FFEDD5;
+  --severity-moderate: #92400E;
+  --severity-moderate-soft: #FEF3C7;
+  --severity-low: #047857;
+  --severity-low-soft: #D1FAE5;
+  --severity-none: #334155;
+  --severity-none-soft: #F1F5F9;
   --chart-1: #346BDA;
   --chart-2: #8C7CDB;
   --chart-3: oklch(0.439 0 0);
@@ -123,13 +146,74 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+  /* A visible ring for keyboard users on every control, including the ones
+     that previously set outline-none without a replacement. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans antialiased;
   }
   h1, h2, h3, h4, h5, h6, .font-heading {
     @apply font-koulen;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* appearance-none selects previously lost their dropdown affordance. */
+  select:not([multiple]) {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+  }
+}
+
+/* Scroll containment used by the dashboard, tables and drawers. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.scrollbar-hide,
+.no-scrollbar,
+.custom-scrollbar {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Motion is opt-in. Anything that moves must still leave a static cue. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* On narrow screens data tables scroll, but the action column stays visible. */
+@media (max-width: 767px) {
+  .responsive-table {
+    min-width: 40rem;
+  }
+  .responsive-table th:last-child,
+  .responsive-table td:last-child {
+    position: sticky;
+    right: 0;
+    background: #ffffff;
+    box-shadow: -8px 0 12px -12px rgba(15, 23, 42, 0.4);
   }
 }
 
@@ -149,9 +233,15 @@
     overflow: visible !important;
     background: white !important;
     color: black !important;
-    font-size: 12pt;
+    /* 12pt root made text-xs print at 9pt. Body copy now prints at 11pt. */
+    font-size: 11pt;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  .print-report .text-xs {
+    font-size: 10pt !important;
+    line-height: 1.45 !important;
   }
 
   /* Hide entire dashboard shell */

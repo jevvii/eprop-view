@@ -1,4 +1,5 @@
 'use client'
+import { AlertTriangle } from 'lucide-react'
 
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -21,8 +22,8 @@ export default function DashboardErrorBoundary({
   return (
     <div className="min-h-[70dvh] flex items-center justify-center p-4 sm:p-6 bg-brand-gray">
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 text-center space-y-6">
-        <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 border border-red-100 flex items-center justify-center mx-auto text-2xl">
-          ⚠️
+        <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 border border-red-100 flex items-center justify-center mx-auto">
+          <AlertTriangle className="h-6 w-6" aria-hidden="true" />
         </div>
 
         <div className="space-y-2">

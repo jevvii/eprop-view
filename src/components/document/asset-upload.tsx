@@ -1,4 +1,5 @@
 'use client'
+import { FolderOpen, Camera } from 'lucide-react'
 
 import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -105,7 +106,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
             className="hidden"
             onChange={(e) => handleFileChange(e.target.files)}
           />
-          <span className="text-2xl mb-1 grayscale group-hover:grayscale-0 transition-transform group-hover:scale-110" aria-hidden="true">📂</span>
+          <FolderOpen className="mb-1 h-6 w-6 text-slate-600" aria-hidden="true" />
           <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Browse</span>
         </button>
 
@@ -122,7 +123,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
             className="hidden"
             onChange={(e) => handleFileChange(e.target.files)}
           />
-          <span className="text-2xl mb-1 grayscale group-hover:grayscale-0 transition-transform group-hover:scale-110" aria-hidden="true">📸</span>
+          <Camera className="mb-1 h-6 w-6 text-primary" aria-hidden="true" />
           <span className="text-xs font-bold text-primary uppercase tracking-wide">Capture</span>
         </button>
       </div>

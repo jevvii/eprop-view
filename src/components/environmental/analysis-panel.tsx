@@ -125,7 +125,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
                 disabled={isAutoCalculating}
                 className="text-xs font-semibold uppercase tracking-wider bg-primary/10 text-primary hover:bg-primary hover:text-white px-3 py-1.5 rounded-lg transition-colors border border-primary/20 min-h-[36px]"
               >
-                {isAutoCalculating ? 'Analyzing GIS…' : '⚡ Auto-Calculate from GIS'}
+                {isAutoCalculating ? 'Analyzing GIS…' : 'Auto-calculate from GIS'}
               </button>
             )}
           </div>
@@ -139,8 +139,8 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 flex-1">
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Fault Proximity</label>
-            <select
+            <label htmlFor="env-fault" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Fault Proximity</label>
+            <select id="env-fault"
               value={faultLine}
               disabled={!canAssess}
               onChange={(event) => setFaultLine(event.target.value as (typeof faultLineOptions)[number])}
@@ -154,8 +154,8 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Liquefaction Risk</label>
-            <select
+            <label htmlFor="env-liquefaction" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Liquefaction Risk</label>
+            <select id="env-liquefaction"
               value={liquefaction}
               disabled={!canAssess}
               onChange={(event) => setLiquefaction(event.target.value as (typeof liquefactionOptions)[number])}
@@ -169,8 +169,8 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Erosion Potential</label>
-            <select
+            <label htmlFor="env-erosion" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Erosion Potential</label>
+            <select id="env-erosion"
               value={erosion}
               disabled={!canAssess}
               onChange={(event) => setErosion(event.target.value as (typeof erosionOptions)[number])}
@@ -184,8 +184,8 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Suitability Score</label>
-            <input
+            <label htmlFor="env-score" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Suitability Score</label>
+            <input id="env-score"
               type="number"
               min="0"
               max="10"
@@ -199,8 +199,8 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
         </div>
 
         <div className="h-full flex flex-col">
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Detailed Analysis</label>
-          <textarea
+          <label htmlFor="env-analysis" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Detailed Analysis</label>
+          <textarea id="env-analysis"
             value={analysis}
             disabled={!canAssess}
             onChange={(event) => setAnalysis(event.target.value)}

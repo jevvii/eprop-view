@@ -1,4 +1,5 @@
 'use client'
+import { ClipboardCheck } from 'lucide-react'
 
 import { useState } from 'react'
 import { useAIModels, useAIDetections, useAIAnalysisJobs, useProfile } from '@/app/lib/queries'
@@ -127,7 +128,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
           </>
         ) : (
           <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-100">
-            <span className="text-base" aria-hidden="true">🧑‍🔬</span>
+            <ClipboardCheck className="h-4 w-4 text-slate-600" aria-hidden="true" />
             <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
               Review & Validation Mode
             </span>
@@ -140,10 +141,10 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Impact Score:</span>
               <span className="text-sm font-bold text-slate-900 tabular-nums">{damageScore.toFixed(1)}/10</span>
               {riskLevel && (
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                  riskLevel === 'critical' ? 'bg-red-100 text-red-700 border border-red-200' :
-                  riskLevel === 'high' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
-                  riskLevel === 'moderate' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                  riskLevel === 'critical' ? 'bg-severity-critical-soft text-severity-critical' :
+                  riskLevel === 'high' ? 'bg-severity-high-soft text-severity-high' :
+                  riskLevel === 'moderate' ? 'bg-severity-moderate-soft text-severity-moderate' : 'bg-severity-low-soft text-severity-low'
                 }`}>
                   {riskLevel}
                 </span>

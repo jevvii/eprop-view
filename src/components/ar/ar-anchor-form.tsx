@@ -231,14 +231,14 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-black text-slate-600 uppercase tracking-wider">
-              {snapshot ? '📸 Camera Snapshot Attached' : 'Visual Frame Evidence'}
+              {snapshot ? 'Camera snapshot attached' : 'Visual frame evidence'}
             </span>
             <button
               type="button"
               onClick={handleCaptureSnapshot}
               className="text-xs font-black text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-3 py-1.5 rounded-lg uppercase tracking-wider transition-colors min-h-[36px]"
             >
-              {snapshot ? 'Retake Frame' : 'Snap Frame 📷'}
+              {snapshot ? 'Retake frame' : 'Capture frame'}
             </button>
           </div>
 

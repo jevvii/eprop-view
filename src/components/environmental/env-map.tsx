@@ -12,6 +12,18 @@ type EnvMapProps = {
   center?: [number, number]
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => {
+    switch (character) {
+      case '&': return '&amp;'
+      case '<': return '&lt;'
+      case '>': return '&gt;'
+      case '"': return '&quot;'
+      default: return '&#39;'
+    }
+  })
+}
+
 const zoneColors: Record<string, string> = {
   fault_line: '#dc2626',
   liquefaction: '#f97316',
@@ -175,13 +187,13 @@ export function EnvMap({ projectId, center }: EnvMapProps) {
         const popupContent = `
           <div style="font-family: sans-serif; padding: 4px;">
             <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px;">
-              ${hotspot.title}
+              ${escapeHtml(hotspot.title)}
             </div>
             <div style="font-size: 10px; color: #64748b; line-height: 1.3;">
-              ${hotspot.description || 'Sector Risk Hotspot'}
+              ${escapeHtml(hotspot.description || 'Sector Risk Hotspot')}
             </div>
             <div style="margin-top: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; color: ${hotspotColor(hotspot.severity)};">
-              Severity: ${hotspot.severity}
+              Severity: ${escapeHtml(String(hotspot.severity))}
             </div>
           </div>
         `

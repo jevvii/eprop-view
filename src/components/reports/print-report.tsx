@@ -81,7 +81,7 @@ function ReportAIDetails({ inspectionId }: { inspectionId: string }) {
             {anchors.map((anchor) => (
               <div key={anchor.id} className="bg-white p-3 rounded-xl border border-slate-100">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold uppercase text-black">📍 {anchor.label}</span>
+                  <span className="text-xs font-bold uppercase text-black">{anchor.label}</span>
                   <span className="text-xs font-bold text-slate-500 uppercase">{anchor.damage_type ?? 'structural'}</span>
                 </div>
                 <div className="text-[11px] font-mono tabular-nums text-slate-500">
@@ -211,7 +211,7 @@ export function PrintReport({ reports, projectName, generatedBy, stats, selected
               <div className="h-[1px] flex-1 bg-slate-100" />
             </div>
 
-            <div className="grid grid-cols-[1fr,250px] gap-10">
+            <div className="grid grid-cols-[1fr_250px] gap-10">
               <div>
                 <h3 className="text-2xl font-black uppercase tracking-tighter mb-4 text-black">{report.title}</h3>
                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-6">

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Koulen } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -24,6 +24,13 @@ export const metadata: Metadata = {
   description: "Environmental Property Risk Assessment Dashboard",
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#346BDA',
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,7 +41,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${koulen.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#F6F6F6] text-black">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>
           {children}
         </Providers>

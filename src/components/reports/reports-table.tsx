@@ -163,15 +163,18 @@ export function ReportsTable({
                 return (
                   <tr
                     key={report.id}
-                    className={`group cursor-pointer transition-all ${
+                    className={`group transition-all ${
                       isSelected ? 'bg-primary/[0.04]' : 'hover:bg-slate-50/70'
                     }`}
-                    onClick={() => handleSelectReport(report)}
                   >
                     <td className="py-4 sm:py-5 pl-2">
-                      <div className={`flex items-start gap-3 transition-all ${
-                        isSelected ? 'border-l-4 border-primary pl-3' : 'pl-3 border-l-2 border-transparent'
-                      }`}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectReport(report)}
+                        className={`flex w-full cursor-pointer items-start gap-3 text-left transition-all ${
+                          isSelected ? 'border-l-4 border-primary pl-3' : 'pl-3 border-l-2 border-transparent'
+                        }`}
+                      >
                         <div className="flex-1 min-w-0">
                           <div className={`font-bold uppercase tracking-tight leading-tight transition-colors text-xs sm:text-sm truncate ${
                             isSelected ? 'text-primary' : 'text-slate-900'
@@ -182,7 +185,7 @@ export function ReportsTable({
                             {report.report_id}
                           </div>
                         </div>
-                      </div>
+                      </button>
                     </td>
                     <td className="py-4 sm:py-5 text-right pr-2">
                       <div className="flex items-center justify-end gap-2.5">

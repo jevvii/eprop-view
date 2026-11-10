@@ -1,4 +1,5 @@
 'use client'
+import { MapPin, Trash2 } from 'lucide-react'
 
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useState, useCallback, useEffect, useMemo, useRef } from 'react'
@@ -449,7 +450,7 @@ function ARPageContent() {
 
             {anchors.length === 0 ? (
               <div className="text-center py-6 px-3 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
-                <span className="text-2xl mb-1 block opacity-40">📍</span>
+                <MapPin className="mx-auto mb-1 h-6 w-6 text-slate-400" aria-hidden="true" />
                 <p className="text-xs sm:text-xs text-slate-500 font-bold uppercase tracking-wider leading-relaxed">
                   No markers saved for this inspection. Start a session and tap the view to place one.
                 </p>
@@ -474,7 +475,7 @@ function ARPageContent() {
                           />
                         ) : (
                           <div className="w-11 h-11 rounded-xl bg-slate-200/60 flex items-center justify-center text-lg shrink-0">
-                            📍
+                            <MapPin className="h-5 w-5 text-slate-400" aria-hidden="true" />
                           </div>
                         )}
 
@@ -508,7 +509,7 @@ function ARPageContent() {
                         {isDeleting ? (
                           <span className="text-xs animate-spin">⏳</span>
                         ) : (
-                          <span className="text-sm">🗑️</span>
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
                         )}
                       </button>
                     </div>

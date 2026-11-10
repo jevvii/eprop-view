@@ -154,18 +154,18 @@ export function ProjectGrid() {
                       </span>
                     ))
                   ) : (
-                    <span className="text-xs font-medium text-slate-500">
-                      Engr. Sarah Jenkins, PE · Engr. David Chen, SE · Alex Rivera
-                    </span>
+                    <span className="text-xs font-medium text-slate-500">No team assigned</span>
                   )}
                 </div>
               </div>
 
               <div className="mt-4 flex items-center justify-between pt-2">
                 <div className="text-xs font-medium text-slate-500">
-                  Last Telemetry: <span className="text-slate-800 font-semibold">{lastInspection ? new Date(lastInspection).toLocaleDateString() : 'INITIAL_SCAN'}</span>
+                  Last inspection:{' '}
+                  <span className="text-slate-800 font-semibold">
+                    {lastInspection ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(lastInspection)) : 'None yet'}
+                  </span>
                 </div>
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
             </div>
           )

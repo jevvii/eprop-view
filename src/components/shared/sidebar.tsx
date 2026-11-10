@@ -5,10 +5,20 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import {
+  ClipboardList,
+  FileText,
+  FolderKanban,
+  Globe2,
+  LayoutDashboard,
+  ScanLine,
+  Settings,
+} from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import { createClient } from '@/app/lib/supabase/client'
 import { useProfile, useUnreadAssetNotifications } from '@/app/lib/queries'
 import { useNav } from './nav-wrapper'
+import { useMediaQuery } from './use-media-query'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -17,6 +27,7 @@ export function Sidebar() {
   const { data: profile } = useProfile()
   const { data: unreadCount } = useUnreadAssetNotifications()
   const { isOpen, close } = useNav()
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
   const isAdmin = profile?.role === 'admin'
 
   // Close drawer on Escape key when open on mobile
@@ -46,32 +57,37 @@ export function Sidebar() {
   const userRole = profile?.role || 'viewer'
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['admin', 'engineer'] },
-    { href: '/projects', label: 'Projects', icon: '📁', roles: ['admin', 'engineer', 'inspector'] },
-    { href: '/environmental', label: 'Environmental View', icon: '🌍', roles: ['admin', 'engineer'] },
-    { href: '/reports', label: 'Reports', icon: '📋', roles: ['admin', 'engineer'] },
+    { href: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard, roles: ['admin', 'engineer'] },
+    { href: '/projects', label: 'Projects', Icon: FolderKanban, roles: ['admin', 'engineer', 'inspector'] },
+    { href: '/environmental', label: 'Environmental View', Icon: Globe2, roles: ['admin', 'engineer'] },
+    { href: '/reports', label: 'Reports', Icon: ClipboardList, roles: ['admin', 'engineer'] },
     {
       href: '/document',
-      label: 'Document',
-      icon: '📄',
+      label: 'Documents',
+      Icon: FileText,
       badge: unreadCount && unreadCount > 0 ? unreadCount : null,
       roles: ['admin', 'engineer', 'inspector'],
     },
-    { href: '/ar', label: 'AR Mode', icon: '🥽', roles: ['inspector', 'admin'] },
-    { href: '/settings', label: 'Settings', icon: '⚙️', roles: ['admin'] },
+    { href: '/ar', label: 'AR Inspection', Icon: ScanLine, roles: ['inspector', 'admin'] },
+    { href: '/settings', label: 'Settings', Icon: Settings, roles: ['admin'] },
   ]
 
   const visibleNavItems = navItems.filter((item) => item.roles.includes(userRole))
 
   return (
-    <aside 
+    <aside
       className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white overscroll-contain
         flex flex-col p-6 border-r border-slate-100 transition-transform duration-300 ease-in-out
+        overflow-y-auto
+        pt-[max(1.5rem,env(safe-area-inset-top))]
+        pb-[max(1.5rem,env(safe-area-inset-bottom))]
         lg:relative lg:translate-x-0
         ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
       `}
-      aria-label="Main Navigation Drawer"
+      aria-label="Main navigation"
+      /* Off-screen drawer must not remain in the tab order. */
+      inert={!isDesktop && !isOpen}
     >
       <div className="flex items-center justify-between mb-8 sm:mb-12 px-2">
         <div className="flex items-center gap-3.5">
@@ -112,14 +128,18 @@ export function Sidebar() {
                 if (window.innerWidth < 1024) close()
               }}
               aria-current={isActive ? 'page' : undefined}
-              className={`group flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black uppercase tracking-[0.08em] transition-all duration-200 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              className={`group flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-[0.08em] transition-colors duration-150 min-h-[44px] border-l-4 ${
                 isActive
-                  ? 'bg-primary/10 text-primary border-l-4 border-primary font-black shadow-xs pl-3.5'
-                  : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 border-l-4 border-transparent'
+                  ? 'bg-primary/10 text-primary border-primary'
+                  : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 border-transparent'
               }`}
             >
               <div className="flex items-center gap-3.5">
-                <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'grayscale opacity-70'}`} aria-hidden="true">{item.icon}</span>
+                <item.Icon
+                  className={`w-5 h-5 shrink-0 ${isActive ? 'text-primary' : 'text-slate-500'}`}
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
                 <span>{item.label}</span>
               </div>
               {item.badge && (
@@ -137,7 +157,7 @@ export function Sidebar() {
           type="button"
           disabled={isLoggingOut}
           onClick={handleLogout}
-          className="w-full min-h-[44px] py-3.5 bg-primary text-white font-black text-xs uppercase tracking-[0.18em] rounded-xl hover:translate-y-[-1px] transition-all active:scale-[0.98] shadow-lg shadow-primary/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="w-full min-h-[44px] py-3.5 bg-primary text-white font-bold text-xs uppercase tracking-[0.18em] rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
         >
           {isLoggingOut ? 'Logging out...' : 'Logout'}
         </button>

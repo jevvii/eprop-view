@@ -1,4 +1,5 @@
 'use client'
+import { MapPin } from 'lucide-react'
 
 import { useEffect, useMemo, useState } from 'react'
 import { useInspections, useProjects, useAIDetectionsForInspection, useARAnchors } from '@/app/lib/queries'
@@ -170,8 +171,8 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Report Title</label>
-          <input
+          <label htmlFor="report-title" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Report Title</label>
+          <input id="report-title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
@@ -180,8 +181,8 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Project</label>
-          <select
+          <label htmlFor="report-project" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Project</label>
+          <select id="report-project"
             value={selectedProjectId}
             onChange={(event) => setSelectedProjectId(event.target.value)}
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
@@ -194,8 +195,8 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Inspection (Optional)</label>
-          <select
+          <label htmlFor="report-inspection" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Inspection (Optional)</label>
+          <select id="report-inspection"
             value={inspectionId}
             onChange={(event) => setInspectionId(event.target.value)}
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
@@ -209,8 +210,8 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Date</label>
-          <input
+          <label htmlFor="report-date" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Date</label>
+          <input id="report-date"
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
@@ -219,8 +220,8 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Status</label>
-          <select
+          <label htmlFor="report-status" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Status</label>
+          <select id="report-status"
             value={status}
             onChange={(event) => setStatus(event.target.value as (typeof statusOptions)[number])}
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
@@ -233,8 +234,8 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Location</label>
-          <input
+          <label htmlFor="report-location" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Location</label>
+          <input id="report-location"
             value={location}
             onChange={(event) => setLocation(event.target.value)}
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
@@ -243,8 +244,8 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Risk Score</label>
-          <input
+          <label htmlFor="report-risk" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Risk Score</label>
+          <input id="report-risk"
             type="number"
             min="0"
             max="10"
@@ -272,7 +273,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
                 onClick={handleApplyAISuggestions}
                 className="text-xs font-bold uppercase tracking-wider text-blue-700 hover:text-blue-800 bg-blue-100 hover:bg-blue-200/80 px-3.5 py-2 min-h-[38px] rounded-xl transition-colors self-start sm:self-auto shadow-sm"
               >
-                Auto-Populate Findings & Score 🪄
+                Auto-populate findings and score
               </button>
             )}
           </div>
@@ -312,7 +313,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
                   <div className="flex flex-wrap gap-1.5">
                     {arAnchors.slice(0, 3).map((anchor) => (
                       <span key={anchor.id} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 font-semibold text-xs uppercase">
-                        📍 {anchor.label}
+                        <MapPin className="inline h-3.5 w-3.5" aria-hidden="true" /> {anchor.label}
                       </span>
                     ))}
                     {arAnchors.length > 3 && (
@@ -335,8 +336,8 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
       )}
 
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Key Findings</label>
-        <textarea
+        <label htmlFor="report-findings" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Key Findings</label>
+        <textarea id="report-findings"
           value={keyFindings}
           onChange={(event) => setKeyFindings(event.target.value)}
           className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm min-h-[120px] focus:ring-2 focus:ring-blue-500 outline-none"

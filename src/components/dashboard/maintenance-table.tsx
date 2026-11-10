@@ -121,8 +121,18 @@ export function MaintenanceTable() {
         {items?.map((item) => (
           <div
             key={item.id}
+            role={canManage ? 'button' : undefined}
+            tabIndex={canManage ? 0 : undefined}
+            aria-label={canManage ? `Edit task: ${item.title}` : undefined}
             onClick={() => canManage && openEditModal(item)}
-            className={`p-4 rounded-2xl bg-white border border-slate-100 shadow-xs transition-all group ${
+            onKeyDown={(event) => {
+              if (!canManage) return
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                openEditModal(item)
+              }
+            }}
+            className={`p-4 rounded-2xl bg-white border border-slate-100 shadow-xs transition-colors group ${
               canManage ? 'cursor-pointer hover:shadow-md hover:border-primary/30' : ''
             }`}
           >

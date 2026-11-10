@@ -1,10 +1,22 @@
 import type { SeverityLevel } from '@/app/types'
 
+/**
+ * Single severity vocabulary. These tokens are defined once in globals.css so
+ * a critical detection is the same colour in the vault, the dashboard and the
+ * printed report.
+ */
 const severityStyles: Record<SeverityLevel, string> = {
-  low: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  medium: 'bg-amber-100 text-amber-700 border-amber-200',
-  high: 'bg-red-100 text-red-700 border-red-200',
-  critical: 'bg-purple-100 text-purple-700 border-purple-200',
+  low: 'bg-severity-low-soft text-severity-low border-severity-low/30',
+  medium: 'bg-severity-moderate-soft text-severity-moderate border-severity-moderate/30',
+  high: 'bg-severity-high-soft text-severity-high border-severity-high/30',
+  critical: 'bg-severity-critical-soft text-severity-critical border-severity-critical/30',
+}
+
+const severityLabels: Record<SeverityLevel, string> = {
+  low: 'Low',
+  medium: 'Moderate',
+  high: 'High',
+  critical: 'Critical',
 }
 
 interface SeverityBadgeProps {
@@ -15,9 +27,10 @@ interface SeverityBadgeProps {
 export function SeverityBadge({ severity, className = '' }: SeverityBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${severityStyles[severity]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${severityStyles[severity]} ${className}`}
     >
-      {severity}
+      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+      {severityLabels[severity]}
     </span>
   )
 }

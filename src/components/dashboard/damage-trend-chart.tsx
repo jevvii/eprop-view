@@ -11,8 +11,10 @@ import {
   Legend,
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
-import { useDamageTrends, useAllAIDetections } from '@/app/lib/queries'
-import { useMemo } from 'react'
+import type { ChartOptions } from 'chart.js'
+import { useDamageTrends } from '@/app/lib/queries'
+import { useMediaQuery } from '@/components/shared/use-media-query'
+import type { DamageTrend } from '@/app/types'
 
 ChartJS.register(
   CategoryScale,
@@ -29,168 +31,118 @@ interface DamageTrendChartProps {
   className?: string
 }
 
-export function DamageTrendChart({ isFloating = false, className = '' }: DamageTrendChartProps) {
-  const { data: trends, isLoading, isError } = useDamageTrends()
-  const { data: aiDetections = [] } = useAllAIDetections()
+const SEVERITIES: { key: DamageTrend['severity']; label: string; color: string }[] = [
+  { key: 'critical', label: 'Critical', color: '#B91C1C' },
+  { key: 'high', label: 'High', color: '#C2410C' },
+  { key: 'moderate', label: 'Moderate', color: '#B45309' },
+  { key: 'low', label: 'Low', color: '#047857' },
+]
 
-  const aiStats = useMemo(() => {
-    const counts = {
-      crack: 0,
-      corrosion: 0,
-      spalling: 0,
-      leakage: 0,
-      deformation: 0,
-      critical: 0,
-      high: 0,
-      medium: 0,
-      low: 0,
-    };
-    (aiDetections || []).forEach((d) => {
-      if (d?.damage_type && d.damage_type in counts) {
-        counts[d.damage_type as keyof typeof counts] += 1
-      }
-      if (d?.severity && d.severity in counts) {
-        counts[d.severity as keyof typeof counts] += 1
-      }
-    })
-    return counts
-  }, [aiDetections])
+function monthLabel(isoDate: string): string {
+  const date = new Date(isoDate)
+  if (Number.isNaN(date.getTime())) return isoDate
+  return new Intl.DateTimeFormat(undefined, { month: 'short', year: '2-digit' }).format(date)
+}
+
+export function DamageTrendChart({ isFloating = false, className = '' }: DamageTrendChartProps) {
+  const { data: trends, isLoading, isError, refetch } = useDamageTrends()
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+
+  const bgStyle = isFloating ? 'bg-white/95 backdrop-blur-md' : 'bg-white'
+  const shell = `${bgStyle} p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200/70 h-full flex flex-col ${className}`
 
   if (isLoading) {
-    return (
-      <div className={`bg-white p-6 rounded-[2rem] shadow-xl animate-pulse h-64 ${className}`} />
-    )
+    return <div className={`${shell} animate-pulse`} aria-busy="true" aria-label="Loading damage trend" />
   }
 
   if (isError) {
     return (
-      <div className={`bg-white p-6 rounded-[2rem] shadow-xl text-red-600 font-black uppercase tracking-widest ${className}`}>
-        Trend Telemetry Offline
+      <div className={shell} role="alert">
+        <h3 className="text-sm font-bold text-slate-900">Damage severity trend</h3>
+        <p className="mt-1 text-sm text-red-700">Unable to load trend data.</p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="mt-3 self-start rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-800 hover:bg-slate-100 min-h-[36px]"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
+  const rows = trends ?? []
+  const dates = Array.from(new Set(rows.map((t) => t.date))).sort()
+  const labels = dates.map(monthLabel)
+
+  if (rows.length === 0 || dates.length === 0) {
+    return (
+      <div className={shell}>
+        <h3 className="text-sm font-bold text-slate-900">Damage severity trend</h3>
+        <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+          <p className="text-sm font-medium text-slate-700">No trend data yet</p>
+          <p className="mt-1 max-w-xs text-sm text-slate-500">
+            Trends appear after inspections are recorded for a project.
+          </p>
+        </div>
       </div>
     )
   }
 
   const chartData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May (Live AI)'],
-    datasets: [
-      {
-        label: 'CRITICAL',
-        data: trends?.filter((t) => t.severity === 'critical').map((t) => t.value) || [
-          8.5,
-          8.2,
-          7.5,
-          6.8,
-          aiStats.critical > 0 ? Math.min(10, 6.5 + aiStats.critical * 0.4) : 6.5,
-        ],
-        borderColor: '#ef4444',
-        backgroundColor: '#ef4444',
-        tension: 0.4,
-      },
-      {
-        label: 'HIGH',
-        data: trends?.filter((t) => t.severity === 'high').map((t) => t.value) || [
-          5.2,
-          5.0,
-          4.8,
-          4.5,
-          aiStats.high > 0 ? Math.min(10, 4.2 + aiStats.high * 0.3) : 4.2,
-        ],
-        borderColor: '#f97316',
-        backgroundColor: '#f97316',
-        tension: 0.4,
-      },
-      {
-        label: 'MODERATE',
-        data: trends?.filter((t) => t.severity === 'moderate').map((t) => t.value) || [
-          3.8,
-          3.6,
-          3.4,
-          3.2,
-          aiStats.medium > 0 ? Math.min(10, 3.0 + aiStats.medium * 0.2) : 3.0,
-        ],
-        borderColor: '#fbbf24',
-        backgroundColor: '#fbbf24',
-        tension: 0.4,
-      },
-      {
-        label: 'LOW',
-        data: trends?.filter((t) => t.severity === 'low').map((t) => t.value) || [
-          2.1,
-          2.3,
-          2.0,
-          1.8,
-          aiStats.low > 0 ? Math.min(10, 1.6 + aiStats.low * 0.1) : 1.6,
-        ],
-        borderColor: '#10b981',
-        backgroundColor: '#10b981',
-        tension: 0.4,
-      },
-    ],
+    labels,
+    datasets: SEVERITIES.map((severity) => ({
+      label: severity.label,
+      data: dates.map((date) => {
+        const entries = rows.filter((t) => t.date === date && t.severity === severity.key)
+        if (entries.length === 0) return null
+        return entries.reduce((sum, entry) => sum + entry.value, 0) / entries.length
+      }),
+      borderColor: severity.color,
+      backgroundColor: severity.color,
+      tension: 0.35,
+      spanGaps: true,
+    })),
   }
 
-  const options = {
+  const options: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: reduceMotion ? false : { duration: 350 },
     scales: {
-      y: { min: 0, max: 10, grid: { color: 'rgba(226, 232, 240, 0.5)' } },
+      y: { min: 0, max: 10, grid: { color: 'rgba(226, 232, 240, 0.6)' } },
       x: { grid: { display: false } },
     },
     plugins: {
-      legend: { 
-        position: 'top' as const, 
-        align: 'end' as const,
+      legend: {
+        position: 'top',
+        align: 'end',
         labels: {
-          font: { size: 10, weight: 'bold' as any },
-          boxWidth: 20,
-          usePointStyle: false,
-          padding: 15
-        }
+          font: { size: 11, weight: 600 },
+          boxWidth: 12,
+          usePointStyle: true,
+          padding: 14,
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => `${context.dataset.label ?? ''}: ${context.parsed.y ?? '—'}`,
+        },
       },
     },
   }
 
-  const bgStyle = isFloating ? 'bg-white/95 backdrop-blur-md' : 'bg-white'
-
   return (
-    <div className={`${bgStyle} p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 h-full flex flex-col ${className}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-        <div>
-          <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-wider uppercase">DAMAGE SEVERITY TREND & AI TELEMETRY</h3>
-          <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
-            {aiDetections.length > 0
-              ? `AI Telemetry: ${aiDetections.length} total defects detected across vault assets`
-              : 'Synchronized with real-time inspection feeds'}
-          </p>
-        </div>
-        {aiDetections.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {aiStats.crack > 0 && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 uppercase tabular-nums">
-                {aiStats.crack} Crack
-              </span>
-            )}
-            {aiStats.corrosion > 0 && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 uppercase tabular-nums">
-                {aiStats.corrosion} Corrosion
-              </span>
-            )}
-            {aiStats.spalling > 0 && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 uppercase tabular-nums">
-                {aiStats.spalling} Spalling
-              </span>
-            )}
-            {aiStats.leakage > 0 && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 uppercase tabular-nums">
-                {aiStats.leakage} Leakage
-              </span>
-            )}
-          </div>
-        )}
+    <div className={shell}>
+      <div className="mb-3">
+        <h3 className="text-sm font-bold text-slate-900">Damage severity trend</h3>
+        <p className="mt-0.5 text-sm text-slate-500">
+          Average recorded severity per month ({rows.length} entr{rows.length === 1 ? 'y' : 'ies'}).
+        </p>
       </div>
-      <div className="flex-1 min-h-[160px]">
+      <div className="min-h-[180px] flex-1">
         <Line data={chartData} options={options} />
       </div>
     </div>
   )
 }
-

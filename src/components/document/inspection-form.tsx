@@ -148,8 +148,8 @@ export function InspectionForm() {
 
       <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 flex-1">
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Project</label>
-          <select
+          <label htmlFor="inspection-project" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Project</label>
+          <select id="inspection-project"
             value={projectId}
             onChange={(event) => {
               setProjectId(event.target.value)
@@ -168,9 +168,9 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Building</label>
+          <label htmlFor="inspection-building" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Building</label>
           {buildings && buildings.length > 0 ? (
-            <select
+            <select id="inspection-building"
               value={selectedBuildingId}
               onChange={(event) => {
                 setSelectedBuildingId(event.target.value)
@@ -193,9 +193,9 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Floor Level</label>
+          <label htmlFor="inspection-floor" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Floor Level</label>
           {floors && floors.length > 0 ? (
-            <select
+            <select id="inspection-floor"
               value={selectedFloorId}
               onChange={(event) => {
                 const fid = event.target.value
@@ -224,9 +224,9 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Structural Element</label>
+          <label htmlFor="inspection-element" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Structural Element</label>
           {elements && elements.length > 0 ? (
-            <select
+            <select id="inspection-element"
               value={selectedElementId}
               onChange={(event) => {
                 const eid = event.target.value
@@ -256,8 +256,8 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Operation Date</label>
-          <input
+          <label htmlFor="inspection-date" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Operation Date</label>
+          <input id="inspection-date"
             type="date"
             value={inspectionDate}
             onChange={(event) => setInspectionDate(event.target.value)}
@@ -267,8 +267,8 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Precise Zone / Pin</label>
-          <input
+          <label htmlFor="inspection-location" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Precise Zone / Pin</label>
+          <input id="inspection-location"
             value={location}
             onChange={(event) => setLocation(event.target.value)}
             className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-medium bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -278,8 +278,8 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Initial Risk Score (0-10)</label>
-          <input
+          <label htmlFor="inspection-risk" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Initial Risk Score (0-10)</label>
+          <input id="inspection-risk"
             type="number"
             min="0"
             max="10"
@@ -292,8 +292,8 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Status Protocol</label>
-          <select
+          <label htmlFor="inspection-status" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Status Protocol</label>
+          <select id="inspection-status"
             value={status}
             onChange={(event) => setStatus(event.target.value as any)}
             className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
@@ -308,8 +308,8 @@ export function InspectionForm() {
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Technical Notes</label>
-        <textarea
+        <label htmlFor="inspection-notes" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Technical Notes</label>
+        <textarea id="inspection-notes"
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-medium bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[90px] resize-none"

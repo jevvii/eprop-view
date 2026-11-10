@@ -13,21 +13,21 @@ interface StatCardProps {
 export function StatCard({ label, value, variant = 'default', className = '', isFloating = false }: StatCardProps) {
   const bgColor = {
     default: isFloating ? 'bg-white/95 backdrop-blur-md' : 'bg-white',
-    critical: isFloating ? 'bg-red-50/95 backdrop-blur-md' : 'bg-red-50',
-    info: isFloating ? 'bg-indigo-50/95 backdrop-blur-md' : 'bg-indigo-50',
-    success: isFloating ? 'bg-emerald-50/95 backdrop-blur-md' : 'bg-emerald-50'
+    critical: isFloating ? 'bg-severity-critical-soft/95 backdrop-blur-md' : 'bg-severity-critical-soft',
+    info: isFloating ? 'bg-primary/5 backdrop-blur-md' : 'bg-primary/5',
+    success: isFloating ? 'bg-severity-low-soft/95 backdrop-blur-md' : 'bg-severity-low-soft',
   }[variant]
 
   const textColor = {
     default: 'text-slate-900',
-    critical: 'text-red-600',
-    info: 'text-indigo-600',
-    success: 'text-emerald-600'
+    critical: 'text-severity-critical',
+    info: 'text-primary',
+    success: 'text-severity-low',
   }[variant]
 
   return (
-    <div className={`px-4 py-3.5 sm:px-5 sm:py-4 rounded-2xl shadow-md sm:shadow-lg border border-white/40 flex flex-col justify-between min-w-0 ${bgColor} ${className}`}>
-      <div className="text-xs font-bold text-slate-600 mb-1 tracking-wider uppercase truncate" title={label}>{label}</div>
+    <div className={`px-4 py-3.5 sm:px-5 sm:py-4 rounded-2xl shadow-sm border border-slate-200/70 flex flex-col justify-between min-w-0 ${bgColor} ${className}`}>
+      <div className="text-xs font-semibold text-slate-600 mb-1 tracking-wide uppercase truncate" title={label}>{label}</div>
       <div className={`text-2xl sm:text-3xl font-koulen tracking-wider leading-none tabular-nums ${textColor}`}>
         {value}
       </div>

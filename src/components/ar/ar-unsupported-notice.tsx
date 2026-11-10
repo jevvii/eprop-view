@@ -9,7 +9,7 @@ export function ARUnsupportedNotice() {
   return (
     <div className="bg-sky-50/90 border border-sky-200/80 p-4 rounded-2xl flex items-start justify-between gap-3 shadow-sm">
       <div className="flex items-start gap-3">
-        <span className="text-xl shrink-0 mt-0.5">🌐</span>
+        
         <div>
           <h4 className="text-xs font-black text-sky-950 uppercase tracking-wider">
             Universal Optical AR Active

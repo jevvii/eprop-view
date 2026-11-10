@@ -1,4 +1,5 @@
 'use client'
+import { MapPin } from 'lucide-react'
 
 import { useState, useCallback } from 'react'
 import { useARSessionContext } from './ar-session-manager'
@@ -190,7 +191,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
                 className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-slate-950 font-black text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-xl shadow-emerald-500/30 transition-all border border-emerald-300 min-h-[44px] min-w-[44px]"
                 aria-label="Drop Quick Marker"
               >
-                <span className="text-base sm:text-lg">📍</span>
+                <MapPin className="h-5 w-5" aria-hidden="true" />
                 <span className="font-extrabold uppercase tracking-wider">Quick Marker</span>
               </button>
             )}
@@ -201,8 +202,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
         <div className="absolute inset-0 flex items-center justify-center p-6 text-center z-10 bg-slate-950/80 backdrop-blur-sm">
           <div className="max-w-sm space-y-4">
             <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-3xl shadow-2xl">
-              🥽
-            </div>
+                          </div>
             <div>
               <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-widest">
                 Progressive AR Pipeline Standby

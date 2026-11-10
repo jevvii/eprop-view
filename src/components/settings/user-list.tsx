@@ -89,7 +89,7 @@ export function UserList() {
       </div>
       
       <div className="overflow-x-auto flex-1 min-h-[350px]">
-        <table className="w-full text-sm">
+        <table className="responsive-table w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200">
               <th className="text-left py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Designation & Contact</th>

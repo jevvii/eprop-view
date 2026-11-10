@@ -143,7 +143,7 @@ export function BuildingsManager() {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="responsive-table w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left">
                 <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Name & Code</th>

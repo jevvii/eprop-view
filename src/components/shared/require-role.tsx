@@ -1,4 +1,5 @@
 'use client'
+import { Lock } from 'lucide-react'
 
 import React from 'react'
 import Link from 'next/link'
@@ -56,8 +57,8 @@ export function AccessDenied({
 
   return (
     <div className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 text-center max-w-lg mx-auto my-8 sm:my-12 space-y-6">
-      <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-inner">
-        🔒
+      <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto">
+        <Lock className="h-7 w-7" aria-hidden="true" />
       </div>
       <div>
         <h3 className="text-xl font-koulen text-primary tracking-wide uppercase">{title}</h3>
