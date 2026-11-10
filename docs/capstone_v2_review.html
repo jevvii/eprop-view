@@ -1,0 +1,594 @@
+<title>ePropView Capstone v2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Design plan
+     Layout: a drawing-sheet document — title block, ruled sections, tabular evidence.
+     Color: drafting-paper neutrals with blueprint-teal ink; status hues kept separate.
+     Type: IBM Plex Sans Condensed (display), IBM Plex Sans (body), IBM Plex Mono (data). */
+
+  :root {
+    --paper: #f3f4f1;
+    --paper-raised: #fbfbf9;
+    --ink: #16191b;
+    --ink-soft: #4d565b;
+    --ink-faint: #7b858a;
+    --rule: #d3d7d3;
+    --rule-strong: #a9b0ad;
+    --accent: #0d5563;
+    --accent-soft: #dce9ea;
+    --met: #2c6a4c;
+    --partial: #856411;
+    --missing: #9e3d29;
+    --blocker-bg: #f6e7e1;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #121618;
+      --paper-raised: #181d1f;
+      --ink: #e7eae6;
+      --ink-soft: #a8b1b2;
+      --ink-faint: #7b8688;
+      --rule: #2b3336;
+      --rule-strong: #465155;
+      --accent: #7fc4cd;
+      --accent-soft: #1b2c30;
+      --met: #7cc39b;
+      --partial: #d6b257;
+      --missing: #e08d78;
+      --blocker-bg: #2a1c18;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #121618;
+    --paper-raised: #181d1f;
+    --ink: #e7eae6;
+    --ink-soft: #a8b1b2;
+    --ink-faint: #7b8688;
+    --rule: #2b3336;
+    --rule-strong: #465155;
+    --accent: #7fc4cd;
+    --accent-soft: #1b2c30;
+    --met: #7cc39b;
+    --partial: #d6b257;
+    --missing: #e08d78;
+    --blocker-bg: #2a1c18;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .sheet {
+    max-width: 940px;
+    margin: 0 auto;
+    padding-block: 32px 56px;
+  }
+
+  /* Title block */
+  .titleblock {
+    border: 1px solid var(--rule-strong);
+    background: var(--paper-raised);
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .titleblock__main {
+    padding: 22px 24px 20px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: clamp(1.9rem, 6vw, 2.9rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 10px 0 8px;
+  }
+
+  .lede {
+    color: var(--ink-soft);
+    max-width: 62ch;
+    font-size: 0.98rem;
+  }
+
+  .titleblock__meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0;
+  }
+
+  .meta-cell {
+    padding: 14px 24px;
+    border-top: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+  }
+
+  .meta-cell:last-child { border-right: 0; }
+
+  .meta-cell dt {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.64rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .meta-cell dd {
+    margin: 4px 0 0;
+    font-size: 0.86rem;
+    font-weight: 500;
+  }
+
+  /* Stat strip */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin: 26px 0 4px;
+  }
+
+  .stat {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    padding: 14px 16px;
+    min-width: 0;
+  }
+
+  .stat__value {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-size: 1.85rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .stat__label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-top: 6px;
+  }
+
+  .stat--met .stat__value { color: var(--met); }
+  .stat--partial .stat__value { color: var(--partial); }
+  .stat--missing .stat__value { color: var(--missing); }
+
+  /* Sections */
+  section { margin-top: 38px; }
+
+  h2 {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 600;
+    font-size: 1.18rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0 0 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  h2 .ref {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    margin-right: 10px;
+  }
+
+  p { margin: 12px 0 0; max-width: 68ch; color: var(--ink-soft); }
+  strong { color: var(--ink); font-weight: 600; }
+
+  /* Blocker */
+  .blocker {
+    margin-top: 16px;
+    background: var(--blocker-bg);
+    border: 1px solid var(--missing);
+    padding: 16px 18px;
+  }
+
+  .blocker__tag {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.64rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--missing);
+  }
+
+  .blocker p { color: var(--ink); margin-top: 6px; }
+  .blocker p + p { color: var(--ink-soft); }
+
+  code, pre {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.8rem;
+  }
+
+  pre {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 12px 14px;
+    overflow-x: auto;
+    margin: 12px 0 0;
+    line-height: 1.5;
+  }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin-top: 14px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.866rem;
+    min-width: 520px;
+  }
+
+  thead th {
+    text-align: left;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+    padding: 0 12px 8px 0;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  tbody td {
+    padding: 10px 12px 10px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+
+  tbody td:first-child { color: var(--ink); font-weight: 500; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  .chip {
+    display: inline-block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+  }
+
+  .chip--a { color: var(--accent); }
+  .chip--b { color: var(--partial); }
+  .chip--c { color: var(--met); }
+  .chip--met { color: var(--met); }
+  .chip--partial { color: var(--partial); }
+  .chip--missing { color: var(--missing); }
+
+  /* Parity bar */
+  .parity {
+    margin-top: 18px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .parity__row {
+    display: grid;
+    grid-template-columns: 74px 1fr 42px;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .parity__label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .parity__track {
+    height: 10px;
+    background: var(--accent-soft);
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .parity__fill { height: 100%; display: block; }
+  .parity__fill--met { background: var(--met); }
+  .parity__fill--partial { background: var(--partial); }
+  .parity__fill--missing { background: var(--missing); }
+
+  .parity__count {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--ink);
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 44px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule-strong);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    justify-content: space-between;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+  }
+
+  @media (max-width: 560px) {
+    .sheet { padding-block: 20px 40px; }
+    .titleblock__main { padding: 18px 16px; }
+    .meta-cell { padding: 12px 16px; }
+    .parity__row { grid-template-columns: 62px 1fr 36px; gap: 8px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="titleblock">
+    <div class="titleblock__main">
+      <div class="eyebrow">Scope &amp; status review · panel additions</div>
+      <h1>ePropView Capstone v2</h1>
+      <p class="lede">
+        The eleven recommendations from the post-evaluation panel, mapped onto the existing
+        system, specified against the use-case diagram, and built one layer at a time with a
+        verification gate that runs on every push.
+      </p>
+    </div>
+    <dl class="titleblock__meta">
+      <div class="meta-cell"><dt>Branch</dt><dd>feat/capstone-v2-contract</dd></div>
+      <div class="meta-cell"><dt>Target</dt><dd>staging → main on go signal</dd></div>
+      <div class="meta-cell"><dt>Database</dt><dd>Migration 017</dd></div>
+      <div class="meta-cell"><dt>Gate</dt><dd>tsc · lint · 58 tests · build</dd></div>
+    </dl>
+  </header>
+
+  <div class="stats">
+    <div class="stat stat--met">
+      <div class="stat__value">31</div>
+      <div class="stat__label">Use cases met</div>
+    </div>
+    <div class="stat stat--partial">
+      <div class="stat__value">10</div>
+      <div class="stat__label">Partial</div>
+    </div>
+    <div class="stat stat--missing">
+      <div class="stat__value">10</div>
+      <div class="stat__label">Missing at baseline</div>
+    </div>
+    <div class="stat">
+      <div class="stat__value">14</div>
+      <div class="stat__label">New tables</div>
+    </div>
+    <div class="stat">
+      <div class="stat__value">58</div>
+      <div class="stat__label">Tests passing</div>
+    </div>
+  </div>
+
+  <section>
+    <h2><span class="ref">01</span>Where the work stands</h2>
+    <p>
+      The contract layer is complete: schema, domain logic, server actions, RBAC, the AI client
+      and the audit trail. Every route that mutates data validates a strict schema, checks a
+      capability and writes an audit event. The UI workstreams consume that contract and have
+      not started.
+    </p>
+    <p>
+      The parity matrix covers all 51 nodes of the agreed use-case diagram. Each one is tied to
+      a route or server action, so a gap is a named piece of work rather than a general feeling
+      that something is unfinished.
+    </p>
+    <div class="parity">
+      <div class="parity__row">
+        <span class="parity__label">Met</span>
+        <span class="parity__track"><span class="parity__fill parity__fill--met" style="width:60.8%"></span></span>
+        <span class="parity__count">31</span>
+      </div>
+      <div class="parity__row">
+        <span class="parity__label">Partial</span>
+        <span class="parity__track"><span class="parity__fill parity__fill--partial" style="width:19.6%"></span></span>
+        <span class="parity__count">10</span>
+      </div>
+      <div class="parity__row">
+        <span class="parity__label">Missing</span>
+        <span class="parity__track"><span class="parity__fill parity__fill--missing" style="width:19.6%"></span></span>
+        <span class="parity__count">10</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="ref">02</span>The eleven additions</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Addition</th>
+            <th scope="col">Tier</th>
+            <th scope="col">How it is answered</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Tilt / sinking indicator</td>
+            <td><span class="chip chip--a">A</span></td>
+            <td>Measured tilt and differential settlement, classified against 1/500 and 1/250 thresholds. Manual readings, never inferred from photos.</td>
+          </tr>
+          <tr>
+            <td>Crack categories</td>
+            <td><span class="chip chip--a">A</span></td>
+            <td>ACI 224R-01 width bands with ACI 201.1R cause, orientation and pattern. The band is computed from the measurement, not accepted from a client.</td>
+          </tr>
+          <tr>
+            <td>Filter</td>
+            <td><span class="chip chip--a">A</span></td>
+            <td>One shared, URL-synced filter bar across reports, asset vault, maintenance and dashboard.</td>
+          </tr>
+          <tr>
+            <td>Editable reports</td>
+            <td><span class="chip chip--a">A</span></td>
+            <td>Every field editable, with the previous state snapshotted into a revision table before each save.</td>
+          </tr>
+          <tr>
+            <td>Recommendation</td>
+            <td><span class="chip chip--a">A</span></td>
+            <td>AI drafts, an engineer signs. Only signed text can reach a report.</td>
+          </tr>
+          <tr>
+            <td>Severity scoring with cost and action</td>
+            <td><span class="chip chip--a">A</span></td>
+            <td>AI returns a peso range; a deterministic table computes alongside. Divergence beyond the accepted band must be confirmed by an engineer.</td>
+          </tr>
+          <tr>
+            <td>Structural limitation</td>
+            <td><span class="chip chip--a">A</span></td>
+            <td>Per-report exclusion checklist plus free text and per-element notes, printed as an explicit assessment-limitation statement.</td>
+          </tr>
+          <tr>
+            <td>Flood and geohazard checklists</td>
+            <td><span class="chip chip--a">A</span></td>
+            <td>Versioned templates prefilled from the site's actual geospatial zone membership, then confirmed or overridden.</td>
+          </tr>
+          <tr>
+            <td>Rebound hammer</td>
+            <td><span class="chip chip--b">B</span></td>
+            <td>Reading array with median ± 1.5 IQR outlier rejection, mean, and an indicative strength labelled as requiring calibration.</td>
+          </tr>
+          <tr>
+            <td>Soil investigation</td>
+            <td><span class="chip chip--b">B</span></td>
+            <td>Borehole, depth, classification, SPT N-value, groundwater and liquefaction susceptibility at site level.</td>
+          </tr>
+          <tr>
+            <td>Erosion</td>
+            <td><span class="chip chip--b">B</span></td>
+            <td>Observed condition per inspection, feeding the existing project-level erosion score rather than replacing it.</td>
+          </tr>
+          <tr>
+            <td>Forensic engineering</td>
+            <td><span class="chip chip--b">B</span></td>
+            <td>Failure hypothesis, mechanism narrative, an evidence chain linking images and detections, and a recommended next step.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="ref">03</span>What is still blocked</h2>
+    <div class="blocker">
+      <div class="blocker__tag">Blocking · needs a human</div>
+      <p>
+        Migration 017 is written and committed but never executed. The preview database password
+        is not available to the agent that authored it, so the fourteen tables do not yet exist
+        anywhere.
+      </p>
+      <p>One command applies it, and it is safe to re-run:</p>
+      <pre>psql "$PREVIEW_DB" -v ON_ERROR_STOP=1 \
+  -f supabase/migrations/017_capstone_v2_domain.sql</pre>
+      <p>
+        Until that runs, the new actions compile and pass tests, but no screen can read or write
+        the new records.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="ref">04</span>Next, in parallel</h2>
+    <p>
+      The four UI workstreams are specified with non-overlapping file ownership, so they can run
+      at the same time without colliding on the shared schema.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Workstream</th>
+            <th scope="col">Surface</th>
+            <th scope="col">Touches</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>WS-A · Inspector capture</td>
+            <td>Tilt, rebound, soil, erosion, forensic, checklists</td>
+            <td>Inspection components and the asset vault</td>
+          </tr>
+          <tr>
+            <td>WS-B · Engineer review</td>
+            <td>Crack taxonomy, cost panel, recommendation, full report edit</td>
+            <td>Report and AI components</td>
+          </tr>
+          <tr>
+            <td>WS-C · Filters and export</td>
+            <td>Shared filter bar, CSV, share link, heatmap</td>
+            <td>Shared UI, dashboard, reports table</td>
+          </tr>
+          <tr>
+            <td>WS-D · Admin surfaces</td>
+            <td>Audit log, health, backup, project CRUD, registry</td>
+            <td>Settings only</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="ref">05</span>Rules that do not bend</h2>
+    <p>
+      <strong>main is production.</strong> Nothing reaches it without an explicit go signal.
+      Feature branches merge into staging, and staging is what Vercel previews against an
+      isolated database.
+    </p>
+    <p>
+      <strong>Provenance is recorded, not implied.</strong> Every detection says whether Gemini,
+      the deterministic heuristic, or an engineer produced it. Live AR frames never call Gemini;
+      only a deliberate analysis does, so a ~20 request/day quota cannot stall a scan.
+    </p>
+    <p>
+      <strong>Capstone depth.</strong> No model training, no payments, no multi-tenancy. Cost
+      figures are planning-level, rebound strength needs calibration to mean anything, and the
+      two diagram nodes beyond scope are honest equivalents rather than pretence.
+    </p>
+  </section>
+
+  <footer>
+    <span>ePropView · Capstone v2 scope review</span>
+    <span>docs/capstone_v2_scope_contract.md</span>
+  </footer>
+
+</div>
