@@ -51,10 +51,10 @@ export async function createUser(prevState: unknown, formData: FormData) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { 
-      role,
-      full_name: fullName
-    },
+    // Role lives in app_metadata (server-controlled) and in profiles.
+    // user_metadata is user-writable, so it never carries authorization data.
+    app_metadata: { role },
+    user_metadata: { full_name: fullName },
   })
 
   if (error) return { error: error.message }
@@ -94,17 +94,8 @@ export async function updateUserRole(userId: string, newRole: Role) {
     return { error: 'Cannot remove admin role from your own active session.' }
   }
 
-  const supabase = await createClient()
-
-  // Update in profiles table
-  const { error } = await supabase
-    .from('profiles')
-    .update({ role: newRole })
-    .eq('id', userId)
-
-  if (error) return { error: error.message }
-
-  // Sync to auth user_metadata
+  // Privileged writes go through the service-role client. The profiles trigger
+  // rejects role/is_active changes from a normal authenticated session.
   try {
     const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
     const supabaseAdmin = createSupabaseClient(
@@ -112,11 +103,20 @@ export async function updateUserRole(userId: string, newRole: Role) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
+
+    const { error } = await supabaseAdmin
+      .from('profiles')
+      .update({ role: newRole })
+      .eq('id', userId)
+
+    if (error) return { error: error.message }
+
     await supabaseAdmin.auth.admin.updateUserById(userId, {
-      user_metadata: { role: newRole }
+      app_metadata: { role: newRole },
     })
   } catch (syncErr) {
-    console.warn('Metadata sync warning:', syncErr)
+    console.error('Role update failed:', syncErr)
+    return { error: 'Role update failed. Please retry.' }
   }
 
   revalidatePath('/settings')
@@ -165,7 +165,7 @@ export async function getAllProfilesWithEmails() {
     .select('*')
     .order('created_at', { ascending: false })
 
-  const { data: { users }, error: uError } = await supabaseAdmin.auth.admin.listUsers()
+  const { data: { users }, error: uError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
   if (uError) throw uError
 
   const profileMap = new Map((profiles || []).map((p) => [p.id, p]))
@@ -175,9 +175,10 @@ export async function getAllProfilesWithEmails() {
     return {
       id: u.id,
       email: u.email ?? '',
-      full_name: p?.full_name || u.user_metadata?.full_name || u.email?.split('@')[0] || 'User',
-      role: (p?.role || u.user_metadata?.role || 'viewer') as Role,
-      department: p?.department || u.user_metadata?.department || 'Engineering & Inspection',
+      full_name: p?.full_name || u.email?.split('@')[0] || 'User',
+      // Authorization role comes only from profiles.
+      role: (p?.role ?? 'viewer') as Role,
+      department: p?.department || 'Engineering & Inspection',
       phone: p?.phone || '',
       is_active: p?.is_active !== false,
       created_at: p?.created_at || u.created_at || new Date().toISOString(),

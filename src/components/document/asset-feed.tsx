@@ -21,13 +21,13 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
-  const handleDelete = async (imageId: string, storagePath: string) => {
+  const handleDelete = async (imageId: string) => {
     if (!window.confirm('Permanent Deletion Protocol: Are you sure you want to remove this asset?')) return
-    
+
     setDeletingId(imageId)
 
     try {
-      await deleteInspectionImage(imageId, storagePath)
+      await deleteInspectionImage(imageId)
       queryClient.invalidateQueries({ queryKey: ['inspection-images', inspectionId] })
     } catch (err) {
       console.error('Delete error:', err)
@@ -134,7 +134,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
 
                     {canDelete && (
                       <button
-                        onClick={() => handleDelete(image.id, image.storage_path)}
+                        onClick={() => handleDelete(image.id)}
                         disabled={deletingId === image.id}
                         aria-label="Delete asset"
                         className="absolute top-3 right-3 min-w-11 min-h-11 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 active:scale-95 disabled:opacity-50 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"

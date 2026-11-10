@@ -1,12 +1,16 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
+import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { parseGeoJSON } from '@/app/lib/geo/import-geojson'
 import { parseShapefile } from '@/app/lib/geo/import-shapefile'
 import { geojsonToWKT } from '@/app/lib/geo/wkt'
 import type { GeospatialZone } from '@/app/types'
+
+const MAX_LAYER_BYTES = 25 * 1024 * 1024
 
 /**
  * Imports a geohazard dataset (GeoJSON, ESRI Shapefile, or zipped shapefile)
@@ -17,13 +21,21 @@ export async function importGeohazardLayer(formData: FormData): Promise<{
   imported: number
   message: string
 }> {
-  await requireRole(['admin'])
+  const { userId } = await requireRole(['admin'])
+  await enforceRateLimit(`geohazard-import:${userId}`, 10, 3600)
+
   const file = formData.get('file') as File | null
-  const projectId = (formData.get('project_id') as string) || null
+  const rawProjectId = (formData.get('project_id') as string) || null
 
   if (!file) {
     throw new Error('No dataset file provided in upload')
   }
+
+  if (file.size > MAX_LAYER_BYTES) {
+    throw new Error('Dataset exceeds the 25 MB import limit')
+  }
+
+  const projectId = rawProjectId ? z.string().uuid().parse(rawProjectId) : null
 
   const filename = file.name.toLowerCase()
   const buffer = await file.arrayBuffer()
@@ -140,7 +152,12 @@ export async function getGeohazardLayers(projectId?: string): Promise<Geospatial
   let query = supabase.from('geospatial_zones').select('*').order('created_at', { ascending: false })
 
   if (projectId) {
-    query = query.or(`project_id.eq.${projectId},project_id.is.null`)
+    // Never interpolate an unvalidated value into PostgREST filter syntax.
+    const parsedProjectId = z.string().uuid().safeParse(projectId)
+    if (!parsedProjectId.success) {
+      throw new Error('Invalid project id')
+    }
+    query = query.or(`project_id.eq.${parsedProjectId.data},project_id.is.null`)
   }
 
   const { data, error } = await query

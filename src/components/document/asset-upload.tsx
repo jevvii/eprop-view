@@ -2,7 +2,11 @@
 
 import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { uploadInspectionImage } from '@/app/actions/uploads'
+import {
+  finalizeInspectionImageUpload,
+  prepareInspectionImageUpload,
+} from '@/app/actions/uploads'
+import { createClient } from '@/app/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 
 interface AssetUploadProps {
@@ -39,12 +43,32 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
     setUploading(true)
 
     try {
+      const supabase = createClient()
+
       for (const file of files) {
-        const formData = new FormData()
-        formData.append('inspectionId', inspectionId)
-        formData.append('file', file)
-        formData.append('caption', file.name)
-        await uploadInspectionImage(formData)
+        // Step 1: server authorizes the upload and issues a signed URL.
+        const { storagePath, token } = await prepareInspectionImageUpload({
+          inspectionId,
+          fileName: file.name,
+          mimeType: file.type,
+          size: file.size,
+        })
+
+        // Step 2: bytes go straight to storage, bypassing Server Action body limits.
+        const { error: uploadError } = await supabase.storage
+          .from('inspection-images')
+          .uploadToSignedUrl(storagePath, token, file)
+
+        if (uploadError) {
+          throw new Error(uploadError.message)
+        }
+
+        // Step 3: server verifies the decoded bytes with sharp and writes the row.
+        await finalizeInspectionImageUpload({
+          inspectionId,
+          storagePath,
+          caption: file.name,
+        })
       }
 
       setFiles([])
