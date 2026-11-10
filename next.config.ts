@@ -2,6 +2,11 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // A lockfile in the parent directory makes Next infer the wrong workspace
+  // root and scan (and recompile against) an unrelated tree.
+  turbopack: {
+    root: process.cwd(),
+  },
   images: {
     remotePatterns: [
       {
