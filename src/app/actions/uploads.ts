@@ -1,6 +1,7 @@
 'use server'
 
 import sharp from 'sharp'
+import type { Metadata as SharpMetadata } from 'sharp'
 import { z } from 'zod'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
@@ -124,7 +125,7 @@ export async function finalizeInspectionImageUpload(input: unknown): Promise<Ins
     throw new Error('Uploaded file is empty or too large')
   }
 
-  let metadata: sharp.Metadata
+  let metadata: SharpMetadata
   try {
     metadata = await sharp(buffer).metadata()
   } catch {

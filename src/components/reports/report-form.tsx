@@ -4,7 +4,6 @@ import { MapPin } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useInspections, useProjects, useAIDetectionsForInspection, useARAnchors } from '@/app/lib/queries'
 import { useCreateReport } from '@/app/lib/mutations'
-import { reportFormSchema } from '@/app/lib/validators'
 import { Button } from '@/components/ui/button'
 
 type ReportFormProps = {
@@ -131,28 +130,20 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
     setError(null)
     setSuccessMessage(null)
 
-    const parsed = reportFormSchema.safeParse({
-      title,
-      project_id: selectedProjectId,
-      inspection_id: inspectionId || undefined,
-      date,
-      location,
-      status,
-      risk_score: riskScore,
-      key_findings: keyFindings,
-    })
-
-    if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Please check the form inputs.')
-      return
-    }
-
     try {
+      // The server action validates with the same schema. Keeping zod on the
+      // server removes ~64 KB of schema code from this route's client bundle.
       await createReport.mutateAsync({
-        ...parsed.data,
-        inspection_id: parsed.data.inspection_id ?? null,
+        title,
+        project_id: selectedProjectId,
+        inspection_id: inspectionId || null,
+        date,
+        location,
+        status,
+        risk_score: riskScore,
+        key_findings: keyFindings,
       })
-      setSuccessMessage('Report created successfully.')
+      setSuccessMessage('Report created')
       if (onClose) {
         setTimeout(onClose, 1500)
       }

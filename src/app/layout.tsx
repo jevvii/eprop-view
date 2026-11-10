@@ -22,6 +22,7 @@ const koulen = Koulen({
 export const metadata: Metadata = {
   title: "EPROP VIEW",
   description: "Environmental Property Risk Assessment Dashboard",
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useEnvironmentalRisk, useProfile } from '@/app/lib/queries'
 import { useUpsertEnvironmentalRisk } from '@/app/lib/mutations'
 import { hasCapability } from '@/app/lib/role-utils'
-import { environmentalRiskSchema } from '@/app/lib/validators'
 import { RiskScore } from '@/components/shared/risk-score'
 import { Button } from '@/components/ui/button'
 
@@ -50,32 +49,20 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
     setError(null)
     setSuccess(null)
 
-    const parsed = environmentalRiskSchema.safeParse({
-      fault_line_proximity: faultLine,
-      soil_liquefaction_risk: liquefaction,
-      erosion_potential: erosion,
-      overall_risk_score: overallScore,
-      additional_analysis: analysis,
-    })
-
-    if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'INVALID_INPUT')
-      return
-    }
-
     try {
+      // Server-side validation is authoritative; no schema ships to the client.
       await upsertRisk.mutateAsync({
         project_id: projectId,
-        fault_line_proximity: parsed.data.fault_line_proximity,
-        soil_liquefaction_risk: parsed.data.soil_liquefaction_risk,
-        erosion_potential: parsed.data.erosion_potential,
-        overall_risk_score: parsed.data.overall_risk_score,
-        additional_analysis: parsed.data.additional_analysis,
+        fault_line_proximity: faultLine,
+        soil_liquefaction_risk: liquefaction,
+        erosion_potential: erosion,
+        overall_risk_score: Number(overallScore),
+        additional_analysis: analysis,
         assessed_date: new Date().toISOString(),
       })
-      setSuccess('SYNC_COMPLETE')
+      setSuccess('Assessment saved.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'SYNC_FAILED')
+      setError(err instanceof Error ? err.message : 'Could not save the assessment.')
     }
   }
 

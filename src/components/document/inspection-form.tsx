@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useProjects, useBuildings, useFloors, useStructuralElements } from '@/app/lib/queries'
 import { useCreateInspection } from '@/app/lib/mutations'
-import { inspectionFormSchema } from '@/app/lib/validators'
 import { Button } from '@/components/ui/button'
 import type { StructuralElement } from '@/app/types'
 
@@ -102,27 +101,21 @@ export function InspectionForm() {
     setError(null)
     setSuccess(null)
 
-    const parsed = inspectionFormSchema.safeParse({
-      project_id: projectId,
-      inspection_date: inspectionDate,
-      location,
-      floor,
-      structural_element: structuralElement,
-      building_id: selectedBuildingId || undefined,
-      floor_id: selectedFloorId || undefined,
-      structural_element_id: selectedElementId || undefined,
-      risk_score: riskScore,
-      status,
-      notes,
-    })
-
-    if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Please check the form inputs.')
-      return
-    }
-
     try {
-      await createInspection.mutateAsync(parsed.data)
+      // Server-side validation is authoritative; no schema ships to the client.
+      await createInspection.mutateAsync({
+        project_id: projectId,
+        inspection_date: inspectionDate,
+        location,
+        floor,
+        structural_element: structuralElement,
+        building_id: selectedBuildingId || null,
+        floor_id: selectedFloorId || null,
+        structural_element_id: selectedElementId || null,
+        risk_score: riskScore,
+        status,
+        notes,
+      })
       setInspectionDate(new Date().toISOString().slice(0, 10))
       setLocation('')
       setRiskScore('4.5')

@@ -11,12 +11,13 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-6 sm:p-8 md:p-12 bg-white rounded-2xl sm:rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-slate-100">
         <div className="flex flex-col items-center text-center mb-8 sm:mb-12">
           <div className="w-20 h-20 relative mb-6 drop-shadow-md">
-            <Image 
-              src="/logo-blue.png" 
-              alt="EPROP VIEW Logo" 
+            <Image
+              src="/logo-blue.png"
+              alt="EPROP VIEW Logo"
               fill
               priority
-              className="object-contain" 
+              sizes="80px"
+              className="object-contain"
             />
             <div className="absolute inset-0 bg-primary/5 rounded-2xl -z-10 scale-125" />
           </div>
