@@ -53,6 +53,20 @@ export async function proxy(request: NextRequest) {
     return redirectResponse
   }
 
+  // Viewers are read-only consumers of published reports. The operational
+  // workspaces — asset vault, project registry — were previously reachable by
+  // direct URL because only the sidebar hid them. RLS still protects the data,
+  // but the surfaces themselves are not part of the viewer role.
+  if (
+    user &&
+    role === 'viewer' &&
+    (path.startsWith('/document') || path.startsWith('/projects'))
+  ) {
+    const redirectResponse = NextResponse.redirect(new URL('/reports', request.url))
+    copyCookies(supabaseResponse, redirectResponse)
+    return redirectResponse
+  }
+
   if (
     (path.startsWith('/dashboard') || path.startsWith('/environmental') || path.startsWith('/reports')) &&
     user &&
