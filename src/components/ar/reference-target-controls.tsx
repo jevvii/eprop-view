@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Download, Printer } from 'lucide-react'
 import { createReferenceSvg, getValidReference, type ReferenceTarget } from '@/app/lib/ar/printed-reference'
+import { createReferencePng } from '@/app/lib/ar/reference-download'
 import type { ARAnchor } from '@/app/types'
 
 interface Props { inspectionId: string; anchors: ARAnchor[] }
@@ -21,15 +22,23 @@ export function ReferenceTargetControls({ inspectionId, anchors }: Props) {
     return [...new Map([...current, ...saved].map((target) => [target.id, target])).values()]
   }, [anchors, created, inspectionId])
 
-  const download = (target: ReferenceTarget) => {
-    const blob = new Blob([createReferenceSvg(target)], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `epropview-reference-${target.id}.svg`
-    link.click()
-    // Let the browser consume the download before releasing its backing URL.
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  const download = (target: ReferenceTarget, format: 'png' | 'svg' = 'png') => {
+    try {
+      const blob = format === 'png' ? createReferencePng(target) : new Blob([createReferenceSvg(target)], { type: 'image/svg+xml' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `epropview-reference-${target.id}.${format}`
+      // Appending the link also supports browsers that ignore detached download links.
+      document.body.appendChild(link)
+      try { link.click() } finally {
+        link.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }
+      setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not export the target. Try again.')
+    }
   }
 
   return (
@@ -70,7 +79,8 @@ export function ReferenceTargetControls({ inspectionId, anchors }: Props) {
       </form>
       {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
       <p className="text-xs leading-relaxed text-slate-600">
-        Print the SVG at actual size (100%). Check the QR width with a ruler and keep the white border clear.
+        Downloads are PNG images. Print at actual size (100%) and check the QR width with a ruler.
+        Use the SVG option if your printer ignores the PNG print size. Keep the white border clear.
         Reuse the original target; creating a new one gives it a different identity.
       </p>
       {targets.length > 0 && (
@@ -80,8 +90,12 @@ export function ReferenceTargetControls({ inspectionId, anchors }: Props) {
               <p className="truncate font-semibold">{target.label}</p>
               <p>{target.sizeMm} mm · {target.id.slice(0, 8)}</p>
             </div>
-            <button type="button" onClick={() => download(target)} aria-label={`Download reference ${target.label}`}
-              className="min-h-[44px] shrink-0 px-3 text-xs font-semibold text-primary">Download again</button>
+            <div className="flex shrink-0 flex-col">
+              <button type="button" onClick={() => download(target)} aria-label={`Download reference ${target.label}`}
+                className="min-h-[44px] px-3 text-xs font-semibold text-primary">Download PNG</button>
+              <button type="button" onClick={() => download(target, 'svg')} aria-label={`Print SVG reference ${target.label}`}
+                className="min-h-[44px] px-3 text-xs font-semibold text-slate-600">Print SVG</button>
+            </div>
           </li>)}
         </ul>
       )}

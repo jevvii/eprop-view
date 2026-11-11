@@ -100,7 +100,7 @@ flowchart TB
 * **Model Registry v2**: Live deployment of ONNX/TensorRT architectures (`yolov8`, `resnet50`) with configurable input dimensions and IoU thresholds.
 
 ### 7. 📱 Printed-reference AR inspection
-* **Physical Reference Tracking**: Download a uniquely identified QR reference for an inspection and surface. The web camera detects its corners and keeps saved marker points aligned as the target moves or changes perspective.
+* **Physical Reference Tracking**: Download a uniquely identified QR reference as a PNG image (or SVG for printing) for an inspection and surface. The web camera detects its corners and keeps saved marker points aligned as the target moves or changes perspective.
 * **Evidence Capture**: Quick Marker saves a target-relative point with a real camera photo. The detailed form associates the captured point and photo with manual classification, severity and notes.
 * **Loss and Reacquisition**: Placement stops and overlays hide when tracking is lost. Scanning the original target restores saved markers after a new session or page reload. Existing markers without reference metadata remain available in the saved list.
 * **Saved Marker Deletion**: Inspectors can delete markers from their own sessions, including completed sessions; admins can delete any marker. Confirmed deletion updates the saved list and viewport. Failed deletion keeps the marker visible and shows a retry message. Deleting a marker preserves captured evidence files.

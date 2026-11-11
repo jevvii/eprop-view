@@ -8,6 +8,8 @@ visible physical reference rather than synthetic camera/gyro coordinates.
 
 - Generate a downloadable, printable QR reference for the selected inspection
   and a named surface/element. Include a unique target ID and declared print size.
+  The default download is PNG with explicit pixel dimensions and physical print
+  resolution; a separate SVG print option preserves vector output.
 - Decode the reference from the existing live rear-camera stream. Derive a
   planar projective transform from its four detected corners, accounting for
   video cropping and viewport resizing.
@@ -55,8 +57,10 @@ measurements. Analysis remains explicitly heuristic/manual.
 ## Capstone demonstration
 
 1. Select an inspection and give the target a surface name, such as "Column C3 — north face".
-2. Create/download its SVG, print at 100%, and check the requested QR width
-   excluding the white border. Attach it flat beside the area to inspect.
+2. Create/download its PNG, print at 100%, and check the requested QR width
+   excluding the white border. If the image viewer/printer ignores the PNG print
+   resolution, use the separate Print SVG option. Attach it flat beside the area
+   to inspect.
 3. Start AR Session and show the complete target. Wait for "Reference tracked".
 4. Tap the point on the same flat surface and use Quick Marker + photo. Use the
    detailed form when classification, severity and field notes are needed.
