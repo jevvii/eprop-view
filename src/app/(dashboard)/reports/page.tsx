@@ -7,6 +7,8 @@ import { AccessDenied } from '@/components/shared/require-role'
 import { PrintReport } from '@/components/reports/print-report'
 import { ReportForm } from '@/components/reports/report-form'
 import { ReportsTable } from '@/components/reports/reports-table'
+import { ReportFilters, downloadCsv, filterReports, useReportFilters } from '@/components/shared/report-filters'
+import { exportReportsCsv } from '@/app/actions/export'
 import { Button } from '@/components/ui/button'
 import type { Report } from '@/app/types'
 
@@ -14,7 +16,7 @@ export default function ReportsPage() {
   const { data: profile, isLoading: profileLoading } = useProfile()
   const { data: projects, isLoading, isError } = useProjects()
   const [projectId, setProjectId] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const { filters, update, reset } = useReportFilters()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [printMode, setPrintMode] = useState<'single' | 'full'>('single')
@@ -24,11 +26,7 @@ export default function ReportsPage() {
   const canCreateReport = hasCapability(profile?.role, 'report:create')
   const canExportReport = hasCapability(profile?.role, 'report:export')
 
-  const filteredReports = useMemo(() => {
-    if (!reports) return []
-    if (statusFilter === 'all') return reports
-    return reports.filter(r => r.status === statusFilter)
-  }, [reports, statusFilter])
+  const filteredReports = useMemo(() => filterReports(reports, filters), [reports, filters])
 
   useEffect(() => {
     if (!projectId && projects && projects.length > 0) {
@@ -57,6 +55,17 @@ export default function ReportsPage() {
   const handlePrintSelected = () => {
     setPrintMode('single')
     setTimeout(() => window.print(), 100)
+  }
+
+  const [exporting, setExporting] = useState(false)
+  const handleExportCsv = async () => {
+    setExporting(true)
+    try {
+      const payload = await exportReportsCsv(projectId || null)
+      downloadCsv(payload.filename, payload.csv)
+    } finally {
+      setExporting(false)
+    }
   }
 
   if (isLoading || profileLoading) {
@@ -105,8 +114,7 @@ export default function ReportsPage() {
           {/* Actions Container */}
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-xs">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Site</label>
-              <select
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Site</label>              <select
                 value={projectId}
                 onChange={(event) => setProjectId(event.target.value)}
                 className="rounded-lg border border-slate-200 px-3 py-1.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all max-w-[170px] truncate"
@@ -114,21 +122,6 @@ export default function ReportsPage() {
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>{project.name}</option>
                 ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-xs">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-              >
-                <option value="all">ALL</option>
-                <option value="open">OPEN</option>
-                <option value="in_review">REVIEW</option>
-                <option value="critical">CRITICAL</option>
-                <option value="completed">DONE</option>
               </select>
             </div>
 
@@ -143,6 +136,17 @@ export default function ReportsPage() {
               </Button>
             )}
 
+            {canExportReport && (
+              <Button
+                variant="outline"
+                disabled={!hasReports || exporting}
+                onClick={handleExportCsv}
+                className="font-bold uppercase tracking-wider text-xs px-4 h-11 border-slate-200"
+              >
+                {exporting ? 'Exporting…' : 'Export CSV'}
+              </Button>
+            )}
+
             {canCreateReport && (
               <Button 
                 onClick={() => setIsCreateModalOpen(true)} 
@@ -153,6 +157,13 @@ export default function ReportsPage() {
             )}
           </div>
         </div>
+
+        <ReportFilters
+          filters={filters}
+          onChange={update}
+          onReset={reset}
+          resultCount={filteredReports.length}
+        />
 
         <div className="grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-4">
           <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-md border border-slate-100 group hover:shadow-lg transition-all min-w-0">

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useGeospatialZones, useProjects } from "@/app/lib/queries";
+import { useGeospatialZones, useProjects, useRiskHotspots } from "@/app/lib/queries";
 
 const riskColors: Record<string, string> = {
     zone_a: "#ef4444", // Red
@@ -69,6 +69,8 @@ export function GeospatialMap() {
 
     const { data: zones } = useGeospatialZones();
     const { data: projects } = useProjects();
+    const { data: hotspots } = useRiskHotspots();
+    const [showHeatmap, setShowHeatmap] = useState(false);
 
     // 1. Initialize Map (Strictly Once)
     useEffect(() => {
@@ -137,6 +139,37 @@ export function GeospatialMap() {
                         "line-color": ["get", "color"],
                         "line-width": 3.5,
                         "line-opacity": 0.85,
+                    },
+                },
+                beforeId,
+            );
+
+            // Risk density heatmap. Fed from hotspots only, so it measures where
+            // problems have actually been recorded rather than where polygons exist.
+            m.addSource("risk-heat", {
+                type: "geojson",
+                data: { type: "FeatureCollection", features: [] },
+            });
+
+            m.addLayer(
+                {
+                    id: "risk-heatmap",
+                    type: "heatmap",
+                    source: "risk-heat",
+                    layout: { visibility: "none" },
+                    paint: {
+                        "heatmap-weight": ["get", "weight"],
+                        "heatmap-intensity": 0.9,
+                        "heatmap-radius": 48,
+                        "heatmap-opacity": 0.6,
+                        "heatmap-color": [
+                            "interpolate", ["linear"], ["heatmap-density"],
+                            0, "rgba(16,185,129,0)",
+                            0.25, "rgba(16,185,129,0.5)",
+                            0.5, "rgba(251,191,36,0.7)",
+                            0.75, "rgba(239,68,68,0.8)",
+                            1, "rgba(127,29,29,0.9)",
+                        ],
                     },
                 },
                 beforeId,
@@ -215,7 +248,48 @@ export function GeospatialMap() {
         });
     }, [isStyleLoaded, zones]);
 
-    // 4. Camera Focus — custom frame animation for smooth zoom without flyTo
+    // 4. Sync heatmap data from recorded hotspots.
+    useEffect(() => {
+        const m = map.current;
+        if (!m || !isStyleLoaded) return;
+
+        const source = m.getSource("risk-heat") as mapboxgl.GeoJSONSource | undefined;
+        if (!source) return;
+
+        const features = (hotspots ?? [])
+            .filter(
+                (hotspot) =>
+                    typeof hotspot.latitude === "number" && typeof hotspot.longitude === "number",
+            )
+            .map((hotspot) => ({
+                type: "Feature" as const,
+                geometry: {
+                    type: "Point" as const,
+                    coordinates: [hotspot.longitude as number, hotspot.latitude as number],
+                },
+                properties: {
+                    weight:
+                        hotspot.severity === "critical"
+                            ? 1
+                            : hotspot.severity === "moderate"
+                              ? 0.6
+                              : 0.3,
+                },
+            }));
+
+        source.setData({ type: "FeatureCollection", features } as never);
+    }, [isStyleLoaded, hotspots]);
+
+    // 5. Heatmap visibility toggle.
+    useEffect(() => {
+        const m = map.current;
+        if (!m || !isStyleLoaded) return;
+        if (m.getLayer("risk-heatmap")) {
+            m.setLayoutProperty("risk-heatmap", "visibility", showHeatmap ? "visible" : "none");
+        }
+    }, [isStyleLoaded, showHeatmap]);
+
+    // 6. Camera Focus — custom frame animation for smooth zoom without flyTo
     useEffect(() => {
         const m = map.current;
         if (!m || !isStyleLoaded) return;
@@ -251,6 +325,23 @@ export function GeospatialMap() {
     return (
         <div className="relative h-full w-full">
             <div ref={mapContainer} className="h-full w-full" />
+            <button
+                type="button"
+                onClick={() => setShowHeatmap((current) => !current)}
+                aria-pressed={showHeatmap}
+                className={`absolute right-3 top-3 z-10 rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wider shadow-sm transition-colors min-h-[40px] ${
+                    showHeatmap
+                        ? "bg-primary text-white border-primary"
+                        : "bg-white/95 text-slate-700 border-slate-200 hover:bg-white"
+                }`}
+            >
+                Risk heatmap
+            </button>
+            {showHeatmap && (hotspots ?? []).length === 0 && (
+                <div className="pointer-events-none absolute right-3 top-16 z-10 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-[11px] font-medium text-slate-600 shadow-sm max-w-[220px]">
+                    No hotspots recorded yet, so the heatmap is empty.
+                </div>
+            )}
             {projects !== undefined && !hasCoordinates && (
                 <div className="pointer-events-none absolute bottom-3 left-3 right-3 sm:right-auto rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs font-medium text-slate-700 shadow-sm">
                     No project coordinates yet — showing the regional default extent.

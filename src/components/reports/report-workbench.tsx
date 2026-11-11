@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
+  createShareToken,
   getReportLimitation,
   getReportRevisions,
   updateReportWithRevision,
@@ -45,6 +46,8 @@ export function ReportWorkbench({ report }: { report: Report }) {
 
   const save = useAsyncAction()
   const limits = useAsyncAction()
+  const share = useAsyncAction()
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
   const isLocked = report.status === 'completed' && !reopen
 
   const refresh = useCallback(async () => {
@@ -105,6 +108,15 @@ export function ReportWorkbench({ report }: { report: Report }) {
     setExclusions((current) =>
       current.includes(text) ? current.filter((item) => item !== text) : [...current, text]
     )
+  }
+
+  const handleShare = async () => {
+    const token = await share.run('Share link created. It expires in 14 days.', () =>
+      createShareToken(report.id, 14)
+    )
+    if (token) {
+      setShareUrl(`${window.location.origin}/share/${token.token}`)
+    }
   }
 
   return (
@@ -294,6 +306,40 @@ export function ReportWorkbench({ report }: { report: Report }) {
               )
             })}
           </ul>
+        )}
+      </Panel>
+
+      <Panel
+        title="Share"
+        description="Creates a read-only link showing this report, its signed recommendations and its limitation statement. The link expires and can be revoked."
+      >
+        {share.error && <InlineMessage tone="error">{share.error}</InlineMessage>}
+        {share.success && <InlineMessage tone="success">{share.success}</InlineMessage>}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleShare}
+            disabled={share.pending}
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+          >
+            {share.pending ? 'Creating…' : 'Create share link'}
+          </button>
+          {shareUrl && (
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(shareUrl).catch(() => undefined)}
+              className="inline-flex items-center justify-center bg-white border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all min-h-[44px]"
+            >
+              Copy link
+            </button>
+          )}
+        </div>
+
+        {shareUrl && (
+          <p className="break-all rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700">
+            {shareUrl}
+          </p>
         )}
       </Panel>
     </div>
