@@ -57,8 +57,7 @@ export function useProjects() {
   })
 }
 
-export function useReports(projectId?: string) {
-  return useQuery({
+export function useReports(projectId?: string) {  return useQuery({
     queryKey: ['reports', projectId],
     queryFn: async (): Promise<Report[]> => {
       const baseMapper = (report: any) => ({
@@ -577,6 +576,40 @@ export function useStructuralElements(floorId?: string) {
     queryFn: async () => {
       const { getStructuralElements } = await import('@/app/actions/buildings')
       return getStructuralElements(floorId)
+    },
+  })
+}
+
+/**
+ * A single report by primary key, for the review workbench.
+ *
+ * The list query selects a page of reports; the workbench needs one row with its
+ * joined names, so it fetches directly rather than filtering the list.
+ */
+export function useReport(reportId?: string) {
+  return useQuery({
+    queryKey: ['report', reportId],
+    enabled: Boolean(reportId),
+    queryFn: async (): Promise<Report | null> => {
+      if (!reportId) return null
+      const { data, error } = await getClient()
+        .from('reports')
+        .select('*, project_name:projects(name), lead_inspector_name:profiles!reports_lead_inspector_id_fkey(full_name)')
+        .eq('id', reportId)
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data) return null
+
+      return {
+        ...data,
+        project_name:
+          typeof data.project_name === 'string' ? data.project_name : data.project_name?.name ?? '',
+        lead_inspector_name:
+          typeof data.lead_inspector_name === 'string'
+            ? data.lead_inspector_name
+            : data.lead_inspector_name?.full_name ?? '',
+      } as Report
     },
   })
 }

@@ -251,6 +251,13 @@ export interface AIDamageDetection {
   verified_at: string | null
   notes: string
   created_at: string
+  // Capstone v2 (migration 017) — ACI 224R-01 / ACI 201.1R
+  crack_width_mm?: number | null
+  crack_width_band?: CrackWidthBand | null
+  crack_orientation?: CrackOrientation | null
+  crack_pattern?: CrackPattern | null
+  crack_cause?: CrackCause | null
+  aci_reference?: string | null
 }
 
 export interface AIAnalysisJob {
