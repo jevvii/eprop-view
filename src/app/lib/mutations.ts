@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
 import { runAIAnalysis, verifyDetection, updateAIDetection } from '@/app/actions/ai'
-import { startARSession, endARSession, createARAnchor } from '@/app/actions/ar'
+import { startARSession, endARSession, createARAnchor, deleteARAnchor } from '@/app/actions/ar'
 import { toggleAIModelStatus, registerAIModel, updateUserRole } from '@/app/actions/admin'
 import { createInspection } from '@/app/actions/inspections'
 import { createReportAction, updateReportAction } from '@/app/actions/reports'
@@ -21,6 +21,7 @@ import type {
   AIModelTask,
   AIModelFormat,
   ARPose,
+  ARAnchor,
   Vector3,
   DamageType,
   SeverityLevel,
@@ -304,17 +305,14 @@ export function useDeleteARAnchor() {
   return useMutation({
     mutationFn: async (input: { anchorId: string; inspectionId?: string } | string) => {
       const anchorId = typeof input === 'string' ? input : input.anchorId
-      const supabase = getClient()
-      const { error } = await supabase.from('ar_anchors').delete().eq('id', anchorId)
-      if (error) throw error
-      return input
+      return deleteARAnchor(anchorId)
     },
-    onSuccess: (input) => {
-      const inspectionId = typeof input === 'object' && input !== null ? input.inspectionId : undefined
-      if (inspectionId) {
-        queryClient.invalidateQueries({ queryKey: ['ar-anchors', inspectionId] })
-      }
-      queryClient.invalidateQueries({ queryKey: ['ar-anchors'] })
+    onSuccess: (deleted) => {
+      // Remove only a server-confirmed deletion from the list and viewport caches.
+      const removeMarker = (anchors: ARAnchor[] | undefined) => anchors?.filter((anchor) => anchor.id !== deleted.id)
+      queryClient.setQueriesData<ARAnchor[]>({ queryKey: ['ar-anchors'] }, removeMarker)
+      queryClient.setQueriesData<ARAnchor[]>({ queryKey: ['all-ar-anchors'] }, removeMarker)
+      queryClient.invalidateQueries({ queryKey: ['ar-anchors', deleted.inspection_id] })
       queryClient.invalidateQueries({ queryKey: ['all-ar-anchors'] })
       queryClient.invalidateQueries({ queryKey: ['inspections'] })
     },

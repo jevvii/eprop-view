@@ -103,6 +103,7 @@ flowchart TB
 * **Mobile Sensor Tracking**: Native Capacitor bridge plugins for iOS (`ARKit`) and Android (`ARCore`) providing low-latency 60 FPS plane tracking.
 * **In-Situ Optical Defect Tagging**: Drop persistent 3D spatial defect anchors with real-world XYZ coordinates and snapshot capture.
 * **Universal Fallback**: WebXR and simulated desktop viewport support.
+* **Saved Marker Deletion**: Inspectors can delete markers from their own sessions, including completed sessions; admins can delete any marker. Confirmed deletion updates the saved list and viewport. Failed deletion keeps the marker visible and shows a retry message. Deleting a marker preserves captured evidence files.
 
 ### 8. 🏢 Building, Floor & Structural Element Master Data
 * **Complex Multi-Structure Hierarchy**: Projects contain distinct physical buildings with structural codes and geographic coordinates.

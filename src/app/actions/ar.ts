@@ -287,6 +287,47 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
   return data as ARAnchor
 }
 
+/** Delete a saved marker, including one from a completed session. RLS remains enforced. */
+export async function deleteARAnchor(anchorId: string): Promise<Pick<ARAnchor, 'id' | 'inspection_id'>> {
+  const { userId, role } = await requireRole(['inspector', 'admin'])
+  const parsedId = z.string().uuid().safeParse(anchorId)
+  if (!parsedId.success) throw new Error('Invalid marker id')
+
+  const supabase = await createClient()
+  const { data: anchor, error: anchorError } = await supabase
+    .from('ar_anchors')
+    .select('id, session_id, inspection_id')
+    .eq('id', parsedId.data)
+    .maybeSingle()
+
+  if (anchorError) throw anchorError
+  if (!anchor) throw new Error('Marker not found')
+
+  if (role === 'inspector') {
+    const { data: session, error: sessionError } = await supabase
+      .from('ar_sessions')
+      .select('started_by')
+      .eq('id', anchor.session_id)
+      .maybeSingle()
+
+    if (sessionError) throw sessionError
+    if (!session || session.started_by !== userId) {
+      throw new Error('Access denied: inspectors may only delete markers from their own sessions')
+    }
+  }
+
+  const { data: deleted, error } = await supabase
+    .from('ar_anchors')
+    .delete()
+    .eq('id', parsedId.data)
+    .eq('inspection_id', anchor.inspection_id)
+    .select('id, inspection_id')
+    .maybeSingle()
+
+  if (error) throw error
+  if (!deleted) throw new Error('Marker was not deleted. It may no longer exist or you may not have permission.')
+  return deleted
+}
 
 /**
  * Get all anchors (optionally filtered by project).
