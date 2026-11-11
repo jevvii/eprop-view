@@ -1,7 +1,7 @@
 'use client'
 import { MapPin } from 'lucide-react'
 
-import { useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useARSessionContext } from './ar-session-manager'
 
 interface ARCameraViewProps {
@@ -25,6 +25,22 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
     xPercent: 50,
     yPercent: 50,
   })
+  const [videoLive, setVideoLive] = useState(false)
+
+  // iOS can pause a MediaStream video even when muted; make the preview
+  // recoverable with a tap instead of leaving a black viewport.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.setAttribute('webkit-playsinline', 'true')
+
+    if (activeMode === 'optical-camera') {
+      setVideoLive(!video.paused && video.readyState >= 2)
+      void video.play().catch(() => setVideoLive(false))
+    } else {
+      setVideoLive(false)
+    }
+  }, [activeMode, videoRef])
 
   const handlePointer = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -89,9 +105,11 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
     ? hitPose
       ? 'Surface locked'
       : 'Scanning planes…'
-    : hitPose
-      ? 'Screen marker ready'
-      : 'Tap to aim'
+    : !videoLive
+      ? 'Starting camera…'
+      : hitPose
+        ? 'Screen marker ready'
+        : 'Tap to aim'
 
   return (
     <div
@@ -110,11 +128,32 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
         playsInline
         muted
         autoPlay
+        onPlaying={() => setVideoLive(true)}
+        onPause={() => setVideoLive(false)}
+        onWaiting={() => setVideoLive(false)}
+        onLoadedData={() => {
+          void videoRef.current?.play().catch(() => setVideoLive(false))
+        }}
         className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-300"
         style={{
           display: activeMode === 'optical-camera' ? 'block' : 'none',
         }}
       />
+
+      {activeMode === 'optical-camera' && !videoLive && (
+        <button
+          type="button"
+          onClick={() => {
+            void videoRef.current?.play().catch(() => setVideoLive(false))
+          }}
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-slate-950/85 px-6 text-center text-white"
+        >
+          <span className="text-sm font-semibold">Tap to start the camera preview</span>
+          <span className="max-w-xs text-xs text-slate-300">
+            If it stays black, check that camera access is allowed for this site.
+          </span>
+        </button>
+      )}
 
       {/* Render Canvas (WebXR or Tier 3B Simulated Grid or frame capture buffer) */}
       <canvas

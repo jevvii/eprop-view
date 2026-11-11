@@ -449,9 +449,10 @@ function ARPageContent() {
                 Camera AR with screen-space markers
               </h4>
               <p className="text-xs text-sky-800 font-medium mt-0.5 leading-relaxed">
-                This device does not expose WebXR hit-testing. The camera feed works, but depth is
-                estimated at a fixed range and markers stay in screen space; they are not locked to a
-                physical surface. Frame capture and heuristic analysis are available.
+                This device does not expose WebXR hit-testing. A live camera feed is used when
+                camera permission is granted, with screen-space markers. Depth is estimated at a
+                fixed range; markers are not locked to a physical surface. Frame capture and
+                heuristic analysis are available in camera mode.
               </p>
             </div>
           </div>

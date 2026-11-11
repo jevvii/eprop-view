@@ -152,9 +152,15 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
       {/* Surface Coordinate Telemetry */}
       <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs">
         <div className="flex justify-between text-slate-400 font-bold uppercase tracking-wider mb-1">
-          <span>Marker Pose (screen-space)</span>
+          <span>{activeMode === 'webxr' ? 'Marker pose (world)' : 'Marker pose (screen-space)'}</span>
           <span className={hitPose ? 'text-emerald-600 font-black' : 'text-amber-600 font-black'}>
-            {hitPose ? 'WebXR hit' : 'Estimated'}
+            {activeMode === 'webxr'
+              ? hitPose
+                ? 'WebXR hit'
+                : 'Searching'
+              : hitPose
+                ? 'Screen-space'
+                : 'Estimated'}
           </span>
         </div>
         <div className="font-mono text-slate-700 font-bold tabular-nums">
