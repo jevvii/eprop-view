@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useCreateARAnchor } from '@/app/lib/mutations'
-import { analyzeCapturedFrame } from '@/app/actions/ai-frame'
 import { useARSessionContext } from './ar-session-manager'
+import type { ARCaptureState } from './use-ar-capture'
 import { Button } from '@/components/ui/button'
 import type { ARPose, DamageType, SeverityLevel } from '@/app/types'
 
@@ -12,6 +12,8 @@ interface ARAnchorFormProps {
   inspectionId: string
   hitPose?: ARPose | null
   onSaved?: () => void
+  /** Capture state owned by the page, shared with the viewport controls. */
+  capture: ARCaptureState
 }
 
 const damageTypes: DamageType[] = ['crack', 'corrosion', 'spalling', 'deformation', 'leakage', 'none']
@@ -26,81 +28,34 @@ const labelMap: Record<DamageType, string> = {
   none: 'Structural Member',
 }
 
-export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAnchorFormProps) {
+export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved, capture }: ARAnchorFormProps) {
   const createAnchor = useCreateARAnchor()
-  const { captureCurrentFrame, activeMode } = useARSessionContext()
+  const { activeMode } = useARSessionContext()
   const evidenceUnavailable = activeMode === 'webxr'
 
   const [label, setLabel] = useState('Structural Marker')
   const [damageType, setDamageType] = useState<DamageType>('crack')
   const [severity, setSeverity] = useState<SeverityLevel>('medium')
   const [notes, setNotes] = useState('')
-  const [snapshot, setSnapshot] = useState<string | null>(null)
-  const [isScanningAI, setIsScanningAI] = useState(false)
-  const [scanError, setScanError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const activePose: ARPose = hitPose || {
     position: { x: 0, y: -0.15, z: -1.45 },
     quaternion: { x: 0, y: 0, z: 0, w: 1 },
   }
 
-  const handleCaptureSnapshot = useCallback(() => {
-    const frame = captureCurrentFrame()
-    if (frame) {
-      setSnapshot(frame)
-      setScanError(null)
-      return
-    }
-
-    setScanError(
-      evidenceUnavailable
-        ? 'Immersive WebXR does not expose the camera frame. Switch to camera mode to capture evidence.'
-        : 'No camera frame is available. Start the camera first.'
-    )
-  }, [captureCurrentFrame, evidenceUnavailable])
-
-  const handleAICameraScan = async () => {
-    setScanError(null)
-    const frame = captureCurrentFrame()
-
-    if (!frame) {
-      setScanError(
-        evidenceUnavailable
-          ? 'Immersive WebXR cannot capture a frame for analysis. Switch to camera mode to run the heuristic.'
-          : 'No camera frame is available. Start the camera first.'
-      )
-      return
-    }
-
-    setSnapshot(frame)
-    setIsScanningAI(true)
-
-    try {
-      const result = await analyzeCapturedFrame({ inspectionId, dataUrl: frame })
-
-      if (!result) {
-        setNotes('Heuristic analysis: no defect pattern detected in this frame.')
-        return
-      }
-
-      setDamageType(result.damageType)
-      setSeverity(result.severity)
-      setLabel(labelMap[result.damageType])
-      setNotes(
-        `Heuristic edge/colour analysis (non-ML): ${result.damageType} at ${(
-          result.confidence * 100
-        ).toFixed(0)}% confidence. Not a trained classifier.`
-      )
-    } catch (err) {
-      setScanError(err instanceof Error ? err.message : 'Frame analysis failed')
-    } finally {
-      setIsScanningAI(false)
-    }
-  }
+  // Adopt the result of an analysis triggered from the viewport controls.
+  useEffect(() => {
+    if (!capture.analysis) return
+    setDamageType(capture.analysis.damageType)
+    setSeverity(capture.analysis.severity)
+    setLabel(labelMap[capture.analysis.damageType])
+    setNotes(capture.analysis.notes)
+  }, [capture.analysis])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    setScanError(null)
+    setSubmitError(null)
 
     try {
       await createAnchor.mutateAsync({
@@ -111,13 +66,13 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
         damageType,
         severity,
         notes,
-        snapshotDataUrl: snapshot || undefined,
+        snapshotDataUrl: capture.snapshot || undefined,
       })
 
-      setSnapshot(null)
+      capture.setSnapshot(null)
       onSaved?.()
     } catch (err) {
-      setScanError(err instanceof Error ? err.message : 'Could not save the anchor')
+      setSubmitError(err instanceof Error ? err.message : 'Could not save the anchor')
     }
   }
 
@@ -133,19 +88,16 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
             Spatial Anchor Control
           </h4>
         </div>
-        <button
-          type="button"
-          onClick={handleAICameraScan}
-          disabled={isScanningAI || evidenceUnavailable}
-          className="text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl uppercase tracking-wider transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isScanningAI ? 'Analyzing…' : 'Analyze Frame (heuristic)'}
-        </button>
+        {capture.isScanning && (
+          <span className="text-[11px] font-black uppercase tracking-wider text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-1 rounded-lg">
+            Analyzing…
+          </span>
+        )}
       </div>
 
-      {scanError && (
+      {(capture.error || submitError) && (
         <p role="alert" className="text-xs font-semibold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
-          {scanError}
+          {submitError ?? capture.error}
         </p>
       )}
 
@@ -250,15 +202,15 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-black text-slate-600 uppercase tracking-wider">
-              {snapshot ? 'Camera snapshot attached' : 'Visual frame evidence'}
+              {capture.snapshot ? 'Camera snapshot attached' : 'Visual frame evidence'}
             </span>
             <button
               type="button"
-              onClick={handleCaptureSnapshot}
+              onClick={() => capture.capture()}
               disabled={evidenceUnavailable}
               className="text-xs font-black text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-3 py-1.5 rounded-lg uppercase tracking-wider transition-colors min-h-[36px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {snapshot ? 'Retake frame' : 'Capture frame'}
+              {capture.snapshot ? 'Retake frame' : 'Capture frame'}
             </button>
           </div>
 
@@ -270,10 +222,10 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
             </p>
           )}
 
-          {snapshot ? (
+          {capture.snapshot ? (
             <div className="flex items-center gap-3 pt-1">
               <img
-                src={snapshot}
+                src={capture.snapshot}
                 alt="Captured visual evidence"
                 className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-500 shadow-md shrink-0"
               />

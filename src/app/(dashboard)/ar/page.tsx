@@ -7,6 +7,7 @@ import { ARSessionManager, useARSessionContext } from '@/components/ar/ar-sessio
 import { ARCameraView } from '@/components/ar/ar-camera-view'
 import { AROverlay } from '@/components/ar/ar-overlay'
 import { ARAnchorForm } from '@/components/ar/ar-anchor-form'
+import { useARCapture } from '@/components/ar/use-ar-capture'
 import { useARAnchors, useProfile, useInspections } from '@/app/lib/queries'
 import { hasCapability } from '@/app/lib/role-utils'
 import { AccessDenied } from '@/components/shared/require-role'
@@ -66,6 +67,8 @@ function ARPageContent() {
   } = useARSessionContext()
 
   const { data: anchors = [] } = useARAnchors(inspectionId || undefined)
+  // Capture and analysis are shared by the viewport controls and the anchor form.
+  const capture = useARCapture(inspectionId)
   const startARSession = useStartARSession()
   const endARSession = useEndARSession()
   const createARAnchor = useCreateARAnchor()
@@ -532,7 +535,13 @@ function ARPageContent() {
           id="ar-viewport"
           className="relative min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border border-slate-100 bg-slate-950"
         >
-          <ARCameraView onTapToAnchor={handleTapToAnchor} />
+          <ARCameraView
+            onTapToAnchor={handleTapToAnchor}
+            onCapture={() => capture.capture()}
+            onAnalyze={() => void capture.analyze()}
+            isScanning={capture.isScanning}
+            captureDisabled={!isActive}
+          />
           <AROverlay anchors={anchors} />
         </div>
 
@@ -543,6 +552,7 @@ function ARPageContent() {
               sessionId={dbSessionId}
               inspectionId={inspectionId}
               hitPose={hitPose}
+              capture={capture}
             />
           )}
 

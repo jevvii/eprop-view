@@ -163,6 +163,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const motionPermissionRef = useRef<'unknown' | 'granted' | 'denied'>('unknown')
   const xrFrameSeenRef = useRef(false)
   const xrFallbackTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const opticalDrawErrorRef = useRef(false)
 
   useEffect(() => {
     sessionRef.current = session
@@ -300,6 +301,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   // capture from it returns a real JPEG) while the element renders black.
   // Copying the frames onto a 2D canvas sidesteps video compositing entirely.
   const startOpticalLoop = useCallback(() => {
+    opticalDrawErrorRef.current = false
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d') ?? null
 
@@ -309,19 +311,28 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     }
 
     const renderFrame = () => {
-      const video = videoRef.current
-      const currentCanvas = canvasRef.current
-      const context = currentCanvas?.getContext('2d') ?? null
+      try {
+        const video = videoRef.current
+        const currentCanvas = canvasRef.current
+        const context = currentCanvas?.getContext('2d') ?? null
 
-      if (currentCanvas && context && video && video.readyState >= 2 && video.videoWidth > 0) {
-        if (
-          currentCanvas.width !== video.videoWidth ||
-          currentCanvas.height !== video.videoHeight
-        ) {
-          currentCanvas.width = video.videoWidth
-          currentCanvas.height = video.videoHeight
+        if (currentCanvas && context && video && video.readyState >= 2 && video.videoWidth > 0) {
+          if (
+            currentCanvas.width !== video.videoWidth ||
+            currentCanvas.height !== video.videoHeight
+          ) {
+            currentCanvas.width = video.videoWidth
+            currentCanvas.height = video.videoHeight
+          }
+          context.drawImage(video, 0, 0, currentCanvas.width, currentCanvas.height)
         }
-        context.drawImage(video, 0, 0, currentCanvas.width, currentCanvas.height)
+      } catch (error) {
+        // A throw here used to kill the loop permanently, leaving a black canvas
+        // for the rest of the session. Report once and keep drawing.
+        if (!opticalDrawErrorRef.current) {
+          opticalDrawErrorRef.current = true
+          console.warn('Camera frame copy failed:', error)
+        }
       }
 
       opticalLoopIdRef.current = requestAnimationFrame(renderFrame)
@@ -761,13 +772,17 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
           } as XRSessionInit)
           pendingXRSession = xrSession
 
-          const canvas = canvasRef.current
-          if (!canvas) {
-            await xrSession.end().catch(() => {})
-            throw new Error('AR canvas is not mounted.')
-          }
+          // A canvas can only ever hold one context type. Binding the display
+          // canvas to WebGL here made every later getContext('2d') return null,
+          // so when WebXR failed to present and the camera took over, the draw
+          // loop ran against a null context and the viewport stayed black while
+          // the video element kept decoding frames. WebXR gets its own canvas:
+          // the compositor reads the layer's framebuffer, not the DOM element.
+          const xrCanvas = document.createElement('canvas')
+          xrCanvas.width = 1
+          xrCanvas.height = 1
 
-          const gl = canvas.getContext('webgl', {
+          const gl = xrCanvas.getContext('webgl', {
             alpha: true,
             antialias: true,
             preserveDrawingBuffer: true,

@@ -1,11 +1,17 @@
 'use client'
-import { MapPin } from 'lucide-react'
+import { Camera, MapPin, ScanSearch } from 'lucide-react'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useARSessionContext } from './ar-session-manager'
 
 interface ARCameraViewProps {
   onTapToAnchor?: () => void
+  /** Capture the current frame as evidence. */
+  onCapture?: () => void
+  /** Capture and run the heuristic analysis on it. */
+  onAnalyze?: () => void
+  isScanning?: boolean
+  captureDisabled?: boolean
 }
 
 /**
@@ -16,7 +22,13 @@ interface ARCameraViewProps {
  * WebViews stop decoding frames: play() resolved, readyState stayed low, and the
  * preview was black. Keeping it continuously rendered is the fix.
  */
-export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
+export function ARCameraView({
+  onTapToAnchor,
+  onCapture,
+  onAnalyze,
+  isScanning = false,
+  captureDisabled = false,
+}: ARCameraViewProps) {
   const {
     session,
     isActive,
@@ -303,28 +315,64 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
             )}
           </div>
 
-          <div className="flex items-end justify-between gap-3 pointer-events-auto">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between pointer-events-auto">
             <p className="text-xs font-black text-white/90 bg-black/70 backdrop-blur-md px-3 sm:px-4 py-2 rounded-xl border border-white/10 uppercase tracking-wider max-w-[260px] sm:max-w-md shadow-lg">
               {isSpatial
                 ? 'Aim the centre reticle at a surface, then place a marker'
-                : 'Tap the view to aim, then place a marker'}
+                : 'Tap the view to aim, then capture or place a marker'}
             </p>
 
-            {onTapToAnchor && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onTapToAnchor()
-                }}
-                disabled={!hitPose}
-                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-slate-950 font-black text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-xl shadow-emerald-500/30 transition-all border border-emerald-300 min-h-[44px] min-w-[44px]"
-                aria-label="Drop Quick Marker"
-              >
-                <MapPin className="h-5 w-5" aria-hidden="true" />
-                <span className="font-extrabold uppercase tracking-wider">Quick Marker</span>
-              </button>
-            )}
+            {/* Capture, analyse and mark sit on the viewport itself: the inspector
+                is looking here, not at a form further down the page. */}
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              {onCapture && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onCapture()
+                  }}
+                  disabled={captureDisabled}
+                  className="flex items-center gap-1.5 bg-white/95 hover:bg-white active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-slate-900 font-black text-[11px] sm:text-xs px-3 sm:px-4 py-3 rounded-2xl shadow-lg transition-all min-h-[44px]"
+                  aria-label="Capture frame"
+                >
+                  <Camera className="h-4 w-4" aria-hidden="true" />
+                  <span className="uppercase tracking-wider">Capture</span>
+                </button>
+              )}
+
+              {onAnalyze && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    void onAnalyze()
+                  }}
+                  disabled={isScanning || captureDisabled}
+                  className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-white font-black text-[11px] sm:text-xs px-3 sm:px-4 py-3 rounded-2xl shadow-lg shadow-sky-500/30 transition-all min-h-[44px]"
+                  aria-label="Analyze frame"
+                >
+                  <ScanSearch className="h-4 w-4" aria-hidden="true" />
+                  <span className="uppercase tracking-wider">{isScanning ? 'Analyzing…' : 'Analyze'}</span>
+                </button>
+              )}
+
+              {onTapToAnchor && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onTapToAnchor()
+                  }}
+                  disabled={!hitPose}
+                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-slate-950 font-black text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-xl shadow-emerald-500/30 transition-all border border-emerald-300 min-h-[44px] min-w-[44px]"
+                  aria-label="Drop Quick Marker"
+                >
+                  <MapPin className="h-5 w-5" aria-hidden="true" />
+                  <span className="font-extrabold uppercase tracking-wider">Marker</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       ) : (
@@ -372,6 +420,27 @@ function DeviceDiagnostics() {
   const [permission, setPermission] = useState<string>('unknown')
   const [secure, setSecure] = useState<string>('unknown')
   const [cameraApi, setCameraApi] = useState<string>('unknown')
+  const [canvasState, setCanvasState] = useState<string>('unknown')
+
+  useEffect(() => {
+    const sampleCanvas = () => {
+      const canvas = document.querySelector('canvas')
+      if (!canvas) {
+        setCanvasState('no canvas in the document')
+        return
+      }
+      const context = canvas.getContext('2d')
+      setCanvasState(
+        context
+          ? `2D ok · ${canvas.width}×${canvas.height}`
+          : 'BLOCKED — this canvas already holds a non-2D context'
+      )
+    }
+
+    sampleCanvas()
+    const timer = setInterval(sampleCanvas, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     setSecure(
@@ -410,6 +479,7 @@ function DeviceDiagnostics() {
     ['Camera permission', permission],
     ['WebXR immersive-ar', xrHardwareSupported ? 'reported supported' : 'not supported'],
     ['Active mode', activeMode],
+    ['Display canvas', canvasState],
     ['Video frames', frames],
   ]
 
