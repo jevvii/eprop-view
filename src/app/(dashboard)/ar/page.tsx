@@ -22,6 +22,7 @@ import {
 } from '@/app/lib/mutations'
 import { SeverityBadge } from '@/components/ai/severity-badge'
 import { Button } from '@/components/ui/button'
+import { MarkerlessInspection } from '@/components/ar/markerless-inspection'
 
 function ARPageContent() {
   const { data: profile, isLoading: profileLoading } = useProfile()
@@ -504,7 +505,7 @@ function ARPageContent() {
   )
 }
 
-export default function ARPage() {
+function ReferenceARPage() {
   return (
     <ARSessionManager>
       <Suspense
@@ -518,4 +519,18 @@ export default function ARPage() {
       </Suspense>
     </ARSessionManager>
   )
+}
+
+export default function ARPage() {
+  const [mode, setMode] = useState<'markerless' | 'reference'>('markerless')
+  const [active, setActive] = useState(false)
+  return <div className="space-y-4">
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Inspection tracking method">
+      <button type="button" aria-pressed={mode === 'markerless'} disabled={active}
+        onClick={() => setMode('markerless')} className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold disabled:opacity-60">Markerless / photo inspection</button>
+      <button type="button" aria-pressed={mode === 'reference'} disabled={active}
+        onClick={() => setMode('reference')} className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold disabled:opacity-60">Printed reference (optional)</button>
+    </div>
+    {mode === 'markerless' ? <MarkerlessInspection onActiveChange={setActive} /> : <ReferenceARPage />}
+  </div>
 }

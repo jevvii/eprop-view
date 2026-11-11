@@ -10,7 +10,8 @@
     "test": "tsx --test src/app/lib/*.test.ts",
     "migrate": "tsx --env-file=.env.local src/scripts/migrate.ts",
     "db:migrate": "tsx src/scripts/apply-all-migrations.ts",
-    "test:ar-browser": "node src/scripts/check-reference-browser.mjs"
+    "test:ar-browser": "node src/scripts/check-reference-browser.mjs",
+    "test:markerless-browser": "node src/scripts/check-markerless-browser.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

@@ -99,13 +99,16 @@ flowchart TB
 * **Calibrated Severity Scoring**: Standardized civil structural formulas combining defect classification, normalized area, and confidence.
 * **Model Registry v2**: Live deployment of ONNX/TensorRT architectures (`yolov8`, `resnet50`) with configurable input dimensions and IoU thresholds.
 
-### 7. 📱 Printed-reference AR inspection
+### 7. 📱 Markerless and printed-reference inspection
+* **Markerless Session Tracking**: On supported immersive WebXR devices, place points using real surface hit tests. Native anchors are used when available; live viewer/projection matrices keep current-session points aligned as the camera moves.
+* **Saved Records, Session-only Locations**: Point labels, notes and coordinates remain saved after AR ends. They are not restored as physical checkpoints in a later session. Browser WebXR persistence cannot be assumed across the targeted devices. See [the markerless behavior and test plan](MARKERLESS_AR_SPEC.md).
+* **Camera/Photo Alternative**: Devices without immersive WebXR can save a real photo and centre-point annotation without any QR. This mode is explicitly non-spatial. WebXR passthrough camera pixels are not exposed by this implementation, so WebXR points can be saved without fabricated photo evidence.
 * **Physical Reference Tracking**: Download a uniquely identified QR reference as a PNG image (or SVG for printing) for an inspection and surface. The web camera detects its corners and keeps saved marker points aligned as the target moves or changes perspective.
 * **Evidence Capture**: Quick Marker saves a target-relative point with a real camera photo. The detailed form associates the captured point and photo with manual classification, severity and notes.
 * **Loss and Reacquisition**: Placement stops and overlays hide when tracking is lost. Scanning the original target restores saved markers after a new session or page reload. Existing markers without reference metadata remain available in the saved list.
 * **Saved Marker Deletion**: Inspectors can delete markers from their own sessions, including completed sessions; admins can delete any marker. Confirmed deletion updates the saved list and viewport. Failed deletion keeps the marker visible and shows a retry message. Deleting a marker preserves captured evidence files.
 
-Print at actual size, check the declared QR width excluding its white border, and attach the target to the same flat stationary surface as the marked points. Keep the target visible. This is planar reference-based AR; it does not measure depth, perform markerless SLAM or certify structural safety. Analysis is labelled heuristic. Physical Android/iPhone verification is still required. See [the tracking specification and device checklist](AR_REFERENCE_TRACKING_SPEC.md). Native bridge scaffolding remains separate from this web workflow; see [native status](native/README.md).
+For the optional printed-reference mode, print at actual size, check the declared QR width excluding its white border, and attach the target to the same flat stationary surface as the marked points. Keep the target visible. This mode is planar reference-based AR and does not measure depth or certify structural safety. Analysis is labelled heuristic. Physical Android/iPhone verification is still required. See [the reference tracking device checklist](AR_REFERENCE_TRACKING_SPEC.md). Native bridge scaffolding remains separate from these web workflows; see [native status](native/README.md).
 
 ### 8. 🏢 Building, Floor & Structural Element Master Data
 * **Complex Multi-Structure Hierarchy**: Projects contain distinct physical buildings with structural codes and geographic coordinates.

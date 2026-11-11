@@ -277,6 +277,10 @@ export interface Quaternion {
 export interface ARPose {
   position: Vector3
   quaternion: Quaternion
+  /** A recording's coordinate frame is valid only during its originating session. */
+  sessionTracking?:
+    | { kind: 'webxr-session-v1'; sessionKey: string; localId: string }
+    | { kind: 'camera-frame-v1'; sessionKey: string; point: { x: number; y: number } }
   /** Coordinates on a stationary flat surface, relative to a visible printed target. */
   reference?: {
     kind: 'printed-reference-v1'

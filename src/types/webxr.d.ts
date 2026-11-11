@@ -96,6 +96,7 @@ declare global {
     readonly session: XRSession
     getViewerPose(referenceSpace: XRReferenceSpace): XRViewerPose | undefined
     getHitTestResults(hitTestSource: XRHitTestSource): XRHitTestResult[]
+    getPose(space: XRSpace, baseSpace: XRSpace): XRPose | null
   }
 
   type XRFrameRequestCallback = (time: DOMHighResTimeStamp, frame: XRFrame) => void
@@ -112,6 +113,7 @@ declare global {
   }
 
   interface XRSession extends EventTarget {
+    readonly visibilityState?: 'visible' | 'visible-blurred' | 'hidden'
     readonly renderState: XRRenderState
     updateRenderState(newState?: XRRenderStateInit): Promise<void>
     requestReferenceSpace(type: 'viewer' | 'local' | 'local-floor' | 'bounded-floor' | 'unbounded'): Promise<XRReferenceSpace>

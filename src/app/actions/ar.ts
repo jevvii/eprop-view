@@ -7,6 +7,7 @@ import { requireRole } from '@/app/lib/dal'
 import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { computeFinalDamageScore, scoreToRiskLevel, severityToScore } from '@/app/lib/damage-score'
 import { referencePoseSchema } from '@/app/lib/ar/printed-reference'
+import { sessionTrackingSchema } from '@/app/lib/ar/markerless'
 import type { ARSession, ARAnchor, ARPose, Vector3, DamageType, SeverityLevel } from '@/app/types'
 
 const BUCKET = 'inspection-images'
@@ -165,6 +166,7 @@ const createAnchorSchema = z
         position: z.object({ x: z.number(), y: z.number(), z: z.number() }),
         quaternion: z.object({ x: z.number(), y: z.number(), z: z.number(), w: z.number() }).optional(),
         reference: referencePoseSchema.optional(),
+        sessionTracking: sessionTrackingSchema.optional(),
       })
       .passthrough(),
     worldPosition: z.object({ x: z.number(), y: z.number(), z: z.number() }).optional(),
@@ -178,6 +180,9 @@ const createAnchorSchema = z
   .refine((input) => !input.pose.reference || input.pose.reference.target.inspectionId === input.inspectionId, {
     message: 'The printed reference belongs to another inspection', path: ['pose', 'reference'],
   })
+  .refine((input) => !(input.pose.reference && input.pose.sessionTracking), { message: 'A marker must use one coordinate frame' })
+  .refine((input) => input.pose.sessionTracking?.kind !== 'camera-frame-v1' || !!input.snapshotDataUrl,
+    { message: 'Camera annotations require a real photo' })
 
 async function storeSnapshot(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -239,7 +244,7 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
 
   const { data: anchorSession, error: anchorSessionError } = await supabase
     .from('ar_sessions')
-    .select('inspection_id, started_by, status')
+    .select('inspection_id, started_by, status, device_info')
     .eq('id', anchorInput.sessionId)
     .maybeSingle()
   if (anchorSessionError) throw anchorSessionError
@@ -248,6 +253,9 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
   }
   if (role === 'inspector' && anchorSession.started_by !== userId) {
     throw new Error('Access denied: inspectors may only add markers to their own sessions')
+  }
+  if (anchorInput.pose.sessionTracking && anchorSession.device_info?.trackingSessionKey !== anchorInput.pose.sessionTracking.sessionKey) {
+    throw new Error('The marker belongs to another tracking session')
   }
 
   // Verify inspection ownership if inspector

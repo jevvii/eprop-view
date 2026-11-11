@@ -156,6 +156,7 @@ try {
         const errors = [];
         page.on('pageerror', e => errors.push(e.message));
         await page.goto(`http://127.0.0.1:${server.address().port}/`);
+        await page.getByRole('button', { name: 'Printed reference (optional)', exact: true }).click();
         await page.getByLabel('Surface or element name').fill('Column A test');
         const downloadPromise = page.waitForEvent('download');
         await page.getByRole('button', { name: 'Create and download target', exact: true }).click();
@@ -268,6 +269,7 @@ try {
         await page.waitForTimeout(300);
         assert(sessions.every(s => s.status === 'completed'));
         await page.reload();
+        await page.getByRole('button', { name: 'Printed reference (optional)', exact: true }).click();
         await page.evaluate(svg => window.__setTargetSvg(svg), svg);
         await page.getByRole('button', { name: 'Start AR Session', exact: true }).click();
         await page.locator(`[data-marker-id="${saved.id}"]`).waitFor({ timeout: 10000 });
