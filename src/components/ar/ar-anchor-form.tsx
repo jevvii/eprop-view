@@ -5,12 +5,14 @@ import { useCreateARAnchor } from '@/app/lib/mutations'
 import { analyzeCapturedFrame } from '@/app/actions/ai-frame'
 import { useARSessionContext } from './ar-session-manager'
 import { Button } from '@/components/ui/button'
+import type { ReferenceEvidence } from '@/app/lib/ar/capture-reference'
 import type { ARPose, DamageType, SeverityLevel } from '@/app/types'
 
 interface ARAnchorFormProps {
   sessionId: string
   inspectionId: string
   hitPose?: ARPose | null
+  captureEvidence: () => ReferenceEvidence | null
   onSaved?: () => void
 }
 
@@ -26,9 +28,9 @@ const labelMap: Record<DamageType, string> = {
   none: 'Structural Member',
 }
 
-export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAnchorFormProps) {
+export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence, onSaved }: ARAnchorFormProps) {
   const createAnchor = useCreateARAnchor()
-  const { captureCurrentFrame, activeMode } = useARSessionContext()
+  const { activeMode } = useARSessionContext()
   const evidenceUnavailable = activeMode === 'webxr'
 
   const [label, setLabel] = useState('Structural Marker')
@@ -36,43 +38,33 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
   const [severity, setSeverity] = useState<SeverityLevel>('medium')
   const [notes, setNotes] = useState('')
   const [snapshot, setSnapshot] = useState<string | null>(null)
+  const [capturedPose, setCapturedPose] = useState<ARPose | null>(null)
   const [isScanningAI, setIsScanningAI] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
 
-  const activePose: ARPose = hitPose || {
-    position: { x: 0, y: -0.15, z: -1.45 },
-    quaternion: { x: 0, y: 0, z: 0, w: 1 },
-  }
+  const activePose = capturedPose || hitPose
 
   const handleCaptureSnapshot = useCallback(() => {
-    const frame = captureCurrentFrame()
-    if (frame) {
-      setSnapshot(frame)
-      setScanError(null)
+    const evidence = captureEvidence()
+    if (!evidence) {
+      setScanError('Keep the printed reference visible and aim at the point before capturing.')
       return
     }
-
-    setScanError(
-      evidenceUnavailable
-        ? 'Immersive WebXR does not expose the camera frame. Switch to camera mode to capture evidence.'
-        : 'No camera frame is available. Start the camera first.'
-    )
-  }, [captureCurrentFrame, evidenceUnavailable])
+    setSnapshot(evidence.snapshotDataUrl)
+    setCapturedPose(evidence.pose)
+    setScanError(null)
+  }, [captureEvidence])
 
   const handleAICameraScan = async () => {
     setScanError(null)
-    const frame = captureCurrentFrame()
-
-    if (!frame) {
-      setScanError(
-        evidenceUnavailable
-          ? 'Immersive WebXR cannot capture a frame for analysis. Switch to camera mode to run the heuristic.'
-          : 'No camera frame is available. Start the camera first.'
-      )
+    const evidence = captureEvidence()
+    if (!evidence) {
+      setScanError('Keep the printed reference visible in the frame before analyzing the marked point.')
       return
     }
-
+    const frame = evidence.snapshotDataUrl
     setSnapshot(frame)
+    setCapturedPose(evidence.pose)
     setIsScanningAI(true)
 
     try {
@@ -103,18 +95,28 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
     setScanError(null)
 
     try {
+      const currentEvidence = captureEvidence()
+      if (!currentEvidence) throw new Error('Reference tracking was lost. Show the printed target before saving.')
+      const freshPose = currentEvidence?.pose
+      if (!freshPose?.reference) throw new Error('Reference tracking was lost. Show the printed target before saving.')
+      const pose = snapshot && capturedPose ? capturedPose : freshPose
+      if (pose.reference?.target.id !== freshPose.reference.target.id) {
+        throw new Error('The captured photo uses another target. Retake it for the visible reference.')
+      }
+      const evidence = snapshot || currentEvidence.snapshotDataUrl
       await createAnchor.mutateAsync({
         sessionId,
         inspectionId,
         label,
-        pose: activePose,
+        pose,
         damageType,
         severity,
         notes,
-        snapshotDataUrl: snapshot || undefined,
+        snapshotDataUrl: evidence,
       })
 
       setSnapshot(null)
+      setCapturedPose(null)
       onSaved?.()
     } catch (err) {
       setScanError(err instanceof Error ? err.message : 'Could not save the anchor')
@@ -130,13 +132,13 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           <h4 className="text-xs sm:text-xs font-black text-slate-800 tracking-[0.2em] uppercase">
-            Spatial Anchor Control
+            Inspection marker details
           </h4>
         </div>
         <button
           type="button"
           onClick={handleAICameraScan}
-          disabled={isScanningAI || evidenceUnavailable}
+              disabled={isScanningAI || evidenceUnavailable || createAnchor.isPending || !hitPose?.reference}
           className="text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl uppercase tracking-wider transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isScanningAI ? 'Analyzing…' : 'Analyze Frame (heuristic)'}
@@ -152,24 +154,18 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
       {/* Surface Coordinate Telemetry */}
       <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs">
         <div className="flex justify-between text-slate-400 font-bold uppercase tracking-wider mb-1">
-          <span>{activeMode === 'webxr' ? 'Marker pose (world)' : 'Marker pose (screen-space)'}</span>
+          <span>Printed reference</span>
           <span className={hitPose ? 'text-emerald-600 font-black' : 'text-amber-600 font-black'}>
-            {activeMode === 'webxr'
-              ? hitPose
-                ? 'WebXR hit'
-                : 'Searching'
-              : hitPose
-                ? 'Screen-space'
-                : 'Estimated'}
+            {hitPose ? 'Tracked' : 'Find target'}
           </span>
         </div>
         <div className="font-mono text-slate-700 font-bold tabular-nums">
-          X: {activePose.position.x.toFixed(2)}m · Y: {activePose.position.y.toFixed(2)}m · Z:{' '}
-          {activePose.position.z.toFixed(2)}m
+          {activePose?.reference?.target.label || 'Scan a reference target to place a marker.'}
+          {snapshot && <p className="mt-1 text-xs font-normal text-slate-600">Photo and marked point are locked together. Retake the frame to change the point.</p>}
         </div>
       </div>
 
-      <div className="space-y-3.5">
+      <fieldset disabled={isScanningAI || createAnchor.isPending} className="space-y-3.5">
         <div>
           <label
             htmlFor="ar-anchor-label"
@@ -289,14 +285,14 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, onSaved }: ARAn
             </p>
           )}
         </div>
-      </div>
+      </fieldset>
 
       <Button
         type="submit"
-        disabled={createAnchor.isPending}
+        disabled={createAnchor.isPending || !hitPose?.reference || isScanningAI}
         className="w-full text-xs font-black uppercase tracking-[0.15em] py-3.5 h-auto shadow-lg shadow-primary/20 min-h-[44px] rounded-xl"
       >
-        {createAnchor.isPending ? 'Saving Anchor…' : 'Drop & Persist Anchor'}
+        {createAnchor.isPending ? 'Saving marker…' : 'Save marker + evidence'}
       </Button>
     </form>
   )

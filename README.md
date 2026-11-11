@@ -99,11 +99,13 @@ flowchart TB
 * **Calibrated Severity Scoring**: Standardized civil structural formulas combining defect classification, normalized area, and confidence.
 * **Model Registry v2**: Live deployment of ONNX/TensorRT architectures (`yolov8`, `resnet50`) with configurable input dimensions and IoU thresholds.
 
-### 7. 📱 Native ARKit & ARCore Mobile Bridge
-* **Mobile Sensor Tracking**: Native Capacitor bridge plugins for iOS (`ARKit`) and Android (`ARCore`) providing low-latency 60 FPS plane tracking.
-* **In-Situ Optical Defect Tagging**: Drop persistent 3D spatial defect anchors with real-world XYZ coordinates and snapshot capture.
-* **Universal Fallback**: WebXR and simulated desktop viewport support.
+### 7. 📱 Printed-reference AR inspection
+* **Physical Reference Tracking**: Download a uniquely identified QR reference for an inspection and surface. The web camera detects its corners and keeps saved marker points aligned as the target moves or changes perspective.
+* **Evidence Capture**: Quick Marker saves a target-relative point with a real camera photo. The detailed form associates the captured point and photo with manual classification, severity and notes.
+* **Loss and Reacquisition**: Placement stops and overlays hide when tracking is lost. Scanning the original target restores saved markers after a new session or page reload. Existing markers without reference metadata remain available in the saved list.
 * **Saved Marker Deletion**: Inspectors can delete markers from their own sessions, including completed sessions; admins can delete any marker. Confirmed deletion updates the saved list and viewport. Failed deletion keeps the marker visible and shows a retry message. Deleting a marker preserves captured evidence files.
+
+Print at actual size, check the declared QR width excluding its white border, and attach the target to the same flat stationary surface as the marked points. Keep the target visible. This is planar reference-based AR; it does not measure depth, perform markerless SLAM or certify structural safety. Analysis is labelled heuristic. Physical Android/iPhone verification is still required. See [the tracking specification and device checklist](AR_REFERENCE_TRACKING_SPEC.md). Native bridge scaffolding remains separate from this web workflow; see [native status](native/README.md).
 
 ### 8. 🏢 Building, Floor & Structural Element Master Data
 * **Complex Multi-Structure Hierarchy**: Projects contain distinct physical buildings with structural codes and geographic coordinates.

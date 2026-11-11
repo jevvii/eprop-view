@@ -2,6 +2,8 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Existing snapshot validation caps decoded evidence at 8 MB (base64 adds 1/3).
+  experimental: { serverActions: { bodySizeLimit: '12mb' } },
   // A lockfile in the parent directory makes Next infer the wrong workspace
   // root and scan (and recompile against) an unrelated tree.
   turbopack: {

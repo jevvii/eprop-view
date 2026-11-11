@@ -27,7 +27,7 @@ export interface XRSessionState {
   videoRef: React.RefObject<HTMLVideoElement | null>
   canvasRef: React.RefObject<HTMLCanvasElement | null>
   setTargetNormCoords: (nx: number, ny: number) => void
-  startSession: () => Promise<void>
+  startSession: (options?: { cameraOnly?: boolean }) => Promise<void>
   endSession: () => Promise<void>
   /** Requests motion permission inside a user gesture (iOS requirement). */
   prepareForAR: () => Promise<void>
@@ -130,6 +130,9 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const scanTimerRef = useRef<NodeJS.Timeout | null>(null)
   const sessionRef = useRef<XRSession | null>(null)
   const isStartingRef = useRef(false)
+  const mountedRef = useRef(true)
+  const referenceOnlyRef = useRef(false)
+  const lifecycleRef = useRef(0)
   const endedRef = useRef(false)
   const motionPermissionRef = useRef<'unknown' | 'granted' | 'denied'>('unknown')
   const xrFrameSeenRef = useRef(false)
@@ -216,7 +219,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
 
   // Listen to mobile device orientation
   useEffect(() => {
-    if (activeMode !== 'optical-camera' && activeMode !== 'simulated') return
+    if (referenceOnlyRef.current || (activeMode !== 'optical-camera' && activeMode !== 'simulated')) return
 
     const handleOrientation = (e: DeviceOrientationEvent) => {
       if (e.beta !== null && e.gamma !== null) {
@@ -261,63 +264,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
       removeEventListener: () => {},
       dispatchEvent: () => true,
     } as unknown as XRSession
-  }, [])
-
-  // Tier 3A Optical Camera render loop (draws video frame + subtle reticle to canvas)
-  const startOpticalLoop = useCallback(() => {
-    const renderFrame = () => {
-      const video = videoRef.current
-      const canvas = canvasRef.current
-      if (canvas && video && video.readyState >= 2) {
-        const ctx = canvas.getContext('2d')
-        if (ctx) {
-          if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-            canvas.width = video.videoWidth || canvas.clientWidth || 1280
-            canvas.height = video.videoHeight || canvas.clientHeight || 720
-          }
-          // Draw raw camera frame
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-          // Subtle AR Reticle overlay
-          const targetX = targetNormRef.current.nx * canvas.width
-          const targetY = targetNormRef.current.ny * canvas.height
-
-          ctx.save()
-          ctx.strokeStyle = 'rgba(52, 211, 153, 0.75)'
-          ctx.lineWidth = 2.5
-          ctx.shadowColor = 'rgba(52, 211, 153, 0.5)'
-          ctx.shadowBlur = 8
-
-          // Outer reticle ring
-          ctx.beginPath()
-          ctx.arc(targetX, targetY, 28, 0, Math.PI * 2)
-          ctx.stroke()
-
-          // Center target pip
-          ctx.fillStyle = '#34D399'
-          ctx.beginPath()
-          ctx.arc(targetX, targetY, 4, 0, Math.PI * 2)
-          ctx.fill()
-
-          // Crosshairs
-          ctx.beginPath()
-          ctx.moveTo(targetX - 38, targetY)
-          ctx.lineTo(targetX - 14, targetY)
-          ctx.moveTo(targetX + 14, targetY)
-          ctx.lineTo(targetX + 38, targetY)
-          ctx.moveTo(targetX, targetY - 38)
-          ctx.lineTo(targetX, targetY - 14)
-          ctx.moveTo(targetX, targetY + 14)
-          ctx.lineTo(targetX, targetY + 38)
-          ctx.stroke()
-
-          ctx.restore()
-        }
-      }
-      opticalLoopIdRef.current = requestAnimationFrame(renderFrame)
-    }
-
-    opticalLoopIdRef.current = requestAnimationFrame(renderFrame)
   }, [])
 
   // Tier 3B Simulated Optical Grid Loop (perspective structural grid + scanning laser)
@@ -465,6 +411,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
 
   // Full endSession handler stopping all media tracks and loops
   const endSession = useCallback(async () => {
+    lifecycleRef.current++
     if (xrFallbackTimerRef.current) {
       clearTimeout(xrFallbackTimerRef.current)
       xrFallbackTimerRef.current = null
@@ -564,7 +511,8 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   // Tier 3A camera, then Tier 3B simulated grid. Shared by the normal start
   // path and by the WebXR watchdog so a non-presenting XR session can fall back.
   const startCameraOrSimulated = useCallback(
-    async (fallbackReason?: string) => {
+    async (fallbackReason?: string, cameraRequired = false) => {
+      const lifecycle = lifecycleRef.current
       // A camera session is a new lifecycle; an earlier XR end must not make
       // its own end handler a no-op.
       endedRef.current = false
@@ -582,18 +530,22 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
             audio: false,
           })
 
-          mediaStreamRef.current = stream
-          const video = videoRef.current
-          if (video) {
-            video.srcObject = stream
-            await video.play().catch(() => {})
+          if (!mountedRef.current || lifecycle !== lifecycleRef.current) {
+            stream.getTracks().forEach((track) => track.stop())
+            throw new Error('Camera session was closed')
           }
-
+          mediaStreamRef.current = stream
           const virtualSession = createVirtualSession()
           sessionRef.current = virtualSession
           setSession(virtualSession)
           setActiveMode('optical-camera')
-          startOpticalLoop()
+          const video = videoRef.current
+          if (video) {
+            video.muted = true
+            video.playsInline = true
+            video.srcObject = stream
+            await video.play().catch(() => {})
+          }
 
           // A stream can be granted while the preview never produces frames
           // (some WebViews and privacy browsers). Do not leave a black viewport.
@@ -612,26 +564,34 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
             throw new Error('Camera preview did not produce frames')
           }
 
-          setHitPose(null)
-          scanTimerRef.current = setTimeout(() => {
-            const { pose, matrix } = calculateOpticalPose()
-            setHitPose(pose)
-            setHitMatrix(matrix)
-          }, 800)
+          if (!cameraRequired) {
+            setHitPose(null)
+            scanTimerRef.current = setTimeout(() => {
+              const { pose, matrix } = calculateOpticalPose()
+              setHitPose(pose)
+              setHitMatrix(matrix)
+            }, 800)
 
-          // Request after the stream starts; iOS motion permission is already
-          // requested from the click via prepareForAR.
-          void requestMotionPermission().then((motion) => {
-            if (motion === 'denied') {
-              setLimitation('Device motion permission was denied. Tap the view to aim the marker.')
-            } else if (motion === 'unsupported') {
-              setLimitation('Device motion is not available in this browser. Tap the view to aim the marker.')
-            }
-          })
+            // Request after the stream starts; iOS motion permission is already
+            // requested from the click via prepareForAR.
+            void requestMotionPermission().then((motion) => {
+              if (motion === 'denied') {
+                setLimitation('Device motion permission was denied. Tap the view to aim the marker.')
+              } else if (motion === 'unsupported') {
+                setLimitation('Device motion is not available in this browser. Tap the view to aim the marker.')
+              }
+            })
 
+          }
+
+          if (!mountedRef.current || lifecycle !== lifecycleRef.current) {
+            stream.getTracks().forEach((track) => track.stop())
+            throw new Error('Camera session was closed')
+          }
           onStarted?.()
           return
         } catch (mediaErr) {
+          if (cameraRequired) throw mediaErr
           console.warn('Camera unavailable or preview failed; using the simulated grid:', mediaErr)
           setLimitation(
             fallbackReason ??
@@ -643,6 +603,8 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
           'This browser has no camera API. Showing a simulated grid; no image evidence will be captured.'
         )
       }
+
+      if (cameraRequired) throw new Error('Camera access is required for printed reference tracking.')
 
       // Tier 3B: simulated grid. Clearly a training/placement aid, not tracking.
       const virtualSession = createVirtualSession()
@@ -662,7 +624,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     },
     [
       createVirtualSession,
-      startOpticalLoop,
       calculateOpticalPose,
       startSimulatedLoop,
       requestMotionPermission,
@@ -696,9 +657,10 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     await startCameraOrSimulated()
   }, [startCameraOrSimulated])
 
-  const startSession = useCallback(async () => {
-    if (isStartingRef.current) return
+  const startSession = useCallback(async (options?: { cameraOnly?: boolean }) => {
+    if (isStartingRef.current) throw new Error('The camera is already starting. Wait a moment and retry.')
     isStartingRef.current = true
+    referenceOnlyRef.current = Boolean(options?.cameraOnly)
     endedRef.current = false
     xrFrameSeenRef.current = false
     setError(null)
@@ -706,7 +668,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
 
     try {
       // Tier 1 & 2: WebXR immersive-ar, only when the browser claims support.
-      if (xrHardwareSupported && navigator?.xr) {
+      if (!options?.cameraOnly && xrHardwareSupported && navigator?.xr) {
         let pendingXRSession: XRSession | null = null
         try {
           // requestSession must be the first await: it needs the click's
@@ -867,7 +829,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
         }
       }
 
-      await startCameraOrSimulated()
+      await startCameraOrSimulated(undefined, options?.cameraOnly)
     } finally {
       isStartingRef.current = false
     }
@@ -875,7 +837,10 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
 
   // Cleanup on unmount
   useEffect(() => {
+    mountedRef.current = true
     return () => {
+      mountedRef.current = false
+      lifecycleRef.current++
       if (xrFallbackTimerRef.current) {
         clearTimeout(xrFallbackTimerRef.current)
         xrFallbackTimerRef.current = null

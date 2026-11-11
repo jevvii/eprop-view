@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "tsx --test src/app/lib/*.test.ts",
     "migrate": "tsx --env-file=.env.local src/scripts/migrate.ts",
-    "db:migrate": "tsx src/scripts/apply-all-migrations.ts"
+    "db:migrate": "tsx src/scripts/apply-all-migrations.ts",
+    "test:ar-browser": "node src/scripts/check-reference-browser.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -19,9 +20,11 @@
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jsqr": "1.4.0",
     "lucide-react": "^1.16.0",
     "mapbox-gl": "3.20.0",
     "next": "^16.4.6",
+    "qrcode-generator": "2.0.4",
     "react": "19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.4",
@@ -40,9 +43,11 @@
     "@types/react-dom": "^19",
     "better-sqlite3": "^12.11.1",
     "dotenv": "^17.2.3",
+    "esbuild": "0.28.2",
     "eslint": "^9",
     "eslint-config-next": "^16.4.6",
     "pg": "^8.16.3",
+    "playwright": "1.65.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
     "typescript": "^5"

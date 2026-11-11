@@ -277,6 +277,18 @@ export interface Quaternion {
 export interface ARPose {
   position: Vector3
   quaternion: Quaternion
+  /** Coordinates on a stationary flat surface, relative to a visible printed target. */
+  reference?: {
+    kind: 'printed-reference-v1'
+    target: {
+      id: string
+      inspectionId: string
+      label: string
+      sizeMm: number
+    }
+    /** Target-width units, origin at the QR code's top-left corner. */
+    point: { x: number; y: number }
+  }
 }
 
 export interface ARSession {

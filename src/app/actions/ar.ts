@@ -6,6 +6,7 @@ import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
 import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { computeFinalDamageScore, scoreToRiskLevel, severityToScore } from '@/app/lib/damage-score'
+import { referencePoseSchema } from '@/app/lib/ar/printed-reference'
 import type { ARSession, ARAnchor, ARPose, Vector3, DamageType, SeverityLevel } from '@/app/types'
 
 const BUCKET = 'inspection-images'
@@ -16,13 +17,14 @@ const MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024
  * Accessible to inspector, engineer, and admin.
  */
 export async function getActiveARSession(inspectionId: string): Promise<ARSession | null> {
-  await requireRole(['inspector', 'engineer', 'admin'])
+  const { userId } = await requireRole(['inspector', 'engineer', 'admin'])
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('ar_sessions')
     .select('*')
     .eq('inspection_id', inspectionId)
-    .in('status', ['active', 'paused'])
+    .eq('started_by', userId)
+    .eq('status', 'active')
     .order('started_at', { ascending: false })
     .limit(1)
     .single()
@@ -162,6 +164,7 @@ const createAnchorSchema = z
       .object({
         position: z.object({ x: z.number(), y: z.number(), z: z.number() }),
         quaternion: z.object({ x: z.number(), y: z.number(), z: z.number(), w: z.number() }).optional(),
+        reference: referencePoseSchema.optional(),
       })
       .passthrough(),
     worldPosition: z.object({ x: z.number(), y: z.number(), z: z.number() }).optional(),
@@ -172,6 +175,9 @@ const createAnchorSchema = z
     snapshotDataUrl: z.string().max(12_000_000).optional(),
   })
   .strict()
+  .refine((input) => !input.pose.reference || input.pose.reference.target.inspectionId === input.inspectionId, {
+    message: 'The printed reference belongs to another inspection', path: ['pose', 'reference'],
+  })
 
 async function storeSnapshot(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -220,8 +226,29 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
     throw new Error(parsed.error.issues[0]?.message ?? 'Invalid anchor payload')
   }
   const anchorInput = parsed.data
+  // The server derives reference-local coordinates instead of trusting a second,
+  // potentially contradictory position supplied by the client.
+  if (anchorInput.pose.reference) {
+    const { point, target } = anchorInput.pose.reference
+    const unit = target.sizeMm / 1000
+    anchorInput.pose.position = { x: point.x * unit, y: -point.y * unit, z: 0 }
+    anchorInput.pose.quaternion = { x: 0, y: 0, z: 0, w: 1 }
+  }
 
   const supabase = await createClient()
+
+  const { data: anchorSession, error: anchorSessionError } = await supabase
+    .from('ar_sessions')
+    .select('inspection_id, started_by, status')
+    .eq('id', anchorInput.sessionId)
+    .maybeSingle()
+  if (anchorSessionError) throw anchorSessionError
+  if (!anchorSession || anchorSession.inspection_id !== anchorInput.inspectionId || anchorSession.status !== 'active') {
+    throw new Error('An active AR session for this inspection is required')
+  }
+  if (role === 'inspector' && anchorSession.started_by !== userId) {
+    throw new Error('Access denied: inspectors may only add markers to their own sessions')
+  }
 
   // Verify inspection ownership if inspector
   if (role === 'inspector') {
@@ -265,7 +292,13 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
     .select()
     .single()
 
-  if (error || !data) throw error ?? new Error('Failed to create AR anchor')
+  if (error || !data) {
+    if (snapshotPath) {
+      const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([snapshotPath])
+      if (cleanupError) console.error('AR snapshot cleanup failed after marker insert:', cleanupError.message)
+    }
+    throw error ?? new Error('Failed to create AR anchor')
+  }
 
   if (severity) {
     try {
