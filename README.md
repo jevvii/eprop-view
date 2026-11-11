@@ -324,6 +324,50 @@ The handoff guide includes:
 
 ---
 
+## 🧱 Capstone v2 — Structural Engineering Additions
+
+The panel's post-evaluation recommendations are specified in
+[`docs/capstone_v2_scope_contract.md`](./docs/capstone_v2_scope_contract.md),
+tracked against the use-case diagram in
+[`docs/usecase_parity_matrix.md`](./docs/usecase_parity_matrix.md), and split
+into parallel workstreams in
+[`docs/workstream_briefs.md`](./docs/workstream_briefs.md).
+
+**Domain model (migration `017`, additive and idempotent):**
+
+| Area | Implementation |
+|---|---|
+| Tilt / sinking | `settlement_observations` with documented thresholds (1/500 monitor, 1/250 action) |
+| Crack categories | ACI 224R-01 width bands + ACI 201.1R cause, orientation and pattern on each detection |
+| Editable reports | every field editable, previous state snapshotted into `report_revisions` |
+| Structural limitations | per-report exclusion checklist plus per-element notes |
+| Cost and action | deterministic PHP planning table, cross-checked against an AI range with divergence flagging |
+| Recommendations | AI drafts, an engineer signs; only signed text reaches a report |
+| Flood / geohazard checklists | versioned templates prefilled from real geospatial zone membership |
+| Rebound hammer | reading array with IQR outlier rejection and a labelled indicative correlation |
+| Soil investigation | borehole, SPT, groundwater and liquefaction susceptibility at site level |
+| Erosion | per-inspection observation feeding the existing project risk score |
+| Forensic engineering | failure hypothesis, mechanism narrative and an evidence chain |
+| Audit trail | `audit_events` written through a SECURITY DEFINER function that stamps the actor |
+
+**AI policy.** Gemini is called only on deliberate actions — an explicit deep
+analysis of a stored image, a cost suggestion, a recommendation draft, a report
+narrative. Live AR frames stay on the deterministic heuristic so scanning never
+stalls or exhausts quota. The chain is `gemini-3.8-flash → gemini-3.5-flash-lite
+→ heuristic`, and every result records its provenance.
+
+**Honest limitations.**
+* Free-tier Gemini may review submitted inputs to improve Google's products; the
+  UI shows this notice wherever an image is sent, and client imagery is out of scope.
+* Repair cost figures are planning-level, not quotations.
+* Rebound readings convert to strength through an indicative correlation that
+  requires site-specific calibration to be meaningful.
+* Tilt and settlement are manually entered measurements, not sensor telemetry.
+* "Manage AI Models" is a registry and selection surface, not a model deployment
+  pipeline. "Backup & Restore" is record export/import, not infrastructure snapshots.
+
+---
+
 ## 📄 License & Ownership
 
 This software and its associated documentation are proprietary and confidential. Unauthorized copying, distribution, or modification is strictly prohibited. All rights reserved by the client organization upon completion of official handoff sign-off.
