@@ -70,7 +70,9 @@ export function GeospatialMap() {
     const { data: zones } = useGeospatialZones();
     const { data: projects } = useProjects();
     const { data: hotspots } = useRiskHotspots();
-    const [showHeatmap, setShowHeatmap] = useState(false);
+    // Heatmap is on by default: the density of recorded problems is the first
+    // thing the dashboard map should say. The toggle remains for a clean view.
+    const [showHeatmap, setShowHeatmap] = useState(true);
 
     // 1. Initialize Map (Strictly Once)
     useEffect(() => {
@@ -156,7 +158,7 @@ export function GeospatialMap() {
                     id: "risk-heatmap",
                     type: "heatmap",
                     source: "risk-heat",
-                    layout: { visibility: "none" },
+                    layout: { visibility: "visible" },
                     paint: {
                         "heatmap-weight": ["get", "weight"],
                         "heatmap-intensity": 0.9,
