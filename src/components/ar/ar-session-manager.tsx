@@ -24,6 +24,8 @@ export interface XRSessionState {
   limitation: string | null
   hitPose: ARPose | null
   hitMatrix: number[] | null
+  /** True once a camera frame has been copied to the display canvas. */
+  framePainted: boolean
   videoRef: React.RefObject<HTMLVideoElement | null>
   canvasRef: React.RefObject<HTMLCanvasElement | null>
   setTargetNormCoords: (nx: number, ny: number) => void
@@ -147,6 +149,8 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const [limitation, setLimitation] = useState<string | null>(null)
   const [hitPose, setHitPose] = useState<ARPose | null>(null)
   const [hitMatrix, setHitMatrix] = useState<number[] | null>(null)
+  /** True once a camera frame has actually been copied to the display canvas. */
+  const [framePainted, setFramePainted] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -164,6 +168,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const xrFrameSeenRef = useRef(false)
   const xrFallbackTimerRef = useRef<NodeJS.Timeout | null>(null)
   const opticalDrawErrorRef = useRef(false)
+  const paintedRef = useRef(false)
 
   useEffect(() => {
     sessionRef.current = session
@@ -302,6 +307,8 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   // Copying the frames onto a 2D canvas sidesteps video compositing entirely.
   const startOpticalLoop = useCallback(() => {
     opticalDrawErrorRef.current = false
+    paintedRef.current = false
+    setFramePainted(false)
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d') ?? null
 
@@ -317,14 +324,39 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
         const context = currentCanvas?.getContext('2d') ?? null
 
         if (currentCanvas && context && video && video.readyState >= 2 && video.videoWidth > 0) {
-          if (
-            currentCanvas.width !== video.videoWidth ||
-            currentCanvas.height !== video.videoHeight
-          ) {
-            currentCanvas.width = video.videoWidth
-            currentCanvas.height = video.videoHeight
+          // Size the backing store to the element's CSS box at device pixel
+          // ratio, then cover-crop by hand. Doing this in the draw call avoids
+          // relying on CSS object-fit for a replaced element, which does not
+          // paint reliably in every mobile browser.
+          const cssWidth = currentCanvas.clientWidth
+          const cssHeight = currentCanvas.clientHeight
+
+          if (cssWidth > 0 && cssHeight > 0) {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2)
+            const targetWidth = Math.round(cssWidth * dpr)
+            const targetHeight = Math.round(cssHeight * dpr)
+
+            if (currentCanvas.width !== targetWidth || currentCanvas.height !== targetHeight) {
+              currentCanvas.width = targetWidth
+              currentCanvas.height = targetHeight
+            }
+
+            const scale = Math.max(
+              targetWidth / video.videoWidth,
+              targetHeight / video.videoHeight
+            )
+            const drawWidth = video.videoWidth * scale
+            const drawHeight = video.videoHeight * scale
+            const offsetX = (targetWidth - drawWidth) / 2
+            const offsetY = (targetHeight - drawHeight) / 2
+
+            context.drawImage(video, offsetX, offsetY, drawWidth, drawHeight)
+
+            if (!paintedRef.current) {
+              paintedRef.current = true
+              setFramePainted(true)
+            }
           }
-          context.drawImage(video, 0, 0, currentCanvas.width, currentCanvas.height)
         }
       } catch (error) {
         // A throw here used to kill the loop permanently, leaving a black canvas
@@ -503,6 +535,8 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     if (canvas && context) {
       context.clearRect(0, 0, canvas.width, canvas.height)
     }
+    paintedRef.current = false
+    setFramePainted(false)
 
     if (scanTimerRef.current) {
       clearTimeout(scanTimerRef.current)
@@ -974,6 +1008,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
         limitation,
         hitPose,
         hitMatrix,
+        framePainted,
         videoRef,
         canvasRef,
         setTargetNormCoords,

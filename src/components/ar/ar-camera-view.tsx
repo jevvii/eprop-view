@@ -35,6 +35,7 @@ export function ARCameraView({
     activeMode,
     xrHardwareSupported,
     hitPose,
+    framePainted,
     videoRef,
     canvasRef,
     setTargetNormCoords,
@@ -203,9 +204,11 @@ export function ARCameraView({
           const video = videoRef.current
           if (!video || video.readyState < 2) setVideoLive(false)
         }}
-        // Capture-only: kept mounted, laid out and playing so frames decode, but
-        // never painted. The canvas mirrors it for display.
-        className="absolute inset-0 w-full h-full object-cover z-0 opacity-0 pointer-events-none"
+        // Capture-only unless the canvas has not painted yet, in which case it
+        // is the visible fallback. Kept mounted and playing either way.
+        className={`absolute inset-0 w-full h-full object-cover z-0 ${
+          isCameraMode && !framePainted ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
       />
 
       {/*
@@ -217,7 +220,11 @@ export function ARCameraView({
       */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full object-cover z-0"
+        // No object-fit: the backing store is sized to this box and the frames
+        // are cover-cropped while drawing.
+        className={`absolute inset-0 w-full h-full z-0 ${
+          isCameraMode && !framePainted ? 'opacity-0' : 'opacity-100'
+        }`}
       />
 
       {isCameraMode && !videoLive && (
@@ -416,25 +423,48 @@ export function ARCameraView({
  * capability that never presents.
  */
 function DeviceDiagnostics() {
-  const { activeMode, videoRef, xrHardwareSupported } = useARSessionContext()
+  const { activeMode, videoRef, xrHardwareSupported, framePainted } = useARSessionContext()
   const [permission, setPermission] = useState<string>('unknown')
   const [secure, setSecure] = useState<string>('unknown')
   const [cameraApi, setCameraApi] = useState<string>('unknown')
   const [canvasState, setCanvasState] = useState<string>('unknown')
+  const [canvasPixel, setCanvasPixel] = useState<string>('unknown')
+  const [canvasCss, setCanvasCss] = useState<string>('unknown')
 
   useEffect(() => {
     const sampleCanvas = () => {
       const canvas = document.querySelector('canvas')
       if (!canvas) {
         setCanvasState('no canvas in the document')
+        setCanvasPixel('—')
+        setCanvasCss('—')
         return
       }
+
       const context = canvas.getContext('2d')
       setCanvasState(
         context
-          ? `2D ok · ${canvas.width}×${canvas.height}`
+          ? '2D ok'
           : 'BLOCKED — this canvas already holds a non-2D context'
       )
+      setCanvasCss(`${canvas.clientWidth}×${canvas.clientHeight} css · ${canvas.width}×${canvas.height} px`)
+
+      if (!context) {
+        setCanvasPixel('unreadable — no 2D context')
+        return
+      }
+
+      try {
+        const data = context.getImageData(
+          Math.floor(canvas.width / 2),
+          Math.floor(canvas.height / 2),
+          1,
+          1
+        ).data
+        setCanvasPixel(`rgba(${data[0]},${data[1]},${data[2]},${data[3]})`)
+      } catch {
+        setCanvasPixel('read blocked by the browser')
+      }
     }
 
     sampleCanvas()
@@ -474,12 +504,16 @@ function DeviceDiagnostics() {
     : 'video element not mounted'
 
   const rows: [string, string][] = [
+    ['Build', (process.env.NEXT_PUBLIC_BUILD_SHA ?? 'local').slice(0, 7)],
     ['Secure context', secure],
     ['Camera API', cameraApi],
     ['Camera permission', permission],
     ['WebXR immersive-ar', xrHardwareSupported ? 'reported supported' : 'not supported'],
     ['Active mode', activeMode],
     ['Display canvas', canvasState],
+    ['Canvas size', canvasCss],
+    ['Canvas centre pixel', canvasPixel],
+    ['Frames painted', framePainted ? 'yes' : 'no — the draw loop has not painted yet'],
     ['Video frames', frames],
   ]
 
