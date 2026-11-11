@@ -508,59 +508,79 @@
   </section>
 
   <section>
-    <h2><span class="ref">03</span>What is still blocked</h2>
-    <div class="blocker">
-      <div class="blocker__tag">Blocking · needs a human</div>
-      <p>
-        Migration 017 is written and committed but never executed. The preview database password
-        is not available to the agent that authored it, so the fourteen tables do not yet exist
-        anywhere.
-      </p>
-      <p>One command applies it, and it is safe to re-run:</p>
-      <pre>psql "$PREVIEW_DB" -v ON_ERROR_STOP=1 \
-  -f supabase/migrations/017_capstone_v2_domain.sql</pre>
-      <p>
-        Until that runs, the new actions compile and pass tests, but no screen can read or write
-        the new records.
-      </p>
-    </div>
-  </section>
-
-  <section>
-    <h2><span class="ref">04</span>Next, in parallel</h2>
+    <h2><span class="ref">03</span>What shipped</h2>
     <p>
-      The four UI workstreams are specified with non-overlapping file ownership, so they can run
-      at the same time without colliding on the shared schema.
+      All four UI workstreams are built and merged into <strong>staging</strong>. Migration 017 is
+      applied to the isolated preview database, so every new screen reads and writes real rows.
     </p>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th scope="col">Workstream</th>
             <th scope="col">Surface</th>
-            <th scope="col">Touches</th>
+            <th scope="col">What is there now</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>WS-A · Inspector capture</td>
-            <td>Tilt, rebound, soil, erosion, forensic, checklists</td>
-            <td>Inspection components and the asset vault</td>
+            <td>Inspector · asset vault</td>
+            <td>Six-panel workbench: tilt and settlement, rebound hammer, soil, erosion, forensic evidence, and flood/geohazard checklists prefilled from mapped zones.</td>
           </tr>
           <tr>
-            <td>WS-B · Engineer review</td>
-            <td>Crack taxonomy, cost panel, recommendation, full report edit</td>
-            <td>Report and AI components</td>
+            <td>Engineer · report route</td>
+            <td>Full editing with revision snapshots, limitation statement, cost panel with divergence gate, AI-drafted recommendation with sign-off, and per-detection crack classification.</td>
           </tr>
           <tr>
-            <td>WS-C · Filters and export</td>
-            <td>Shared filter bar, CSV, share link, heatmap</td>
-            <td>Shared UI, dashboard, reports table</td>
+            <td>Lists and map</td>
+            <td>URL-synced filters, CSV export for reports, detections and maintenance, tokenised share links, and a risk heatmap fed from recorded hotspots.</td>
           </tr>
           <tr>
-            <td>WS-D · Admin surfaces</td>
-            <td>Audit log, health, backup, project CRUD, registry</td>
-            <td>Settings only</td>
+            <td>Admin · settings</td>
+            <td>Audit log, counted system health, project registry with archive, record export/import with dry-run preview, and a thresholds page showing the rules in force.</td>
+          </tr>
+          <tr>
+            <td>Profile</td>
+            <td><code>/profile</code> for every role. Inspectors and engineers previously had no route to edit their own details.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="ref">04</span>Still open</h2>
+    <p>
+      These are stated rather than hidden: a review that finds them should find them already
+      named here.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Gap</th>
+            <th scope="col">Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Import does not carry images or detections</td>
+            <td>They belong to storage objects that are not part of a record export. The UI says so before the import runs.</td>
+          </tr>
+          <tr>
+            <td>Heatmap is empty on a fresh site</td>
+            <td>It plots recorded hotspots, not zones. No problems recorded means nothing to plot, and the panel says that instead of drawing a decorative gradient.</td>
+          </tr>
+          <tr>
+            <td>Rebound strength needs calibration</td>
+            <td>The correlation is indicative. A site-specific curve is required before the number means what a lab number means.</td>
+          </tr>
+          <tr>
+            <td>Production credentials still unrotated</td>
+            <td>The service-role key remains in an old handover archive and the seeded passwords sit in git history. Rotation is an owner action.</td>
+          </tr>
+          <tr>
+            <td>iOS build unverified</td>
+            <td>No macOS host. The Android build compiles; the iOS sources have never been through Xcode.</td>
           </tr>
         </tbody>
       </table>

@@ -100,3 +100,20 @@ ownership. Anything else is a contract change and stops for review.
 * `staging` accepts feature merges freely.
 * `main` is production and changes only on the owner's explicit go signal.
 * Nothing in this branch has touched `main`.
+
+---
+
+## Update — the four workstreams were built directly
+
+The owner asked for the UI to be built in-house rather than delegated, so WS-A
+through WS-D were implemented here and merged into `staging`. The Antigravity
+briefs remain valid as a description of the intended surfaces; they are no
+longer a work queue.
+
+What that changes:
+
+* The four `feat/*` workstream branches and their worktrees were removed.
+* Migration 017 is applied to the preview database.
+* `staging` is 11 commits ahead of the `main` baseline, including a merge of the
+  iPhone camera fix that landed on `main` in parallel.
+* `main` has still not been touched and remains the owner's call.
