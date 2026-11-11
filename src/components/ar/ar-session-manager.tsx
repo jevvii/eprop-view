@@ -24,8 +24,6 @@ export interface XRSessionState {
   limitation: string | null
   hitPose: ARPose | null
   hitMatrix: number[] | null
-  /** True once a camera frame has been copied to the display canvas. */
-  framePainted: boolean
   videoRef: React.RefObject<HTMLVideoElement | null>
   canvasRef: React.RefObject<HTMLCanvasElement | null>
   setTargetNormCoords: (nx: number, ny: number) => void
@@ -149,8 +147,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const [limitation, setLimitation] = useState<string | null>(null)
   const [hitPose, setHitPose] = useState<ARPose | null>(null)
   const [hitMatrix, setHitMatrix] = useState<number[] | null>(null)
-  /** True once a camera frame has actually been copied to the display canvas. */
-  const [framePainted, setFramePainted] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -167,8 +163,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const motionPermissionRef = useRef<'unknown' | 'granted' | 'denied'>('unknown')
   const xrFrameSeenRef = useRef(false)
   const xrFallbackTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const opticalDrawErrorRef = useRef(false)
-  const paintedRef = useRef(false)
 
   useEffect(() => {
     sessionRef.current = session
@@ -296,81 +290,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
       removeEventListener: () => {},
       dispatchEvent: () => true,
     } as unknown as XRSession
-  }, [])
-
-  // Tier 3A Optical Camera render loop.
-  //
-  // The canvas is the surface the user actually sees. A <video> element with a
-  // MediaStream does not paint reliably inside a rounded, overflow-hidden
-  // container on iOS and on several Android GPU drivers: the frames exist (a
-  // capture from it returns a real JPEG) while the element renders black.
-  // Copying the frames onto a 2D canvas sidesteps video compositing entirely.
-  const startOpticalLoop = useCallback(() => {
-    opticalDrawErrorRef.current = false
-    paintedRef.current = false
-    setFramePainted(false)
-    const canvas = canvasRef.current
-    const ctx = canvas?.getContext('2d') ?? null
-
-    if (canvas && ctx) {
-      canvas.width = videoRef.current?.videoWidth || 1280
-      canvas.height = videoRef.current?.videoHeight || 720
-    }
-
-    const renderFrame = () => {
-      try {
-        const video = videoRef.current
-        const currentCanvas = canvasRef.current
-        const context = currentCanvas?.getContext('2d') ?? null
-
-        if (currentCanvas && context && video && video.readyState >= 2 && video.videoWidth > 0) {
-          // Size the backing store to the element's CSS box at device pixel
-          // ratio, then cover-crop by hand. Doing this in the draw call avoids
-          // relying on CSS object-fit for a replaced element, which does not
-          // paint reliably in every mobile browser.
-          const cssWidth = currentCanvas.clientWidth
-          const cssHeight = currentCanvas.clientHeight
-
-          if (cssWidth > 0 && cssHeight > 0) {
-            const dpr = Math.min(window.devicePixelRatio || 1, 2)
-            const targetWidth = Math.round(cssWidth * dpr)
-            const targetHeight = Math.round(cssHeight * dpr)
-
-            if (currentCanvas.width !== targetWidth || currentCanvas.height !== targetHeight) {
-              currentCanvas.width = targetWidth
-              currentCanvas.height = targetHeight
-            }
-
-            const scale = Math.max(
-              targetWidth / video.videoWidth,
-              targetHeight / video.videoHeight
-            )
-            const drawWidth = video.videoWidth * scale
-            const drawHeight = video.videoHeight * scale
-            const offsetX = (targetWidth - drawWidth) / 2
-            const offsetY = (targetHeight - drawHeight) / 2
-
-            context.drawImage(video, offsetX, offsetY, drawWidth, drawHeight)
-
-            if (!paintedRef.current) {
-              paintedRef.current = true
-              setFramePainted(true)
-            }
-          }
-        }
-      } catch (error) {
-        // A throw here used to kill the loop permanently, leaving a black canvas
-        // for the rest of the session. Report once and keep drawing.
-        if (!opticalDrawErrorRef.current) {
-          opticalDrawErrorRef.current = true
-          console.warn('Camera frame copy failed:', error)
-        }
-      }
-
-      opticalLoopIdRef.current = requestAnimationFrame(renderFrame)
-    }
-
-    opticalLoopIdRef.current = requestAnimationFrame(renderFrame)
   }, [])
 
   // Tier 3B Simulated Optical Grid Loop (perspective structural grid + scanning laser)
@@ -535,8 +454,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     if (canvas && context) {
       context.clearRect(0, 0, canvas.width, canvas.height)
     }
-    paintedRef.current = false
-    setFramePainted(false)
 
     if (scanTimerRef.current) {
       clearTimeout(scanTimerRef.current)
@@ -673,7 +590,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
           sessionRef.current = virtualSession
           setSession(virtualSession)
           setActiveMode('optical-camera')
-          startOpticalLoop()
 
           const video = videoRef.current
           if (video) {
@@ -749,7 +665,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     },
     [
       createVirtualSession,
-      startOpticalLoop,
       calculateOpticalPose,
       startSimulatedLoop,
       requestMotionPermission,
@@ -1008,7 +923,6 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
         limitation,
         hitPose,
         hitMatrix,
-        framePainted,
         videoRef,
         canvasRef,
         setTargetNormCoords,

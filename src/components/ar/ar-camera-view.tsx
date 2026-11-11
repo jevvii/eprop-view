@@ -35,7 +35,6 @@ export function ARCameraView({
     activeMode,
     xrHardwareSupported,
     hitPose,
-    framePainted,
     videoRef,
     canvasRef,
     setTargetNormCoords,
@@ -204,10 +203,10 @@ export function ARCameraView({
           const video = videoRef.current
           if (!video || video.readyState < 2) setVideoLive(false)
         }}
-        // Capture-only unless the canvas has not painted yet, in which case it
-        // is the visible fallback. Kept mounted and playing either way.
-        className={`absolute inset-0 w-full h-full object-cover z-0 ${
-          isCameraMode && !framePainted ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        // The camera preview is the video element itself. Visibility is opacity,
+        // never display: a hidden video is throttled on iOS.
+        className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-300 ${
+          isCameraMode ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
 
@@ -218,12 +217,11 @@ export function ARCameraView({
         returns a real image while the element paints nothing. The session manager
         copies the camera frames onto this canvas, which renders reliably.
       */}
+      {/* Simulated grid and the WebXR composition surface. */}
       <canvas
         ref={canvasRef}
-        // No object-fit: the backing store is sized to this box and the frames
-        // are cover-cropped while drawing.
-        className={`absolute inset-0 w-full h-full z-0 ${
-          isCameraMode && !framePainted ? 'opacity-0' : 'opacity-100'
+        className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-300 ${
+          isCameraMode ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
       />
 
@@ -423,52 +421,44 @@ export function ARCameraView({
  * capability that never presents.
  */
 function DeviceDiagnostics() {
-  const { activeMode, videoRef, xrHardwareSupported, framePainted } = useARSessionContext()
+  const { activeMode, videoRef, xrHardwareSupported } = useARSessionContext()
   const [permission, setPermission] = useState<string>('unknown')
   const [secure, setSecure] = useState<string>('unknown')
   const [cameraApi, setCameraApi] = useState<string>('unknown')
   const [canvasState, setCanvasState] = useState<string>('unknown')
-  const [canvasPixel, setCanvasPixel] = useState<string>('unknown')
-  const [canvasCss, setCanvasCss] = useState<string>('unknown')
+  const [videoBox, setVideoBox] = useState<string>('unknown')
+  const [viewport, setViewport] = useState<string>('unknown')
 
   useEffect(() => {
-    const sampleCanvas = () => {
+    const sampleLayout = () => {
       const canvas = document.querySelector('canvas')
       if (!canvas) {
         setCanvasState('no canvas in the document')
-        setCanvasPixel('—')
-        setCanvasCss('—')
-        return
+      } else {
+        setCanvasState(
+          canvas.getContext('2d')
+            ? '2D ok'
+            : 'BLOCKED — this canvas already holds a non-2D context'
+        )
       }
 
-      const context = canvas.getContext('2d')
-      setCanvasState(
-        context
-          ? '2D ok'
-          : 'BLOCKED — this canvas already holds a non-2D context'
+      // The measurement that would have caught the collapsed preview in one
+      // look: a healthy decode with a zero-height box is a layout bug, not a
+      // camera bug.
+      const video = document.querySelector('video')
+      setVideoBox(
+        video
+          ? `${video.clientWidth}×${video.clientHeight} css`
+          : 'no video element'
       )
-      setCanvasCss(`${canvas.clientWidth}×${canvas.clientHeight} css · ${canvas.width}×${canvas.height} px`)
 
-      if (!context) {
-        setCanvasPixel('unreadable — no 2D context')
-        return
-      }
-
-      try {
-        const data = context.getImageData(
-          Math.floor(canvas.width / 2),
-          Math.floor(canvas.height / 2),
-          1,
-          1
-        ).data
-        setCanvasPixel(`rgba(${data[0]},${data[1]},${data[2]},${data[3]})`)
-      } catch {
-        setCanvasPixel('read blocked by the browser')
-      }
+      setViewport(
+        `${window.innerWidth}×${window.innerHeight} @${window.devicePixelRatio ?? 1}x`
+      )
     }
 
-    sampleCanvas()
-    const timer = setInterval(sampleCanvas, 1000)
+    sampleLayout()
+    const timer = setInterval(sampleLayout, 1000)
     return () => clearInterval(timer)
   }, [])
 
@@ -505,16 +495,15 @@ function DeviceDiagnostics() {
 
   const rows: [string, string][] = [
     ['Build', (process.env.NEXT_PUBLIC_BUILD_SHA ?? 'local').slice(0, 7)],
+    ['Viewport', viewport],
     ['Secure context', secure],
     ['Camera API', cameraApi],
     ['Camera permission', permission],
     ['WebXR immersive-ar', xrHardwareSupported ? 'reported supported' : 'not supported'],
     ['Active mode', activeMode],
+    ['Video box', videoBox],
+    ['Video decoded', frames],
     ['Display canvas', canvasState],
-    ['Canvas size', canvasCss],
-    ['Canvas centre pixel', canvasPixel],
-    ['Frames painted', framePainted ? 'yes' : 'no — the draw loop has not painted yet'],
-    ['Video frames', frames],
   ]
 
   return (
