@@ -10,6 +10,7 @@ import { ARAnchorForm } from '@/components/ar/ar-anchor-form'
 import { ReferenceTargetControls } from '@/components/ar/reference-target-controls'
 import { useReferenceTracking } from '@/components/ar/use-reference-tracking'
 import { getReferencePose, getValidReference, type Point2D } from '@/app/lib/ar/printed-reference'
+import { inspectionStartError } from '@/app/lib/ar/permission-errors'
 import { useARAnchors, useProfile, useInspections } from '@/app/lib/queries'
 import { hasCapability } from '@/app/lib/role-utils'
 import { AccessDenied } from '@/components/shared/require-role'
@@ -192,7 +193,7 @@ function ARPageContent() {
         setDbSessionId(row.id)
       }
     } catch (err) {
-      if (generation === workspaceGeneration.current) setStartError(err instanceof Error ? err.message : 'Could not start the inspection camera')
+      if (generation === workspaceGeneration.current) setStartError(inspectionStartError(err, 'camera'))
       await endProgressiveAR()
     } finally {
       if (generation === workspaceGeneration.current) {

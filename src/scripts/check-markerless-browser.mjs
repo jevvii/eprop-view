@@ -6,6 +6,7 @@ import path from 'node:path'
 import http from 'node:http'
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
+import { checkCameraPermissions } from './check-camera-permissions.mjs'
 
 const root = process.cwd(), require = createRequire(path.join(root, 'package.json'))
 const { build } = require('esbuild'), sharp = require('sharp')
@@ -73,6 +74,7 @@ function installXRMock({ supported }) {
     requestSession: async (mode, options) => {
       window.__xrEvents.push('xr-request'); state.requests.push({ mode, options: { requiredFeatures: options.requiredFeatures, optionalFeatures: options.optionalFeatures }, gesture: navigator.userActivation.isActive })
       if (state.rejectStart) throw new Error('Fixture XR session rejected')
+      if (state.rejectPermission) throw new DOMException('Permission denied', 'NotAllowedError')
       const session = new EventTarget(), local = new EventTarget(), timers = new Map(); let nextId = 0, ended = false
       state.session = session; state.local = local
       session.visibilityState = 'visible'; session.renderState = {}
@@ -98,7 +100,8 @@ function installXRMock({ supported }) {
   } })
 }
 try {
-  browser = await chromium.launch({ executablePath: process.env.AR_TEST_BROWSER, headless: true })
+  browser = await chromium.launch({ executablePath: process.env.AR_TEST_BROWSER, headless: true, args: ['--use-fake-device-for-media-stream'] })
+  await checkCameraPermissions(browser, `http://127.0.0.1:${server.address().port}/`, 'camera')
   for (const width of [390, 1280]) {
     markers = []; sessions = []; counter = 0
     const context = await browser.newContext({ viewport: { width, height: 1000 } })
@@ -155,7 +158,10 @@ try {
     await start.waitFor(); await page.waitForTimeout(100)
     assert.equal(await page.locator('[data-xr-marker]').count(), 0)
     assert(sessions.every(s => s.status === 'completed'), 'reference-space reset must end its session rather than reuse old coordinates')
-    await page.evaluate(() => { window.__xr.rejectStart = true }); await start.click()
+    await page.evaluate(() => { window.__xr.rejectPermission = true }); await start.click()
+    await page.getByRole('alert').filter({ hasText: 'AR permission was not granted.' }).waitFor()
+    assert.equal((await page.evaluate(() => window.__xr.requests)).every(request => request.gesture), true)
+    await page.evaluate(() => { window.__xr.rejectPermission = false; window.__xr.rejectStart = true }); await start.click()
     const rejectedToast = page.getByRole('alert').filter({ hasText: 'Fixture XR session rejected' })
     await rejectedToast.waitFor()
     assert.equal(await rejectedToast.evaluate(el => getComputedStyle(el).position), 'fixed')

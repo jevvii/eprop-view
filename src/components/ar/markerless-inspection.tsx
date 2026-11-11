@@ -5,6 +5,7 @@ import type { ARPose } from '@/app/types'
 import { useProfile, useInspections, useARAnchors } from '@/app/lib/queries'
 import { useStartARSession, useEndARSession, useCreateARAnchor, useDeleteARAnchor } from '@/app/lib/mutations'
 import { hasCapability } from '@/app/lib/role-utils'
+import { inspectionStartError } from '@/app/lib/ar/permission-errors'
 import { MarkerlessRuntime, type XRInspectionState } from './markerless-runtime'
 
 const IDLE: XRInspectionState = { active: false, sessionKey: null, tracking: false, hit: false, pins: {}, message: null }
@@ -129,7 +130,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
     } catch (cause) {
       if (current === generation.current) {
         await stop().catch(() => {})
-        const message = cause instanceof Error ? cause.message : 'Could not start inspection'
+        const message = inspectionStartError(cause, mode)
         if (mode === 'webxr') setArStartError({ message })
         else setError(message)
       }

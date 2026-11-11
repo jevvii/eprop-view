@@ -5,6 +5,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import http from 'node:http';
 import assert from 'node:assert/strict';
+import { checkCameraPermissions } from './check-camera-permissions.mjs';
 const root = process.cwd();
 const artifacts = process.env.AR_TEST_ARTIFACTS || path.join(tmpdir(), 'epropview-reference-browser');
 await mkdir(artifacts, { recursive: true });
@@ -88,7 +89,8 @@ await new Promise(r => server.listen(0, '127.0.0.1', r));
 let browser;
 const results = [];
 try {
-    browser = await chromium.launch({ executablePath: process.env.AR_TEST_BROWSER, headless: true });
+    browser = await chromium.launch({ executablePath: process.env.AR_TEST_BROWSER, headless: true, args: ['--use-fake-device-for-media-stream'] });
+    await checkCameraPermissions(browser, `http://127.0.0.1:${server.address().port}/`, 'reference');
     for (const width of [390, 1280]) {
         markers = [];
         sessions = [];
