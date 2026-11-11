@@ -57,7 +57,9 @@ unverified until actual devices are used; emulation does not prove hardware AR.
    point. Move the camera: the point follows its current-session reference frame.
 4. End inspection. Saved records remain in the list; restarting does not restore
    their positions in the new coordinate system. This is intentional.
-5. If immersive AR is unavailable or photo evidence is required, use Camera/photo
+5. On an unsupported device, Start markerless AR shows a dismissible error toast
+   for eight seconds without creating a session. AR startup failures also use a
+   toast. If immersive AR is unavailable or photo evidence is required, use Camera/photo
    inspection. Save captures a real image with a centre-point annotation. This
    mode provides no depth or physical world tracking and requires no printed QR.
 6. The printed-reference option remains available for users who need repeatable

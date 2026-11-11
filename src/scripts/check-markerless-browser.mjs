@@ -67,9 +67,9 @@ function installXRMock({ supported }) {
   const ctx = camera.getContext('2d'); let phase = 0
   setInterval(() => { ctx.fillStyle = phase++ % 2 ? '#67b9d0' : '#6abdd2'; ctx.fillRect(0, 0, 640, 480) }, 33)
   navigator.mediaDevices.getUserMedia = async () => camera.captureStream(30)
-  if (!supported) { Object.defineProperty(navigator, 'xr', { value: undefined, configurable: true }); return }
+  if (supported === 'missing') { Object.defineProperty(navigator, 'xr', { value: undefined, configurable: true }); return }
   Object.defineProperty(navigator, 'xr', { configurable: true, value: {
-    isSessionSupported: async () => true,
+    isSessionSupported: async () => supported,
     requestSession: async (mode, options) => {
       window.__xrEvents.push('xr-request'); state.requests.push({ mode, options: { requiredFeatures: options.requiredFeatures, optionalFeatures: options.optionalFeatures }, gesture: navigator.userActivation.isActive })
       if (state.rejectStart) throw new Error('Fixture XR session rejected')
@@ -156,7 +156,9 @@ try {
     assert.equal(await page.locator('[data-xr-marker]').count(), 0)
     assert(sessions.every(s => s.status === 'completed'), 'reference-space reset must end its session rather than reuse old coordinates')
     await page.evaluate(() => { window.__xr.rejectStart = true }); await start.click()
-    await page.getByRole('alert').filter({ hasText: 'Fixture XR session rejected' }).waitFor()
+    const rejectedToast = page.getByRole('alert').filter({ hasText: 'Fixture XR session rejected' })
+    await rejectedToast.waitFor()
+    assert.equal(await rejectedToast.evaluate(el => getComputedStyle(el).position), 'fixed')
     await page.getByRole('button', { name: 'Use camera/photo inspection', exact: true }).click()
     const photo = page.getByRole('button', { name: 'Capture photo + centre point', exact: true }); await photo.waitFor()
     await page.waitForFunction(() => document.querySelector('video').readyState >= 2); await photo.click()
@@ -168,11 +170,29 @@ try {
     await page.screenshot({ path: path.join(artifacts, `records-${width}.png`), fullPage: true })
     assert.deepEqual(errors, []); results.push({ width, xrSaved: 2, cameraSaved: 1, errors })
     await context.close()
-    const unsupported = await browser.newContext({ viewport: { width, height: 1000 } }); await unsupported.addInitScript(installXRMock, { supported: false })
+    const unsupported = await browser.newContext({ viewport: { width, height: 1000 } }); await unsupported.addInitScript(installXRMock, { supported: width === 390 ? 'missing' : false })
     const unsupportedPage = await unsupported.newPage(); unsupportedPage.on('pageerror', e => errors.push(e.message)); await unsupportedPage.goto(`http://127.0.0.1:${server.address().port}/`)
-    await unsupportedPage.getByText('This browser does not support immersive WebXR.', { exact: false }).waitFor()
-    assert(await unsupportedPage.getByRole('button', { name: 'Start markerless AR', exact: true }).isDisabled())
+    const unsupportedStart = unsupportedPage.getByRole('button', { name: 'Start markerless AR', exact: true })
+    await unsupportedStart.waitFor()
+    assert.equal(await unsupportedPage.getByRole('alert').count(), 0, 'unsupported notice appears only after attempting AR')
+    assert.equal(await unsupportedStart.isDisabled(), false, 'unsupported AR attempts must explain the fallback in a toast')
+    const sessionsBefore = sessions.length
+    await unsupportedStart.click()
+    const toast = unsupportedPage.getByRole('alert').filter({ hasText: 'This device or browser does not support markerless AR.' })
+    await toast.waitFor()
+    assert.equal(await toast.evaluate(el => getComputedStyle(el).position), 'fixed', 'unsupported error must float as a toast')
+    assert.equal(sessions.length, sessionsBefore, 'unsupported AR must not create a session')
+    assert.equal(await unsupportedPage.evaluate(() => window.__xrEvents.includes('xr-request')), false)
+    await unsupportedPage.screenshot({ path: path.join(artifacts, `unsupported-toast-${width}.png`), fullPage: true })
+    await toast.getByRole('button', { name: 'Dismiss AR error', exact: true }).click()
+    await toast.waitFor({ state: 'detached' })
+    await unsupportedPage.clock.install()
+    await unsupportedStart.click(); await toast.waitFor()
+    await unsupportedPage.clock.fastForward(8000)
+    await toast.waitFor({ state: 'detached' })
+    await unsupportedStart.click(); await toast.waitFor()
     await unsupportedPage.getByRole('button', { name: 'Use camera/photo inspection', exact: true }).click()
+    await toast.waitFor({ state: 'detached' })
     await unsupportedPage.getByRole('button', { name: 'Capture photo + centre point', exact: true }).waitFor(); await unsupportedPage.waitForFunction(() => document.querySelector('video').readyState >= 2)
     await unsupportedPage.getByRole('button', { name: 'Capture photo + centre point', exact: true }).click()
     await unsupportedPage.waitForFunction(() => document.querySelectorAll('img[alt^="Evidence for"]').length === 2)
