@@ -191,18 +191,21 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
           const video = videoRef.current
           if (!video || video.readyState < 2) setVideoLive(false)
         }}
-        className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-300 ${
-          isCameraMode ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        // Capture-only: kept mounted, laid out and playing so frames decode, but
+        // never painted. The canvas mirrors it for display.
+        className="absolute inset-0 w-full h-full object-cover z-0 opacity-0 pointer-events-none"
       />
 
-      {/* Render canvas: WebXR composition surface, or the simulated grid. */}
+      {/*
+        The canvas is what the user sees, in every mode. A MediaStream video
+        element renders black inside a rounded, overflow-hidden container on iOS
+        and some Android GPU drivers even though its frames are intact — capture
+        returns a real image while the element paints nothing. The session manager
+        copies the camera frames onto this canvas, which renders reliably.
+      */}
       <canvas
         ref={canvasRef}
-        aria-hidden={isCameraMode}
-        className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-300 ${
-          isCameraMode ? 'opacity-0 pointer-events-none' : 'opacity-100'
-        }`}
+        className="absolute inset-0 w-full h-full object-cover z-0"
       />
 
       {isCameraMode && !videoLive && (

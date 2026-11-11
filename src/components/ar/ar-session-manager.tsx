@@ -292,57 +292,38 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     } as unknown as XRSession
   }, [])
 
-  // Tier 3A Optical Camera render loop (draws video frame + subtle reticle to canvas)
+  // Tier 3A Optical Camera render loop.
+  //
+  // The canvas is the surface the user actually sees. A <video> element with a
+  // MediaStream does not paint reliably inside a rounded, overflow-hidden
+  // container on iOS and on several Android GPU drivers: the frames exist (a
+  // capture from it returns a real JPEG) while the element renders black.
+  // Copying the frames onto a 2D canvas sidesteps video compositing entirely.
   const startOpticalLoop = useCallback(() => {
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d') ?? null
+
+    if (canvas && ctx) {
+      canvas.width = videoRef.current?.videoWidth || 1280
+      canvas.height = videoRef.current?.videoHeight || 720
+    }
+
     const renderFrame = () => {
       const video = videoRef.current
-      const canvas = canvasRef.current
-      if (canvas && video && video.readyState >= 2) {
-        const ctx = canvas.getContext('2d')
-        if (ctx) {
-          if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-            canvas.width = video.videoWidth || canvas.clientWidth || 1280
-            canvas.height = video.videoHeight || canvas.clientHeight || 720
-          }
-          // Draw raw camera frame
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      const currentCanvas = canvasRef.current
+      const context = currentCanvas?.getContext('2d') ?? null
 
-          // Subtle AR Reticle overlay
-          const targetX = targetNormRef.current.nx * canvas.width
-          const targetY = targetNormRef.current.ny * canvas.height
-
-          ctx.save()
-          ctx.strokeStyle = 'rgba(52, 211, 153, 0.75)'
-          ctx.lineWidth = 2.5
-          ctx.shadowColor = 'rgba(52, 211, 153, 0.5)'
-          ctx.shadowBlur = 8
-
-          // Outer reticle ring
-          ctx.beginPath()
-          ctx.arc(targetX, targetY, 28, 0, Math.PI * 2)
-          ctx.stroke()
-
-          // Center target pip
-          ctx.fillStyle = '#34D399'
-          ctx.beginPath()
-          ctx.arc(targetX, targetY, 4, 0, Math.PI * 2)
-          ctx.fill()
-
-          // Crosshairs
-          ctx.beginPath()
-          ctx.moveTo(targetX - 38, targetY)
-          ctx.lineTo(targetX - 14, targetY)
-          ctx.moveTo(targetX + 14, targetY)
-          ctx.lineTo(targetX + 38, targetY)
-          ctx.moveTo(targetX, targetY - 38)
-          ctx.lineTo(targetX, targetY - 14)
-          ctx.moveTo(targetX, targetY + 14)
-          ctx.lineTo(targetX, targetY + 38)
-          ctx.stroke()
-
-          ctx.restore()
+      if (currentCanvas && context && video && video.readyState >= 2 && video.videoWidth > 0) {
+        if (
+          currentCanvas.width !== video.videoWidth ||
+          currentCanvas.height !== video.videoHeight
+        ) {
+          currentCanvas.width = video.videoWidth
+          currentCanvas.height = video.videoHeight
         }
+        context.drawImage(video, 0, 0, currentCanvas.width, currentCanvas.height)
       }
+
       opticalLoopIdRef.current = requestAnimationFrame(renderFrame)
     }
 
@@ -502,6 +483,14 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
     if (opticalLoopIdRef.current) {
       cancelAnimationFrame(opticalLoopIdRef.current)
       opticalLoopIdRef.current = null
+    }
+
+    // The canvas keeps the last painted frame otherwise, which shows through the
+    // standby overlay as a frozen camera image.
+    const canvas = canvasRef.current
+    const context = canvas?.getContext('2d')
+    if (canvas && context) {
+      context.clearRect(0, 0, canvas.width, canvas.height)
     }
 
     if (scanTimerRef.current) {
