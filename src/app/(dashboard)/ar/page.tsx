@@ -567,6 +567,12 @@ function ARPageContent() {
               </span>
             </div>
 
+            {deleteARAnchor.isError && (
+              <p role="alert" className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-semibold text-red-600">
+                Could not delete this marker. Check your connection and permissions, then try again.
+              </p>
+            )}
+
             {anchors.length === 0 ? (
               <div className="text-center py-6 px-3 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
                 <MapPin className="mx-auto mb-1 h-6 w-6 text-slate-400" aria-hidden="true" />
@@ -620,10 +626,11 @@ function ARPageContent() {
                       <button
                         type="button"
                         onClick={() => handleDeleteAnchor(anchor.id)}
-                        disabled={isDeleting}
+                        disabled={deleteARAnchor.isPending}
+                        aria-busy={isDeleting}
                         className="text-slate-400 hover:text-red-600 p-2 rounded-xl hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50"
-                        title="Delete anchor"
-                        aria-label={`Delete anchor ${anchor.label}`}
+                        title="Delete marker"
+                        aria-label={`Delete marker ${anchor.label}`}
                       >
                         {isDeleting ? (
                           <span className="text-xs animate-spin">⏳</span>
