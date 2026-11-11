@@ -530,10 +530,10 @@ function ARPageContent() {
 
       {/* Main AR Workspace Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-6 sm:gap-8 items-start">
-        {/* Camera & Spatial Viewport */}
+        {/* An explicit height lets the h-full camera view fill the viewport on phones. */}
         <div
           id="ar-viewport"
-          className="relative min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border border-slate-100 bg-slate-950"
+          className="relative h-[380px] min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border border-slate-100 bg-slate-950"
         >
           <ARCameraView
             onTapToAnchor={handleTapToAnchor}
