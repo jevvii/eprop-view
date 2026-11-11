@@ -128,7 +128,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
       onSubmit={handleSubmit}
       className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-4"
     >
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2 flex-wrap">
+      <div className="flex flex-col items-start border-b border-slate-100 pb-3 gap-3">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           <h4 className="text-xs sm:text-xs font-black text-slate-800 tracking-[0.2em] uppercase">
@@ -139,7 +139,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
           type="button"
           onClick={handleAICameraScan}
               disabled={isScanningAI || evidenceUnavailable || createAnchor.isPending || !hitPose?.reference}
-          className="text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl uppercase tracking-wider transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl uppercase tracking-wider transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isScanningAI ? 'Analyzing…' : 'Analyze Frame (heuristic)'}
         </button>
@@ -244,7 +244,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
 
         {/* Camera Snapshot Attachment Section */}
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start gap-3">
             <span className="text-xs font-black text-slate-600 uppercase tracking-wider">
               {snapshot ? 'Camera snapshot attached' : 'Visual frame evidence'}
             </span>
@@ -252,7 +252,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
               type="button"
               onClick={handleCaptureSnapshot}
               disabled={evidenceUnavailable}
-              className="text-xs font-black text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-3 py-1.5 rounded-lg uppercase tracking-wider transition-colors min-h-[36px] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-xs font-black text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-3 py-2 rounded-lg uppercase tracking-wider transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {snapshot ? 'Retake frame' : 'Capture frame'}
             </button>
