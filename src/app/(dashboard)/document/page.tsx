@@ -6,6 +6,7 @@ import { ScanLine, Microscope } from 'lucide-react'
 import { InspectionForm } from '@/components/document/inspection-form'
 import { AssetFeed } from '@/components/document/asset-feed'
 import { AssetUpload } from '@/components/document/asset-upload'
+import { StructuralTabs } from '@/components/structural/structural-tabs'
 import { useInspections, useProfile } from '@/app/lib/queries'
 import { hasCapability } from '@/app/lib/role-utils'
 
@@ -29,6 +30,11 @@ export default function DocumentPage() {
     const inspection = inspections.find((item) => item.id === inspectionId)
     if (!inspection) return null
     return `${new Date(inspection.inspection_date).toLocaleDateString()} · ${inspection.location}`
+  }, [inspectionId, inspections])
+
+  const selectedInspection = useMemo(() => {
+    if (!inspectionId || !inspections) return null
+    return inspections.find((item) => item.id === inspectionId) ?? null
   }, [inspectionId, inspections])
 
   if (isLoading) {
@@ -73,6 +79,8 @@ export default function DocumentPage() {
           )}
         </div>
       </div>
+
+      <StructuralTabs inspection={selectedInspection} />
 
       <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1.6fr_1fr]">
         {/* Feed first on mobile: inspectors open the vault to review evidence. */}

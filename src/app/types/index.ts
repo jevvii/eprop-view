@@ -67,6 +67,12 @@ export interface Inspection {
   notes: string
   created_at: string
   updated_at: string
+  // Capstone v2 (migration 017)
+  erosion_condition?: ErosionCondition | null
+  erosion_type?: ErosionType | null
+  erosion_notes?: string | null
+  reopened_at?: string | null
+  reopened_by?: string | null
 }
 
 export interface Report {

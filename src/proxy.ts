@@ -22,6 +22,7 @@ export async function proxy(request: NextRequest) {
     path.startsWith('/reports') ||
     path.startsWith('/document') ||
     path.startsWith('/ar') ||
+    path.startsWith('/profile') ||
     path.startsWith('/settings')
   const isAuthRoute = path === '/' || path === '/login' || path === '/signup'
 
