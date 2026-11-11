@@ -272,14 +272,14 @@ function ARPageContent() {
           </div>
 
           {/* In-Page Inspection Selector Dropdown */}
-          <div className="flex items-center gap-2 flex-wrap pt-1">
+          <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center">
             <label
               htmlFor="ar-inspection-select"
               className="text-xs font-black uppercase tracking-wider text-slate-500 shrink-0"
             >
               Inspection:
             </label>
-            <div className="relative flex-1 max-w-md">
+            <div className="relative w-full min-w-0 sm:max-w-md sm:flex-1">
               <select
                 id="ar-inspection-select"
                 data-testid="ar-inspection-select"
@@ -306,13 +306,13 @@ function ARPageContent() {
         </div>
 
         {/* Start / End AR Session Button */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        <div className="w-full shrink-0 md:w-auto">
           {isActive ? (
             <Button
               onClick={handleEnd}
               disabled={starting}
               variant="outline"
-              className="text-xs font-black uppercase tracking-[0.15em] px-6 py-3 h-auto min-h-[44px] rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm"
+              className="w-full whitespace-normal text-xs font-black uppercase tracking-[0.15em] px-6 py-3 h-auto min-h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm"
             >
               End AR Session
             </Button>
@@ -320,7 +320,7 @@ function ARPageContent() {
             <Button
               onClick={handleStart}
               disabled={!inspectionId || starting}
-              className="text-xs font-black uppercase tracking-[0.15em] px-6 py-3 h-auto min-h-[44px] rounded-xl shadow-lg shadow-primary/20"
+              className="w-full whitespace-normal text-xs font-black uppercase tracking-[0.15em] px-6 py-3 h-auto min-h-12 rounded-xl shadow-lg shadow-primary/20"
             >
               {starting ? 'Starting camera…' : 'Start AR Session'}
             </Button>
@@ -525,11 +525,11 @@ export default function ARPage() {
   const [mode, setMode] = useState<'markerless' | 'reference'>('markerless')
   const [active, setActive] = useState(false)
   return <div className="space-y-4">
-    <div className="flex flex-wrap gap-2" role="group" aria-label="Inspection tracking method">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Inspection tracking method">
       <button type="button" aria-pressed={mode === 'markerless'} disabled={active}
-        onClick={() => setMode('markerless')} className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold disabled:opacity-60">Markerless / photo inspection</button>
+        onClick={() => setMode('markerless')} className="min-h-12 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white disabled:opacity-60">Markerless / photo inspection</button>
       <button type="button" aria-pressed={mode === 'reference'} disabled={active}
-        onClick={() => setMode('reference')} className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold disabled:opacity-60">Printed reference (optional)</button>
+        onClick={() => setMode('reference')} className="min-h-12 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white disabled:opacity-60">Printed reference (optional)</button>
     </div>
     {mode === 'markerless' ? <MarkerlessInspection onActiveChange={setActive} /> : <ReferenceARPage />}
   </div>

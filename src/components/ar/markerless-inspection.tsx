@@ -198,16 +198,16 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
           const url = new URL(window.location.href)
           url.searchParams.set('inspectionId', event.target.value)
           window.history.replaceState({}, '', url.toString())
-        }} className="mt-1 block w-full rounded-lg border border-slate-300 p-3">
+        }} className="mt-1 block min-h-[44px] w-full min-w-0 rounded-lg border border-slate-300 p-3">
           {!inspections.length && <option value="">No inspections available</option>}
           {inspections.map((inspection) => <option key={inspection.id} value={inspection.id}>{inspection.location || inspection.building_name || inspection.id.slice(0, 8)}</option>)}
         </select>
       </label>
-      {!active && <div className="flex flex-wrap gap-2">
+      {!active && <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2" role="group" aria-label="Start inspection">
         <button type="button" disabled={busy || !selectedId || xrSupported === null} onClick={() => void start('webxr')}
-          className="min-h-[44px] rounded-lg bg-primary px-4 py-2 font-semibold text-white disabled:opacity-50">{busy ? 'Starting…' : 'Start markerless AR'}</button>
+          className="min-h-12 w-full min-w-0 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Starting…' : 'Start markerless AR'}</button>
         <button type="button" disabled={busy || !selectedId} onClick={() => void start('camera')}
-          className="min-h-[44px] rounded-lg border border-slate-300 px-4 py-2 font-semibold">Use camera/photo inspection</button>
+          className="min-h-12 w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 text-sm font-semibold">Use camera/photo inspection</button>
       </div>}
     </div>
     <div ref={overlayRef} data-markerless-overlay data-xr-active={state.active} className={`relative h-[420px] overflow-hidden rounded-2xl border border-slate-200 ${state.active ? 'bg-transparent' : 'bg-slate-950'}`}>
