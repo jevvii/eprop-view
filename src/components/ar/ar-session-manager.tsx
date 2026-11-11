@@ -571,13 +571,8 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
 
       if (navigator?.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
         try {
-          const motion = await requestMotionPermission()
-          if (motion === 'denied') {
-            setLimitation('Device motion permission was denied. Tap the view to aim the marker.')
-          } else if (motion === 'unsupported') {
-            setLimitation('Device motion is not available in this browser. Tap the view to aim the marker.')
-          }
-
+          // Get the camera first: iOS loses the click activation after an
+          // awaited permission prompt, and the video needs to start playing.
           const stream = await navigator.mediaDevices.getUserMedia({
             video: {
               facingMode: { ideal: 'environment' },
@@ -594,6 +589,12 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
             await video.play().catch(() => {})
           }
 
+          const virtualSession = createVirtualSession()
+          sessionRef.current = virtualSession
+          setSession(virtualSession)
+          setActiveMode('optical-camera')
+          startOpticalLoop()
+
           // A stream can be granted while the preview never produces frames
           // (some WebViews and privacy browsers). Do not leave a black viewport.
           const previewReady = await waitForVideoFrame(video, 2500)
@@ -601,14 +602,15 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
             stream.getTracks().forEach((track) => track.stop())
             mediaStreamRef.current = null
             if (video) video.srcObject = null
+            if (opticalLoopIdRef.current) {
+              cancelAnimationFrame(opticalLoopIdRef.current)
+              opticalLoopIdRef.current = null
+            }
+            sessionRef.current = null
+            setSession(null)
+            setActiveMode('idle')
             throw new Error('Camera preview did not produce frames')
           }
-
-          const virtualSession = createVirtualSession()
-          sessionRef.current = virtualSession
-          setSession(virtualSession)
-          setActiveMode('optical-camera')
-          startOpticalLoop()
 
           setHitPose(null)
           scanTimerRef.current = setTimeout(() => {
@@ -616,6 +618,16 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
             setHitPose(pose)
             setHitMatrix(matrix)
           }, 800)
+
+          // Request after the stream starts; iOS motion permission is already
+          // requested from the click via prepareForAR.
+          void requestMotionPermission().then((motion) => {
+            if (motion === 'denied') {
+              setLimitation('Device motion permission was denied. Tap the view to aim the marker.')
+            } else if (motion === 'unsupported') {
+              setLimitation('Device motion is not available in this browser. Tap the view to aim the marker.')
+            }
+          })
 
           onStarted?.()
           return
