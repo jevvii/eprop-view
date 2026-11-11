@@ -7,7 +7,9 @@ import { ARSessionManager, useARSessionContext } from '@/components/ar/ar-sessio
 import { ARCameraView } from '@/components/ar/ar-camera-view'
 import { AROverlay } from '@/components/ar/ar-overlay'
 import { ARAnchorForm } from '@/components/ar/ar-anchor-form'
-import { useARCapture } from '@/components/ar/use-ar-capture'
+import { ReferenceTargetControls } from '@/components/ar/reference-target-controls'
+import { useReferenceTracking } from '@/components/ar/use-reference-tracking'
+import { getReferencePose, getValidReference, type Point2D } from '@/app/lib/ar/printed-reference'
 import { useARAnchors, useProfile, useInspections } from '@/app/lib/queries'
 import { hasCapability } from '@/app/lib/role-utils'
 import { AccessDenied } from '@/components/shared/require-role'
@@ -20,6 +22,7 @@ import {
 } from '@/app/lib/mutations'
 import { SeverityBadge } from '@/components/ai/severity-badge'
 import { Button } from '@/components/ui/button'
+import { MarkerlessInspection } from '@/components/ar/markerless-inspection'
 
 function ARPageContent() {
   const { data: profile, isLoading: profileLoading } = useProfile()
@@ -54,66 +57,38 @@ function ARPageContent() {
   const inspectionId = selectedInspectionId
 
   const {
-    xrHardwareSupported,
     activeMode,
     isActive,
     error,
     limitation,
-    hitPose,
+    videoRef,
     startSession: startProgressiveAR,
     endSession: endProgressiveAR,
-    prepareForAR,
-    switchToCamera,
   } = useARSessionContext()
 
   const { data: anchors = [] } = useARAnchors(inspectionId || undefined)
-  // Capture and analysis are shared by the viewport controls and the anchor form.
-  const capture = useARCapture(inspectionId)
   const startARSession = useStartARSession()
   const endARSession = useEndARSession()
+  const endSessionRow = endARSession.mutateAsync
   const createARAnchor = useCreateARAnchor()
   const deleteARAnchor = useDeleteARAnchor()
 
   const [dbSessionId, setDbSessionId] = useState<string | null>(null)
   const dbSessionIdRef = useRef<string | null>(null)
-  const creatingSessionRef = useRef(false)
   const [deletingAnchorId, setDeletingAnchorId] = useState<string | null>(null)
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [startError, setStartError] = useState<string | null>(null)
-  const [nativeInfo, setNativeInfo] = useState<{ available: boolean; engine: string; platform: string }>({
-    available: false,
-    engine: 'Progressive AR',
-    platform: 'web',
-  })
-  const [detectedPlanesCount, setDetectedPlanesCount] = useState<number>(0)
+  const [markerError, setMarkerError] = useState<string | null>(null)
+  const [starting, setStarting] = useState(false)
+  const startLock = useRef(false)
+  const workspaceGeneration = useRef(0)
+  const viewportRef = useRef<HTMLDivElement | null>(null)
+  const [aim, setAim] = useState<Point2D>({ x: .5, y: .5 })
+  const tracking = useReferenceTracking(videoRef, viewportRef, inspectionId, isActive && activeMode === 'optical-camera')
+  const hitPose = tracking.frame ? getReferencePose(aim, tracking.frame, tracking.viewport) : null
+  const captureEvidence = useCallback(() => tracking.captureEvidence(aim), [tracking.captureEvidence, aim])
 
   const canUseAR = hasCapability(profile?.role, 'ar:use')
-
-  // Check for Capacitor native ARKit/ARCore bridge
-  useEffect(() => {
-    let unsubscribe: (() => void) | null = null
-    let cancelled = false
-
-    import('@/app/lib/ar/native-bridge').then(({ isNativeARAvailable, onARBridgeEvent }) => {
-      // The component may unmount before the dynamic import resolves.
-      if (cancelled) return
-
-      isNativeARAvailable().then((res) => {
-        if (!cancelled) setNativeInfo(res)
-      })
-
-      unsubscribe = onARBridgeEvent((event) => {
-        if (event.type === 'planeDetected') {
-          setDetectedPlanesCount((c) => c + 1)
-        }
-      })
-    })
-
-    return () => {
-      cancelled = true
-      unsubscribe?.()
-    }
-  }, [])
 
   // Reattach to an already-active DB session instead of leaking it and
   // creating a second row on the next Start.
@@ -123,7 +98,7 @@ function ARPageContent() {
 
     getActiveARSession(inspectionId)
       .then((active) => {
-        if (cancelled || !active) return
+        if (cancelled || !active || dbSessionIdRef.current) return
         dbSessionIdRef.current = active.id
         setDbSessionId(active.id)
       })
@@ -136,69 +111,23 @@ function ARPageContent() {
     }
   }, [inspectionId])
 
-  // A database session follows the AR lifecycle rather than the Start click.
-  // WebXR can end and hand over to the camera mid-run, which stops and restarts
-  // the session; without this, the camera works but markers silently stop
-  // saving because there is no session row to attach them to.
-  useEffect(() => {
-    if (!isActive || !inspectionId) return
-    if (dbSessionIdRef.current || creatingSessionRef.current) return
-
-    creatingSessionRef.current = true
-    let cancelled = false
-
-    startARSession
-      .mutateAsync({
-        inspectionId,
-        deviceInfo: {
-          engine:
-            nativeInfo.platform !== 'web'
-              ? nativeInfo.engine
-              : xrHardwareSupported
-                ? 'WebXR'
-                : 'Optical Camera',
-          platform: nativeInfo.platform,
-        },
-      })
-      .then((created) => {
-        creatingSessionRef.current = false
-        if (cancelled) {
-          // The session ended before the row was created; close it rather than
-          // leaving an orphan that the next Start would reattach to.
-          void endARSession
-            .mutateAsync({ sessionId: created.id, inspectionId })
-            .catch((err) => console.error('Failed to close stale AR session:', err))
-          return
-        }
-        dbSessionIdRef.current = created.id
-        setDbSessionId(created.id)
-      })
-      .catch((err) => {
-        creatingSessionRef.current = false
-        console.error('Failed to open the AR session row:', err)
-      })
-
-    return () => {
-      cancelled = true
-    }
-    // The mutation objects are re-created on every render and are behaviourally
-    // stable; depending on them would re-run this effect every render and cancel
-    // the request it just started.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, inspectionId, nativeInfo, xrHardwareSupported])
-
   // Close the DB session when the workspace unmounts or the inspection changes.
   useEffect(() => {
+    setStarting(false)
+    startLock.current = false
+    setDbSessionId(null)
+    setAim({ x: .5, y: .5 })
     return () => {
+      workspaceGeneration.current++
+      void endProgressiveAR()
       const sessionToClose = dbSessionIdRef.current
       dbSessionIdRef.current = null
       if (sessionToClose) {
-        void endARSession
-          .mutateAsync({ sessionId: sessionToClose, inspectionId })
+        void endSessionRow({ sessionId: sessionToClose, inspectionId })
           .catch((err) => console.error('Failed to close AR session on unmount:', err))
       }
     }
-  }, [endARSession, inspectionId])
+  }, [endSessionRow, endProgressiveAR, inspectionId])
 
   // Change inspection handler (syncs dropdown & browser URL)
   const handleInspectionChange = useCallback(
@@ -232,118 +161,66 @@ function ARPageContent() {
       dbSessionIdRef.current = null
       setDbSessionId(null)
       if (sessionToClose) {
-        void endARSession
-          .mutateAsync({ sessionId: sessionToClose, inspectionId })
+        void endSessionRow({ sessionId: sessionToClose, inspectionId })
           .catch((err) => console.error('Failed to close ended AR session:', err))
       }
     }
     wasActiveRef.current = isActive
-  }, [isActive, inspectionId, endARSession])
+  }, [isActive, inspectionId, endSessionRow])
 
   const handleStart = useCallback(async () => {
-    if (!inspectionId) return
+    if (!inspectionId || startLock.current) return
+    startLock.current = true
+    const generation = workspaceGeneration.current
+    setStarting(true)
     setStartError(null)
-
-    // Requested inside the gesture, before any other await. Awaiting it keeps
-    // the motion prompt and the camera prompt from opening at the same time,
-    // which made iOS drop one of them.
-    await prepareForAR()
-
-    let arStarted = false
-
+    setMarkerError(null)
     try {
-      // Start AR first: WebXR requestSession needs the click's transient
-      // activation, which a preceding network await can consume.
-      const isNativeDevice = nativeInfo.platform !== 'web'
-      if (isNativeDevice) {
-        const { startNativeARSession, requestNativeCameraPermission } = await import(
-          '@/app/lib/ar/native-bridge'
-        )
-        const granted = await requestNativeCameraPermission()
-        if (!granted) {
-          throw new Error('Camera permission was denied')
+      // Printed references use the web camera on both Android and iPhone.
+      await startProgressiveAR({ cameraOnly: true })
+      if (generation !== workspaceGeneration.current) { await endProgressiveAR(); return }
+      if (!dbSessionIdRef.current) {
+        const existing = await getActiveARSession(inspectionId)
+        const row = existing ?? await startARSession.mutateAsync({ inspectionId,
+          deviceInfo: { engine: 'Printed reference (QR plane)', platform: 'web' } })
+        if (generation !== workspaceGeneration.current) {
+          await endSessionRow({ sessionId: row.id, inspectionId })
+          await endProgressiveAR()
+          return
         }
-        await startNativeARSession(inspectionId)
-        arStarted = true
-      } else {
-        await startProgressiveAR()
-        arStarted = true
+        dbSessionIdRef.current = row.id
+        setDbSessionId(row.id)
       }
-
-      // The session row is created by the lifecycle effect above, once the
-      // session is actually active. That keeps a WebXR-to-camera handover in
-      // possession of a session row too.
     } catch (err) {
-      console.error('AR session start failure:', err)
-      setStartError(err instanceof Error ? err.message : 'Could not start the AR session')
-
-      if (arStarted) {
-        if (nativeInfo.platform !== 'web') {
-          try {
-            const { stopNativeARSession } = await import('@/app/lib/ar/native-bridge')
-            await stopNativeARSession()
-          } catch (cleanupErr) {
-            console.error('Failed to stop native AR after start failure:', cleanupErr)
-          }
-        }
-        await endProgressiveAR().catch((cleanupErr) =>
-          console.error('Failed to stop AR after start failure:', cleanupErr)
-        )
+      if (generation === workspaceGeneration.current) setStartError(err instanceof Error ? err.message : 'Could not start the inspection camera')
+      await endProgressiveAR()
+    } finally {
+      if (generation === workspaceGeneration.current) {
+        startLock.current = false
+        setStarting(false)
       }
     }
-  }, [
-    inspectionId,
-    startProgressiveAR,
-    prepareForAR,
-    endProgressiveAR,
-    nativeInfo,
-  ])
+  }, [inspectionId, startProgressiveAR, startARSession, endProgressiveAR, endSessionRow])
 
   const handleEnd = useCallback(async () => {
-    const currentId = dbSessionIdRef.current
-    dbSessionIdRef.current = null
-    setDbSessionId(null)
-
-    if (currentId) {
-      try {
-        await endARSession.mutateAsync({ sessionId: currentId, inspectionId })
-      } catch (err) {
-        console.error('DB session end update failed:', err)
-      }
-    }
-
-    if (nativeInfo.platform !== 'web') {
-      try {
-        const { stopNativeARSession } = await import('@/app/lib/ar/native-bridge')
-        await stopNativeARSession()
-      } catch (err) {
-        console.error('Native AR stop failed:', err)
-      }
-    }
-
     await endProgressiveAR()
-    setDetectedPlanesCount(0)
-  }, [endARSession, nativeInfo.platform, endProgressiveAR, inspectionId])
+    // The isActive effect closes the database row after the camera stops.
+  }, [endProgressiveAR])
 
   const handleTapToAnchor = useCallback(async () => {
-    if (!isActive || !dbSessionId || !inspectionId) return
-    if (!hitPose) {
-      return
-    }
-
+    if (!isActive || !dbSessionId || !inspectionId || createARAnchor.isPending) return
+    setMarkerError(null)
     try {
-      await createARAnchor.mutateAsync({
-        sessionId: dbSessionId,
-        inspectionId,
-        label: `Marker ${anchors.length + 1}`,
-        pose: hitPose,
-        damageType: 'none',
-        notes: 'Marker placed from the viewport reticle. No defect classification was made.',
-      })
+      const evidence = captureEvidence()
+      if (!evidence?.pose.reference) throw new Error('Keep the printed reference visible in the camera frame before placing a marker.')
+      const { pose, snapshotDataUrl } = evidence
+      await createARAnchor.mutateAsync({ sessionId: dbSessionId, inspectionId,
+        label: `Marker ${anchors.length + 1}`, pose, damageType: 'none', snapshotDataUrl,
+        notes: `Manual point on ${evidence.pose.reference.target.label}. No defect classification was made.` })
     } catch (err) {
-      console.error('Failed to place marker:', err)
+      setMarkerError(err instanceof Error ? err.message : 'Could not save the marker. Try again.')
     }
-  }, [isActive, dbSessionId, inspectionId, hitPose, anchors.length, createARAnchor])
+  }, [isActive, dbSessionId, inspectionId, createARAnchor, captureEvidence, anchors.length])
 
   const handleDeleteAnchor = useCallback(
     async (anchorId: string) => {
@@ -390,21 +267,8 @@ function ARPageContent() {
               AR Inspection Mode
             </h2>
             <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-              {activeMode === 'webxr'
-                ? 'WebXR (hit-test)'
-                : activeMode === 'optical-camera'
-                  ? 'Camera + screen markers'
-                  : activeMode === 'simulated'
-                    ? 'Simulated grid'
-                    : xrHardwareSupported
-                      ? 'WebXR available'
-                      : 'Camera + screen markers'}
+              Printed reference AR
             </span>
-            {detectedPlanesCount > 0 && (
-              <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {detectedPlanesCount} plane{detectedPlanesCount === 1 ? '' : 's'} detected
-              </span>
-            )}
           </div>
 
           {/* In-Page Inspection Selector Dropdown */}
@@ -421,7 +285,7 @@ function ARPageContent() {
                 data-testid="ar-inspection-select"
                 value={selectedInspectionId}
                 onChange={(e) => handleInspectionChange(e.target.value)}
-                disabled={isActive}
+                disabled={isActive || starting}
                 className="w-full text-base sm:text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pr-8 outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px] disabled:opacity-60"
               >
                 {inspectionsLoading ? (
@@ -443,18 +307,10 @@ function ARPageContent() {
 
         {/* Start / End AR Session Button */}
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          {isActive && activeMode === 'webxr' && (
-            <Button
-              onClick={() => void switchToCamera()}
-              variant="outline"
-              className="text-xs font-semibold px-4 py-3 h-auto min-h-[44px] rounded-xl"
-            >
-              Use camera instead
-            </Button>
-          )}
           {isActive ? (
             <Button
               onClick={handleEnd}
+              disabled={starting}
               variant="outline"
               className="text-xs font-black uppercase tracking-[0.15em] px-6 py-3 h-auto min-h-[44px] rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm"
             >
@@ -463,10 +319,10 @@ function ARPageContent() {
           ) : (
             <Button
               onClick={handleStart}
-              disabled={!inspectionId || startARSession.isPending}
+              disabled={!inspectionId || starting}
               className="text-xs font-black uppercase tracking-[0.15em] px-6 py-3 h-auto min-h-[44px] rounded-xl shadow-lg shadow-primary/20"
             >
-              {startARSession.isPending ? 'Starting Engine…' : 'Start AR Session'}
+              {starting ? 'Starting camera…' : 'Start AR Session'}
             </Button>
           )}
         </div>
@@ -474,18 +330,17 @@ function ARPageContent() {
 
       {/* Capability banner: this is camera AR with screen-space markers, not
           plane-locked spatial tracking, unless WebXR is genuinely available. */}
-      {!xrHardwareSupported && !bannerDismissed && (
+      {!bannerDismissed && (
         <div className="bg-sky-50/90 border border-sky-200/80 p-3.5 sm:p-4 rounded-2xl flex items-start justify-between gap-3 shadow-sm">
           <div className="flex items-start gap-2.5 sm:gap-3">
             <div>
               <h4 className="text-[11px] sm:text-xs font-black text-sky-950 uppercase tracking-wider">
-                Camera AR with screen-space markers
+                Markers tied to printed references
               </h4>
               <p className="text-xs text-sky-800 font-medium mt-0.5 leading-relaxed">
-                This device does not expose WebXR hit-testing. A live camera feed is used when
-                camera permission is granted, with screen-space markers. Depth is estimated at a
-                fixed range; markers are not locked to a physical surface. Frame capture and
-                heuristic analysis are available in camera mode.
+                Print a reference target and attach it to the surface you are inspecting. Keep the
+                target visible while aiming at points on that same flat surface. Tracking follows
+                the printed target; it does not measure depth or assess structural safety.
               </p>
             </div>
           </div>
@@ -533,26 +388,25 @@ function ARPageContent() {
         {/* An explicit height lets the h-full camera view fill the viewport on phones. */}
         <div
           id="ar-viewport"
+          ref={viewportRef}
           className="relative h-[380px] min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border border-slate-100 bg-slate-950"
         >
-          <ARCameraView
-            onTapToAnchor={handleTapToAnchor}
-            onCapture={() => capture.capture()}
-            onAnalyze={() => void capture.analyze()}
-            isScanning={capture.isScanning}
-            captureDisabled={!isActive}
-          />
-          <AROverlay anchors={anchors} />
+          <ARCameraView onTapToAnchor={handleTapToAnchor} onAimChange={setAim} aim={aim}
+            frame={tracking.frame} viewport={tracking.viewport} placementPose={dbSessionId ? hitPose : null}
+            trackingStatus={tracking.status} trackingMessage={tracking.message} placing={createARAnchor.isPending} />
+          <AROverlay anchors={anchors} frame={tracking.frame} viewport={tracking.viewport} />
         </div>
 
         {/* Controls Column */}
         <div className="space-y-6">
+          <ReferenceTargetControls inspectionId={inspectionId} anchors={anchors} />
+          {markerError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{markerError}</p>}
           {isActive && dbSessionId && inspectionId && (
             <ARAnchorForm
               sessionId={dbSessionId}
               inspectionId={inspectionId}
               hitPose={hitPose}
-              capture={capture}
+              captureEvidence={captureEvidence}
             />
           )}
 
@@ -577,12 +431,13 @@ function ARPageContent() {
               <div className="text-center py-6 px-3 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
                 <MapPin className="mx-auto mb-1 h-6 w-6 text-slate-400" aria-hidden="true" />
                 <p className="text-xs sm:text-xs text-slate-500 font-bold uppercase tracking-wider leading-relaxed">
-                  No markers saved for this inspection. Start a session and tap the view to place one.
+                  No markers saved for this inspection. Print a reference target, start a session and scan it to place a marker.
                 </p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                 {anchors.map((anchor) => {
+                  const reference = getValidReference(anchor.pose)
                   const snapshotUrl = anchor.image_url
                   const isDeleting = deletingAnchorId === anchor.id
 
@@ -615,9 +470,9 @@ function ARPageContent() {
                             {anchor.severity && <SeverityBadge severity={anchor.severity} />}
                           </div>
                           <div className="text-[8.5px] font-mono text-slate-400 mt-1 tabular-nums">
-                            [{anchor.pose?.position?.x?.toFixed(2) ?? '0.00'},{' '}
-                            {anchor.pose?.position?.y?.toFixed(2) ?? '0.00'},{' '}
-                            {anchor.pose?.position?.z?.toFixed(2) ?? '0.00'}]
+                            {reference
+                              ? `Reference: ${reference.target.label} · ${reference.target.id.slice(0, 8)}`
+                              : 'Legacy marker — no printed reference'}
                           </div>
                         </div>
                       </div>
@@ -650,7 +505,7 @@ function ARPageContent() {
   )
 }
 
-export default function ARPage() {
+function ReferenceARPage() {
   return (
     <ARSessionManager>
       <Suspense
@@ -664,4 +519,18 @@ export default function ARPage() {
       </Suspense>
     </ARSessionManager>
   )
+}
+
+export default function ARPage() {
+  const [mode, setMode] = useState<'markerless' | 'reference'>('markerless')
+  const [active, setActive] = useState(false)
+  return <div className="space-y-4">
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Inspection tracking method">
+      <button type="button" aria-pressed={mode === 'markerless'} disabled={active}
+        onClick={() => setMode('markerless')} className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold disabled:opacity-60">Markerless / photo inspection</button>
+      <button type="button" aria-pressed={mode === 'reference'} disabled={active}
+        onClick={() => setMode('reference')} className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold disabled:opacity-60">Printed reference (optional)</button>
+    </div>
+    {mode === 'markerless' ? <MarkerlessInspection onActiveChange={setActive} /> : <ReferenceARPage />}
+  </div>
 }

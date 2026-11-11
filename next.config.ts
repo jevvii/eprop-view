@@ -2,6 +2,8 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Existing snapshot validation caps decoded evidence at 8 MB (base64 adds 1/3).
+  experimental: { serverActions: { bodySizeLimit: '12mb' } },
   // Exposed so the AR device panel can prove which deployment a phone is
   // actually running; a stale cached build makes every other observation lie.
   env: {

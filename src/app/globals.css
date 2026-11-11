@@ -221,6 +221,18 @@ html.ar-immersive #ar-viewport {
   background: transparent !important;
 }
 
+/* The WebXR compositor supplies the camera under this DOM-overlay root. */
+[data-markerless-overlay][data-xr-active="true"] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
 /* On narrow screens data tables scroll, but the action column stays visible. */
 @media (max-width: 767px) {
   .responsive-table {
