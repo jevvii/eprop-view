@@ -1,5 +1,5 @@
 'use client'
-import { Camera, MapPin, ScanSearch } from 'lucide-react'
+import { Camera, Info, MapPin, ScanSearch } from 'lucide-react'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useARSessionContext } from './ar-session-manager'
@@ -126,21 +126,25 @@ export function ARCameraView({
       case 'webxr':
         return {
           label: 'WebXR hit-test',
+          short: 'WebXR',
           classes: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
         }
       case 'optical-camera':
         return {
           label: 'Camera + screen markers',
+          short: 'Camera',
           classes: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
         }
       case 'simulated':
         return {
           label: 'Simulated grid (no camera)',
+          short: 'Simulated',
           classes: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
         }
       default:
         return {
           label: 'Standby',
+          short: 'Standby',
           classes: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
         }
     }
@@ -245,53 +249,57 @@ export function ARCameraView({
       )}
 
       {isActive ? (
-        <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between p-3 sm:p-5">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
+        <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between p-2.5 sm:p-4">
+          {/*
+            One compact top row. The previous layout stacked a mode badge, a
+            status pill and a pose readout, which consumed most of a 380px
+            viewport on a phone. The pose is already shown in the anchor card
+            below the feed, so it is not repeated here.
+          */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               <span
-                className={`text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-full backdrop-blur-md border shadow-lg ${badge.classes}`}
+                className={`text-[10px] sm:text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-full backdrop-blur-md border shadow-lg ${badge.classes}`}
               >
-                {badge.label}
+                <span className="sm:hidden">{badge.short}</span>
+                <span className="hidden sm:inline">{badge.label}</span>
               </span>
 
-              <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-white shadow-lg">
+              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/70 px-2.5 py-1 text-white shadow-lg backdrop-blur-md">
                 <span
-                  className={`h-2 w-2 rounded-full ${
+                  className={`h-1.5 w-1.5 rounded-full ${
                     hitPose ? 'bg-emerald-400 animate-ping' : 'bg-amber-400 animate-pulse'
                   }`}
                 />
-                <span className="text-xs font-black uppercase tracking-widest">{statusLabel}</span>
-              </div>
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">
+                  <span className="sm:hidden">
+                    {hitPose ? 'Ready' : videoLive ? 'Aim' : 'Starting'}
+                  </span>
+                  <span className="hidden sm:inline">{statusLabel}</span>
+                </span>
+              </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setDiagnosticsOpen((open) => !open)
-                }}
-                aria-expanded={diagnosticsOpen}
-                className="pointer-events-auto min-h-[36px] rounded-lg border border-white/20 bg-black/60 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white/80 backdrop-blur-md"
-              >
-                {diagnosticsOpen ? 'Hide device info' : 'Device info'}
-              </button>
-
-              {hitPose && (
-                <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10 text-right text-white shadow-lg">
-                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                    {isSpatial ? 'WebXR pose' : 'Estimated pose'}
-                  </div>
-                  <div className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
-                    X:{hitPose.position.x.toFixed(2)} Y:{hitPose.position.y.toFixed(2)} Z:
-                    {hitPose.position.z.toFixed(2)}m
-                  </div>
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                setDiagnosticsOpen((open) => !open)
+              }}
+              aria-expanded={diagnosticsOpen}
+              aria-label="Device info"
+              className="pointer-events-auto flex min-h-[36px] min-w-[36px] items-center justify-center gap-1.5 rounded-lg border border-white/20 bg-black/60 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white/80 backdrop-blur-md"
+            >
+              <Info className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">{diagnosticsOpen ? 'Hide' : 'Device info'}</span>
+            </button>
           </div>
 
-          {diagnosticsOpen && <DeviceDiagnostics />}
+          {diagnosticsOpen && (
+            <div className="max-h-[65%] overflow-y-auto">
+              <DeviceDiagnostics />
+            </div>
+          )}
 
           <div
             className={`transition-transform duration-75 pointer-events-none ${
@@ -305,11 +313,12 @@ export function ARCameraView({
           >
             {hitPose ? (
               <div className="relative flex items-center justify-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-emerald-400/90 shadow-[0_0_20px_rgba(52,211,153,0.6)] flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full border border-dashed border-emerald-300 animate-spin" />
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border-2 border-emerald-400/90 shadow-[0_0_20px_rgba(52,211,153,0.6)] flex items-center justify-center">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-dashed border-emerald-300 animate-spin" />
                   <div className="absolute w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-md ring-2 ring-white/60" />
                 </div>
-                <span className="absolute -bottom-6 bg-black/85 backdrop-blur-md text-emerald-300 text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-emerald-500/40 whitespace-nowrap shadow-lg">
+                {/* Hidden on phones: it overflowed the viewport at the edges. */}
+                <span className="hidden sm:block absolute -bottom-6 bg-black/85 backdrop-blur-md text-emerald-300 text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-emerald-500/40 whitespace-nowrap shadow-lg">
                   {isSpatial ? 'Surface hit' : 'Screen-space target · ~1.45 m est.'}
                 </span>
               </div>
@@ -320,16 +329,16 @@ export function ARCameraView({
             )}
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between pointer-events-auto">
-            <p className="text-xs font-black text-white/90 bg-black/70 backdrop-blur-md px-3 sm:px-4 py-2 rounded-xl border border-white/10 uppercase tracking-wider max-w-[260px] sm:max-w-md shadow-lg">
+          <div className="space-y-2">
+            {/* The buttons label themselves; the helper sentence only competes for
+                space on a phone. */}
+            <p className="hidden sm:block text-xs font-black text-white/90 bg-black/70 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 uppercase tracking-wider max-w-md shadow-lg">
               {isSpatial
                 ? 'Aim the centre reticle at a surface, then place a marker'
                 : 'Tap the view to aim, then capture or place a marker'}
             </p>
 
-            {/* Capture, analyse and mark sit on the viewport itself: the inspector
-                is looking here, not at a form further down the page. */}
-            <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="pointer-events-auto grid grid-cols-3 gap-2">
               {onCapture && (
                 <button
                   type="button"
@@ -338,11 +347,11 @@ export function ARCameraView({
                     onCapture()
                   }}
                   disabled={captureDisabled}
-                  className="flex items-center gap-1.5 bg-white/95 hover:bg-white active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-slate-900 font-black text-[11px] sm:text-xs px-3 sm:px-4 py-3 rounded-2xl shadow-lg transition-all min-h-[44px]"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-white/95 px-2 py-3 text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-900 shadow-lg transition-all hover:bg-white active:scale-95 disabled:pointer-events-none disabled:opacity-40 min-h-[44px]"
                   aria-label="Capture frame"
                 >
-                  <Camera className="h-4 w-4" aria-hidden="true" />
-                  <span className="uppercase tracking-wider">Capture</span>
+                  <Camera className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>Capture</span>
                 </button>
               )}
 
@@ -354,11 +363,11 @@ export function ARCameraView({
                     void onAnalyze()
                   }}
                   disabled={isScanning || captureDisabled}
-                  className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-white font-black text-[11px] sm:text-xs px-3 sm:px-4 py-3 rounded-2xl shadow-lg shadow-sky-500/30 transition-all min-h-[44px]"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-sky-500 px-2 py-3 text-[10px] sm:text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-sky-500/30 transition-all hover:bg-sky-600 active:scale-95 disabled:pointer-events-none disabled:opacity-40 min-h-[44px]"
                   aria-label="Analyze frame"
                 >
-                  <ScanSearch className="h-4 w-4" aria-hidden="true" />
-                  <span className="uppercase tracking-wider">{isScanning ? 'Analyzing…' : 'Analyze'}</span>
+                  <ScanSearch className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{isScanning ? 'Working…' : 'Analyze'}</span>
                 </button>
               )}
 
@@ -370,11 +379,11 @@ export function ARCameraView({
                     onTapToAnchor()
                   }}
                   disabled={!hitPose}
-                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-slate-950 font-black text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-xl shadow-emerald-500/30 transition-all border border-emerald-300 min-h-[44px] min-w-[44px]"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-emerald-300 bg-emerald-500 px-2 py-3 text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-950 shadow-xl shadow-emerald-500/30 transition-all hover:bg-emerald-600 active:scale-95 disabled:pointer-events-none disabled:opacity-50 min-h-[44px]"
                   aria-label="Drop Quick Marker"
                 >
-                  <MapPin className="h-5 w-5" aria-hidden="true" />
-                  <span className="font-extrabold uppercase tracking-wider">Marker</span>
+                  <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>Marker</span>
                 </button>
               )}
             </div>
