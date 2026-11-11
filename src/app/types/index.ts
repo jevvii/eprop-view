@@ -44,6 +44,9 @@ export interface Project {
   updated_at: string
   inspection_count?: number
   report_count?: number
+  // Capstone v2 (migration 017)
+  archived_at?: string | null
+  archived_by?: string | null
 }
 
 export interface Inspection {

@@ -9,10 +9,15 @@ import { FloorManager } from '@/components/settings/floor-manager'
 import { StructuralElementManager } from '@/components/settings/structural-element-manager'
 import { GeohazardLayerManager } from '@/components/settings/geohazard-layer-manager'
 import { StorageManager } from '@/components/settings/storage-manager'
+import { AuditLog } from '@/components/settings/audit-log'
+import { SystemHealth } from '@/components/settings/system-health'
+import { ProjectManager } from '@/components/settings/project-manager'
+import { BackupRestore } from '@/components/settings/backup-restore'
+import { ConfigurationPanel } from '@/components/settings/configuration-panel'
 import { Button } from '@/components/ui/button'
 import { useProfile } from '@/app/lib/queries'
 
-type SettingsTab = 'overview' | 'users' | 'buildings' | 'geohazard' | 'storage'
+type SettingsTab = 'overview' | 'users' | 'buildings' | 'geohazard' | 'storage' | 'projects' | 'audit' | 'health' | 'backup' | 'config'
 
 export default function SettingsPage() {
   const { data: profile } = useProfile()
@@ -90,6 +95,56 @@ export default function SettingsPage() {
           >
             Storage & S3 Lifecycle
           </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'projects'}
+            onClick={() => setActiveTab('projects')}
+            className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              activeTab === 'projects' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Projects
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'audit'}
+            onClick={() => setActiveTab('audit')}
+            className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              activeTab === 'audit' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Audit Log
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'health'}
+            onClick={() => setActiveTab('health')}
+            className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              activeTab === 'health' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            System Health
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'backup'}
+            onClick={() => setActiveTab('backup')}
+            className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              activeTab === 'backup' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Export / Import
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'config'}
+            onClick={() => setActiveTab('config')}
+            className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              activeTab === 'config' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Thresholds
+          </button>
         </div>
       )}
 
@@ -123,6 +178,36 @@ export default function SettingsPage() {
       {isAdmin && activeTab === 'storage' && (
         <div className="grid grid-cols-1 gap-6">
           <StorageManager />
+        </div>
+      )}
+
+      {isAdmin && activeTab === 'projects' && (
+        <div className="grid grid-cols-1 gap-6">
+          <ProjectManager />
+        </div>
+      )}
+
+      {isAdmin && activeTab === 'audit' && (
+        <div className="grid grid-cols-1 gap-6">
+          <AuditLog />
+        </div>
+      )}
+
+      {isAdmin && activeTab === 'health' && (
+        <div className="grid grid-cols-1 gap-6">
+          <SystemHealth />
+        </div>
+      )}
+
+      {isAdmin && activeTab === 'backup' && (
+        <div className="grid grid-cols-1 gap-6">
+          <BackupRestore />
+        </div>
+      )}
+
+      {isAdmin && activeTab === 'config' && (
+        <div className="grid grid-cols-1 gap-6">
+          <ConfigurationPanel />
         </div>
       )}
 
