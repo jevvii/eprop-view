@@ -83,6 +83,35 @@ function computeTransformMatrix(
   ]
 }
 
+/**
+ * Turn a getUserMedia rejection into something a field inspector can act on.
+ * The DOMException name is the only reliable signal here.
+ */
+function describeMediaError(error: unknown): string {
+  const name =
+    typeof DOMException !== 'undefined' && error instanceof DOMException
+      ? error.name
+      : error instanceof Error
+        ? error.name
+        : ''
+
+  switch (name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'Camera permission was denied. Allow camera access for this site in the browser settings, then start the session again.'
+    case 'NotFoundError':
+      return 'No camera was found on this device.'
+    case 'OverconstrainedError':
+      return 'No camera matched the requested rear-facing settings. This device may only expose a front camera.'
+    case 'NotReadableError':
+      return 'The camera is already in use by another app or tab. Close it and start the session again.'
+    case 'AbortError':
+      return 'The camera stopped before it could start. Try again.'
+    default:
+      return `The camera could not start${name ? ` (${name})` : ''}.`
+  }
+}
+
 function waitForVideoFrame(video: HTMLVideoElement | null, timeoutMs: number): Promise<boolean> {
   if (!video) return Promise.resolve(false)
   if (video.videoWidth > 0 && video.readyState >= 2) return Promise.resolve(true)
@@ -535,6 +564,11 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
   const requestMotionPermission = useCallback(async (): Promise<
     'granted' | 'denied' | 'unsupported'
   > => {
+    // Ask at most once per page load. A second call re-prompts on iOS.
+    if (motionPermissionRef.current !== 'unknown') {
+      return motionPermissionRef.current
+    }
+
     if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) {
       motionPermissionRef.current = 'denied'
       return 'unsupported'
@@ -569,10 +603,24 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
       // its own end handler a no-op.
       endedRef.current = false
 
-      if (navigator?.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+      const secureOrigin = typeof window !== 'undefined' && window.isSecureContext
+      const hasCameraApi =
+        Boolean(navigator?.mediaDevices) &&
+        typeof navigator.mediaDevices.getUserMedia === 'function'
+
+      if (!secureOrigin) {
+        // The single most common cause of "the camera works on my laptop but not
+        // on my phone": the phone opened the site over http:// on the LAN, where
+        // the mediaDevices API does not exist at all.
+        setLimitation(
+          'Camera access requires a secure origin. Open the site over HTTPS or on localhost — a plain http:// address blocks the camera in every mobile browser.'
+        )
+      } else if (!hasCameraApi) {
+        setLimitation(
+          'This browser does not expose a camera API. Showing a simulated grid; no image evidence will be captured.'
+        )
+      } else {
         try {
-          // Get the camera first: iOS loses the click activation after an
-          // awaited permission prompt, and the video needs to start playing.
           const stream = await navigator.mediaDevices.getUserMedia({
             video: {
               facingMode: { ideal: 'environment' },
@@ -583,33 +631,40 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
           })
 
           mediaStreamRef.current = stream
-          const video = videoRef.current
-          if (video) {
-            video.srcObject = stream
-            await video.play().catch(() => {})
-          }
 
+          // Enter camera mode BEFORE playback. A video that is display:none when
+          // play() is called is throttled on iOS and several Android WebViews:
+          // playback "succeeds" but no frames are ever decoded.
           const virtualSession = createVirtualSession()
           sessionRef.current = virtualSession
           setSession(virtualSession)
           setActiveMode('optical-camera')
           startOpticalLoop()
 
-          // A stream can be granted while the preview never produces frames
-          // (some WebViews and privacy browsers). Do not leave a black viewport.
-          const previewReady = await waitForVideoFrame(video, 2500)
-          if (!previewReady) {
-            stream.getTracks().forEach((track) => track.stop())
-            mediaStreamRef.current = null
-            if (video) video.srcObject = null
-            if (opticalLoopIdRef.current) {
-              cancelAnimationFrame(opticalLoopIdRef.current)
-              opticalLoopIdRef.current = null
+          const video = videoRef.current
+          if (video) {
+            video.muted = true
+            video.playsInline = true
+            video.srcObject = stream
+            try {
+              await video.play()
+            } catch (playError) {
+              // Muted inline video is supposed to autoplay, but some browsers
+              // still refuse. The view offers a tap-to-play control, so keep the
+              // stream instead of tearing it down.
+              console.warn('Camera preview needs a tap to start:', playError)
             }
-            sessionRef.current = null
-            setSession(null)
-            setActiveMode('idle')
-            throw new Error('Camera preview did not produce frames')
+          }
+
+          // A cold camera on a phone can take several seconds to deliver its
+          // first frame. We do not fall back to the simulated grid on timeout:
+          // the stream is live, and replacing a granted camera with a drawing is
+          // worse than asking for one tap.
+          const previewReady = await waitForVideoFrame(video, 6000)
+          if (!previewReady) {
+            setLimitation(
+              'The camera permission was granted but the preview has not produced frames yet. Tap the view to start it, and open the device info panel if it stays black.'
+            )
           }
 
           setHitPose(null)
@@ -619,29 +674,27 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
             setHitMatrix(matrix)
           }, 800)
 
-          // Request after the stream starts; iOS motion permission is already
-          // requested from the click via prepareForAR.
-          void requestMotionPermission().then((motion) => {
-            if (motion === 'denied') {
-              setLimitation('Device motion permission was denied. Tap the view to aim the marker.')
-            } else if (motion === 'unsupported') {
-              setLimitation('Device motion is not available in this browser. Tap the view to aim the marker.')
-            }
-          })
+          // Motion permission is requested once, from the click. Asking again
+          // here produced a second system prompt mid-session on iOS.
+          if (motionPermissionRef.current === 'unknown') {
+            void requestMotionPermission().then((motion) => {
+              if (motion === 'denied') {
+                setLimitation('Device motion permission was denied. Tap the view to aim the marker.')
+              } else if (motion === 'unsupported') {
+                setLimitation('Device motion is not available in this browser. Tap the view to aim the marker.')
+              }
+            })
+          }
 
           onStarted?.()
           return
         } catch (mediaErr) {
-          console.warn('Camera unavailable or preview failed; using the simulated grid:', mediaErr)
+          console.warn('Camera unavailable; using the simulated grid:', mediaErr)
           setLimitation(
             fallbackReason ??
-              'Camera access was denied or the preview did not start. Showing a simulated grid; no image evidence will be captured.'
+              `${describeMediaError(mediaErr)} Showing a simulated grid; no image evidence will be captured.`
           )
         }
-      } else {
-        setLimitation(
-          'This browser has no camera API. Showing a simulated grid; no image evidence will be captured.'
-        )
       }
 
       // Tier 3B: simulated grid. Clearly a training/placement aid, not tracking.

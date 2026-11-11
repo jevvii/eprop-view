@@ -73,6 +73,7 @@ function ARPageContent() {
 
   const [dbSessionId, setDbSessionId] = useState<string | null>(null)
   const dbSessionIdRef = useRef<string | null>(null)
+  const creatingSessionRef = useRef(false)
   const [deletingAnchorId, setDeletingAnchorId] = useState<string | null>(null)
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [startError, setStartError] = useState<string | null>(null)
@@ -132,6 +133,57 @@ function ARPageContent() {
     }
   }, [inspectionId])
 
+  // A database session follows the AR lifecycle rather than the Start click.
+  // WebXR can end and hand over to the camera mid-run, which stops and restarts
+  // the session; without this, the camera works but markers silently stop
+  // saving because there is no session row to attach them to.
+  useEffect(() => {
+    if (!isActive || !inspectionId) return
+    if (dbSessionIdRef.current || creatingSessionRef.current) return
+
+    creatingSessionRef.current = true
+    let cancelled = false
+
+    startARSession
+      .mutateAsync({
+        inspectionId,
+        deviceInfo: {
+          engine:
+            nativeInfo.platform !== 'web'
+              ? nativeInfo.engine
+              : xrHardwareSupported
+                ? 'WebXR'
+                : 'Optical Camera',
+          platform: nativeInfo.platform,
+        },
+      })
+      .then((created) => {
+        creatingSessionRef.current = false
+        if (cancelled) {
+          // The session ended before the row was created; close it rather than
+          // leaving an orphan that the next Start would reattach to.
+          void endARSession
+            .mutateAsync({ sessionId: created.id, inspectionId })
+            .catch((err) => console.error('Failed to close stale AR session:', err))
+          return
+        }
+        dbSessionIdRef.current = created.id
+        setDbSessionId(created.id)
+      })
+      .catch((err) => {
+        creatingSessionRef.current = false
+        console.error('Failed to open the AR session row:', err)
+      })
+
+    return () => {
+      cancelled = true
+    }
+    // The mutation objects are re-created on every render and are behaviourally
+    // stable; depending on them would re-run this effect every render and cancel
+    // the request it just started.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, inspectionId, nativeInfo, xrHardwareSupported])
+
   // Close the DB session when the workspace unmounts or the inspection changes.
   useEffect(() => {
     return () => {
@@ -189,10 +241,11 @@ function ARPageContent() {
     if (!inspectionId) return
     setStartError(null)
 
-    // Start the iOS motion permission request in the gesture before any await.
-    void prepareForAR()
+    // Requested inside the gesture, before any other await. Awaiting it keeps
+    // the motion prompt and the camera prompt from opening at the same time,
+    // which made iOS drop one of them.
+    await prepareForAR()
 
-    let createdSessionId: string | null = null
     let arStarted = false
 
     try {
@@ -214,19 +267,9 @@ function ARPageContent() {
         arStarted = true
       }
 
-      // Reuse the rehydrated session instead of inserting a duplicate row.
-      if (!dbSessionIdRef.current) {
-        const created = await startARSession.mutateAsync({
-          inspectionId,
-          deviceInfo: {
-            engine: nativeInfo.platform !== 'web' ? nativeInfo.engine : xrHardwareSupported ? 'WebXR' : 'Optical Camera',
-            platform: nativeInfo.platform,
-          },
-        })
-        createdSessionId = created.id
-        dbSessionIdRef.current = created.id
-        setDbSessionId(created.id)
-      }
+      // The session row is created by the lifecycle effect above, once the
+      // session is actually active. That keeps a WebXR-to-camera handover in
+      // possession of a session row too.
     } catch (err) {
       console.error('AR session start failure:', err)
       setStartError(err instanceof Error ? err.message : 'Could not start the AR session')
@@ -244,26 +287,13 @@ function ARPageContent() {
           console.error('Failed to stop AR after start failure:', cleanupErr)
         )
       }
-
-      if (createdSessionId) {
-        dbSessionIdRef.current = null
-        setDbSessionId(null)
-        try {
-          await endARSession.mutateAsync({ sessionId: createdSessionId, inspectionId })
-        } catch (cleanupErr) {
-          console.error('Failed to clean up orphaned AR session:', cleanupErr)
-        }
-      }
     }
   }, [
     inspectionId,
-    startARSession,
-    xrHardwareSupported,
-    nativeInfo,
     startProgressiveAR,
     prepareForAR,
     endProgressiveAR,
-    endARSession,
+    nativeInfo,
   ])
 
   const handleEnd = useCallback(async () => {

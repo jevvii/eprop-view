@@ -1,13 +1,21 @@
 'use client'
 import { MapPin } from 'lucide-react'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useARSessionContext } from './ar-session-manager'
 
 interface ARCameraViewProps {
   onTapToAnchor?: () => void
 }
 
+/**
+ * Camera surface.
+ *
+ * The video element stays mounted and laid out at all times and is hidden with
+ * opacity. Toggling it with `display: none` made iOS and several Android
+ * WebViews stop decoding frames: play() resolved, readyState stayed low, and the
+ * preview was black. Keeping it continuously rendered is the fix.
+ */
 export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
   const {
     session,
@@ -20,32 +28,63 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
     setTargetNormCoords,
   } = useARSessionContext()
 
-  // Track visual position of reticle in percentages for DOM HUD
   const [reticlePos, setReticlePos] = useState<{ xPercent: number; yPercent: number }>({
     xPercent: 50,
     yPercent: 50,
   })
   const [videoLive, setVideoLive] = useState(false)
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false)
+  const playedOnceRef = useRef(false)
 
-  // iOS can pause a MediaStream video even when muted; make the preview
-  // recoverable with a tap instead of leaving a black viewport.
+  const isCameraMode = activeMode === 'optical-camera'
+
+  /**
+   * Prepare the video element for mobile autoplay, then attempt playback.
+   *
+   * `muted` is set as a property rather than trusted from the attribute: a
+   * server-rendered video whose muted attribute did not survive hydration is
+   * blocked by the autoplay policy on iOS and Android.
+   */
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
+
+    video.muted = true
+    video.defaultMuted = true
+    video.playsInline = true
+    video.setAttribute('playsinline', '')
     video.setAttribute('webkit-playsinline', 'true')
 
-    if (activeMode === 'optical-camera') {
-      setVideoLive(!video.paused && video.readyState >= 2)
+    if (isCameraMode) {
       void video.play().catch(() => setVideoLive(false))
-    } else {
-      setVideoLive(false)
     }
-  }, [activeMode, videoRef])
+  }, [isCameraMode, videoRef])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const markLive = () => {
+      if (video.readyState >= 2) {
+        playedOnceRef.current = true
+        setVideoLive(true)
+      }
+    }
+
+    video.addEventListener('loadeddata', markLive)
+    video.addEventListener('playing', markLive)
+    video.addEventListener('timeupdate', markLive)
+
+    return () => {
+      video.removeEventListener('loadeddata', markLive)
+      video.removeEventListener('playing', markLive)
+      video.removeEventListener('timeupdate', markLive)
+    }
+  }, [videoRef])
 
   const handlePointer = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!isActive) return
-      // Don't intercept pointer events from buttons
       const target = e.target as HTMLElement
       if (target.closest('button')) return
 
@@ -54,7 +93,6 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
         void video.play().catch(() => {})
       }
 
-      // In WebXR the hit-test is the viewer centre, so the reticle is fixed.
       if (activeMode === 'webxr') return
 
       const rect = e.currentTarget.getBoundingClientRect()
@@ -64,10 +102,7 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
         const nx = Math.min(0.95, Math.max(0.05, rawNx))
         const ny = Math.min(0.95, Math.max(0.05, rawNy))
 
-        setReticlePos({
-          xPercent: nx * 100,
-          yPercent: ny * 100,
-        })
+        setReticlePos({ xPercent: nx * 100, yPercent: ny * 100 })
         setTargetNormCoords(nx, ny)
       }
     },
@@ -118,56 +153,79 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
       } ${isActive ? 'touch-none' : 'touch-pan-y'}`}
       onPointerDown={handlePointer}
       onPointerMove={(e) => {
-        // Allow drag-aiming on mobile touch
         if (e.buttons === 1) handlePointer(e)
       }}
     >
-      {/* Live WebRTC Camera Video (Tier 3A Optical Mode) */}
+      {/* Raw camera feed. Always mounted; visibility is opacity, never display. */}
       <video
         ref={videoRef}
         playsInline
         muted
         autoPlay
-        onPlaying={() => setVideoLive(true)}
-        onPause={() => setVideoLive(false)}
-        onWaiting={() => setVideoLive(false)}
+        preload="auto"
+        disablePictureInPicture
+        controls={false}
+        aria-hidden={!isCameraMode}
+        onPlaying={() => {
+          if (videoRef.current && videoRef.current.readyState >= 2) {
+            playedOnceRef.current = true
+            setVideoLive(true)
+          }
+        }}
         onLoadedData={() => {
-          void videoRef.current?.play().catch(() => setVideoLive(false))
+          const video = videoRef.current
+          if (video && video.readyState >= 2) {
+            playedOnceRef.current = true
+            setVideoLive(true)
+          }
+          void videoRef.current?.play().catch(() => {})
         }}
-        className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-300"
-        style={{
-          display: activeMode === 'optical-camera' ? 'block' : 'none',
+        // Buffering after a successful start is not a stopped camera. Only a
+        // video that has never produced a frame counts as not live.
+        onWaiting={() => {
+          const video = videoRef.current
+          if (!video || video.readyState < 2 || !playedOnceRef.current) setVideoLive(false)
         }}
+        onPause={() => setVideoLive(false)}
+        onStalled={() => {
+          const video = videoRef.current
+          if (!video || video.readyState < 2) setVideoLive(false)
+        }}
+        className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-300 ${
+          isCameraMode ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
       />
 
-      {activeMode === 'optical-camera' && !videoLive && (
+      {/* Render canvas: WebXR composition surface, or the simulated grid. */}
+      <canvas
+        ref={canvasRef}
+        aria-hidden={isCameraMode}
+        className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-300 ${
+          isCameraMode ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+      />
+
+      {isCameraMode && !videoLive && (
         <button
           type="button"
           onClick={() => {
-            void videoRef.current?.play().catch(() => setVideoLive(false))
+            const video = videoRef.current
+            if (!video) return
+            video.muted = true
+            void video.play().then(() => setVideoLive(true)).catch(() => setVideoLive(false))
           }}
           className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-slate-950/85 px-6 text-center text-white"
         >
           <span className="text-sm font-semibold">Tap to start the camera preview</span>
           <span className="max-w-xs text-xs text-slate-300">
-            If it stays black, check that camera access is allowed for this site.
+            Some browsers block automatic playback. If it stays black after tapping, open the
+            diagnostics below.
           </span>
         </button>
       )}
 
-      {/* Render Canvas (WebXR or Tier 3B Simulated Grid or frame capture buffer) */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-300"
-        style={{
-          display: activeMode === 'optical-camera' ? 'none' : 'block',
-        }}
-      />
-
-      {/* Active HUD Telemetry Overlay */}
       {isActive ? (
         <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between p-3 sm:p-5">
-          {/* Top Telemetry Header Bar */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <span
@@ -182,26 +240,39 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
                     hitPose ? 'bg-emerald-400 animate-ping' : 'bg-amber-400 animate-pulse'
                   }`}
                 />
-                <span className="text-xs font-black uppercase tracking-widest">
-                  {statusLabel}
-                </span>
+                <span className="text-xs font-black uppercase tracking-widest">{statusLabel}</span>
               </div>
             </div>
 
-            {hitPose && (
-              <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10 text-right text-white shadow-lg">
-                <div className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                  {isSpatial ? 'WebXR pose' : 'Estimated pose'}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setDiagnosticsOpen((open) => !open)
+                }}
+                aria-expanded={diagnosticsOpen}
+                className="pointer-events-auto min-h-[36px] rounded-lg border border-white/20 bg-black/60 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white/80 backdrop-blur-md"
+              >
+                {diagnosticsOpen ? 'Hide device info' : 'Device info'}
+              </button>
+
+              {hitPose && (
+                <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10 text-right text-white shadow-lg">
+                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                    {isSpatial ? 'WebXR pose' : 'Estimated pose'}
+                  </div>
+                  <div className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
+                    X:{hitPose.position.x.toFixed(2)} Y:{hitPose.position.y.toFixed(2)} Z:
+                    {hitPose.position.z.toFixed(2)}m
+                  </div>
                 </div>
-                <div className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
-                  X:{hitPose.position.x.toFixed(2)} Y:{hitPose.position.y.toFixed(2)} Z:{hitPose.position.z.toFixed(2)}m
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* Interactive Dynamic Reticle. In WebXR the hit test is the viewer
-              centre, so the reticle is fixed to the viewport centre. */}
+          {diagnosticsOpen && <DeviceDiagnostics />}
+
           <div
             className={`transition-transform duration-75 pointer-events-none ${
               isSpatial ? 'fixed' : 'absolute'
@@ -214,7 +285,6 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
           >
             {hitPose ? (
               <div className="relative flex items-center justify-center">
-                {/* 3D Surface Target Reticle */}
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-emerald-400/90 shadow-[0_0_20px_rgba(52,211,153,0.6)] flex items-center justify-center">
                   <div className="w-8 h-8 rounded-full border border-dashed border-emerald-300 animate-spin" />
                   <div className="absolute w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-md ring-2 ring-white/60" />
@@ -230,16 +300,13 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
             )}
           </div>
 
-          {/* Bottom Controls & Action Bar */}
           <div className="flex items-end justify-between gap-3 pointer-events-auto">
-            {/* Helper Prompt */}
             <p className="text-xs font-black text-white/90 bg-black/70 backdrop-blur-md px-3 sm:px-4 py-2 rounded-xl border border-white/10 uppercase tracking-wider max-w-[260px] sm:max-w-md shadow-lg">
               {isSpatial
                 ? 'Aim the centre reticle at a surface, then place a marker'
                 : 'Tap the view to aim, then place a marker'}
             </p>
 
-            {/* Quick Anchor Drop Button */}
             {onTapToAnchor && (
               <button
                 type="button"
@@ -258,17 +325,16 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
           </div>
         </div>
       ) : (
-        /* Standby State */
         <div className="absolute inset-0 flex items-center justify-center p-6 text-center z-10 bg-slate-950/80 backdrop-blur-sm">
           <div className="max-w-sm space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-3xl shadow-2xl">
-                          </div>
+            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-3xl shadow-2xl" />
             <div>
               <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-widest">
                 AR camera standby
               </h3>
-              <p className="text-xs sm:text-xs text-slate-400 font-bold uppercase tracking-wider mt-1.5 leading-relaxed">
-                Connect to an inspection and press Start AR Session to begin real-time optical tracking.
+              <p className="text-xs font-bold uppercase tracking-wider mt-1.5 leading-relaxed text-slate-400">
+                Connect to an inspection and press Start AR Session to begin real-time optical
+                tracking.
               </p>
             </div>
 
@@ -286,6 +352,77 @@ export function ARCameraView({ onTapToAnchor }: ARCameraViewProps) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * Device facts that decide whether the camera can start at all.
+ *
+ * Every field here is read from the browser at render time. It exists because
+ * "AR does not work" is unfalsifiable without knowing which precondition failed:
+ * an insecure origin, a missing mediaDevices API, a denied permission, or an XR
+ * capability that never presents.
+ */
+function DeviceDiagnostics() {
+  const { activeMode, videoRef, xrHardwareSupported } = useARSessionContext()
+  const [permission, setPermission] = useState<string>('unknown')
+  const [secure, setSecure] = useState<string>('unknown')
+  const [cameraApi, setCameraApi] = useState<string>('unknown')
+
+  useEffect(() => {
+    setSecure(
+      typeof window === 'undefined'
+        ? 'unknown'
+        : window.isSecureContext
+          ? 'yes (HTTPS or localhost)'
+          : 'NO — camera is blocked on an insecure origin'
+    )
+    setCameraApi(
+      typeof navigator !== 'undefined' &&
+        typeof navigator.mediaDevices?.getUserMedia === 'function'
+        ? 'available'
+        : 'missing from this browser or origin'
+    )
+
+    // Permissions.query is absent in Safari and rejects for the camera name in
+    // some browsers; both paths land on "not queryable" rather than throwing.
+    navigator.permissions
+      .query({ name: 'camera' as PermissionName })
+      .then((status) => {
+        setPermission(status.state)
+        status.onchange = () => setPermission(status.state)
+      })
+      .catch(() => setPermission('not queryable in this browser'))
+  }, [])
+
+  const video = videoRef.current
+  const frames = video
+    ? `${video.videoWidth}×${video.videoHeight} · readyState ${video.readyState}${video.paused ? ' · paused' : ' · playing'}`
+    : 'video element not mounted'
+
+  const rows: [string, string][] = [
+    ['Secure context', secure],
+    ['Camera API', cameraApi],
+    ['Camera permission', permission],
+    ['WebXR immersive-ar', xrHardwareSupported ? 'reported supported' : 'not supported'],
+    ['Active mode', activeMode],
+    ['Video frames', frames],
+  ]
+
+  return (
+    <div className="pointer-events-auto mt-2 max-w-sm rounded-xl border border-white/15 bg-black/80 p-3 text-left text-[10px] font-mono leading-relaxed text-white/80 backdrop-blur-md">
+      <p className="mb-1 text-[9px] font-black uppercase tracking-widest text-emerald-300">
+        Device capabilities
+      </p>
+      <dl className="space-y-0.5">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex gap-2">
+            <dt className="w-28 shrink-0 text-white/50">{label}</dt>
+            <dd className="min-w-0 break-words">{value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   )
 }
