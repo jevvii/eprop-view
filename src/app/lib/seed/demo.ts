@@ -78,7 +78,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
       description:
         'Mixed-use low-rise complex beside the Marikina River. Demo site used to populate the preview environment.',
       status: 'active',
-      geom: 'SRID=4326;POINT(121.0945 14.6507)',
+      geom: { type: 'Point', coordinates: [121.0945, 14.6507] },
       created_by: actor,
     })
     .select('id')
@@ -590,7 +590,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
       description: 'Tilt rising since baseline; crack widens toward this support.',
       position_x: 62,
       position_y: 38,
-      geom: 'SRID=4326;POINT(121.0951 14.6511)',
+      geom: { type: 'Point', coordinates: [121.0951, 14.6511] },
     },
     {
       project_id: project.id,
@@ -599,7 +599,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
       description: 'Erosion is removing cover at the river-facing plinth.',
       position_x: 41,
       position_y: 55,
-      geom: 'SRID=4326;POINT(121.0938 14.6504)',
+      geom: { type: 'Point', coordinates: [121.0938, 14.6504] },
     },
     {
       project_id: project.id,
@@ -608,7 +608,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
       description: 'Diagonal crack across the soffit, monitored.',
       position_x: 55,
       position_y: 47,
-      geom: 'SRID=4326;POINT(121.0947 14.6508)',
+      geom: { type: 'Point', coordinates: [121.0947, 14.6508] },
     },
   ])
   counts.hotspots = 3
