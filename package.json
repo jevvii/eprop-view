@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/app/lib/*.test.ts",
-    "db:migrate": "tsx src/scripts/apply-all-migrations.ts"
+    "db:migrate": "tsx src/scripts/apply-all-migrations.ts",
+    "seed:preview": "tsx src/scripts/seed-preview.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

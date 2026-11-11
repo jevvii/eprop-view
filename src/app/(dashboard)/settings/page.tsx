@@ -14,10 +14,11 @@ import { SystemHealth } from '@/components/settings/system-health'
 import { ProjectManager } from '@/components/settings/project-manager'
 import { BackupRestore } from '@/components/settings/backup-restore'
 import { ConfigurationPanel } from '@/components/settings/configuration-panel'
+import { DemoDataPanel } from '@/components/settings/demo-data'
 import { Button } from '@/components/ui/button'
 import { useProfile } from '@/app/lib/queries'
 
-type SettingsTab = 'overview' | 'users' | 'buildings' | 'geohazard' | 'storage' | 'projects' | 'audit' | 'health' | 'backup' | 'config'
+type SettingsTab = 'overview' | 'users' | 'buildings' | 'geohazard' | 'storage' | 'projects' | 'audit' | 'health' | 'backup' | 'config' | 'demo'
 
 export default function SettingsPage() {
   const { data: profile } = useProfile()
@@ -145,6 +146,16 @@ export default function SettingsPage() {
           >
             Thresholds
           </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'demo'}
+            onClick={() => setActiveTab('demo')}
+            className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              activeTab === 'demo' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Demo Data
+          </button>
         </div>
       )}
 
@@ -208,6 +219,12 @@ export default function SettingsPage() {
       {isAdmin && activeTab === 'config' && (
         <div className="grid grid-cols-1 gap-6">
           <ConfigurationPanel />
+        </div>
+      )}
+
+      {isAdmin && activeTab === 'demo' && (
+        <div className="grid grid-cols-1 gap-6">
+          <DemoDataPanel />
         </div>
       )}
 

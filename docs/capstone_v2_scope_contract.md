@@ -32,7 +32,7 @@ it is amended in a reviewed commit.
 | Branch flow | feature → `staging` (free) → `main` (owner's go signal only) |
 | Preview target | GitHub integration; `productionBranch = main`; every other branch is a Preview |
 | Preview database | separate Supabase project, `gbuwldihkmapzondxkto`, Preview-scoped env vars only |
-| Preview seed | idempotent seed, runs only when `VERCEL_ENV=preview` and `SEED_DEMO_DATA=1` |
+| Preview seed | idempotent, admin-triggered from Settings → Demo Data; refused unless the deployment is Preview (`VERCEL_ENV=preview`) or `SEED_DEMO_DATA=1` is set locally |
 | Verification gate | `tsc --noEmit`, `eslint`, node tests, `next build`, preview deploy — enforced in CI |
 | CI | GitHub Actions on every push and PR |
 | Diagram | acceptance checklist; gaps closed with honest capstone equivalents |
