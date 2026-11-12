@@ -23,6 +23,20 @@ import { useProfile } from '@/app/lib/queries'
 
 type SettingsTab = 'overview' | 'users' | 'buildings' | 'geohazard' | 'storage' | 'projects' | 'audit' | 'health' | 'backup' | 'config' | 'demo'
 
+const TABS: { key: SettingsTab; label: string }[] = [
+  { key: 'overview', label: 'Profile & telemetry' },
+  { key: 'users', label: 'User directory' },
+  { key: 'buildings', label: 'Buildings' },
+  { key: 'geohazard', label: 'Geohazard layers' },
+  { key: 'storage', label: 'Storage lifecycle' },
+  { key: 'projects', label: 'Projects' },
+  { key: 'audit', label: 'Audit log' },
+  { key: 'health', label: 'System health' },
+  { key: 'backup', label: 'Export / import' },
+  { key: 'config', label: 'Thresholds' },
+  { key: 'demo', label: 'Demo data' },
+]
+
 export default function SettingsPage() {
   const { data: profile } = useProfile()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -51,117 +65,25 @@ export default function SettingsPage() {
       />
 
       {isAdmin && (
-        <nav aria-label="Settings Categories" className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200 no-scrollbar overscroll-contain">
-          <button
-            type="button"
-            aria-pressed={activeTab === 'overview'}
-            onClick={() => setActiveTab('overview')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'overview' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Profile & Telemetry
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'users'}
-            onClick={() => setActiveTab('users')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'users' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            User Directory
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'buildings'}
-            onClick={() => setActiveTab('buildings')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'buildings' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Building Master Data
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'geohazard'}
-            onClick={() => setActiveTab('geohazard')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'geohazard' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Geohazard Layers (GIS)
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'storage'}
-            onClick={() => setActiveTab('storage')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'storage' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Storage & S3 Lifecycle
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'projects'}
-            onClick={() => setActiveTab('projects')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'projects' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Projects
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'audit'}
-            onClick={() => setActiveTab('audit')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'audit' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Audit Log
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'health'}
-            onClick={() => setActiveTab('health')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'health' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            System Health
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'backup'}
-            onClick={() => setActiveTab('backup')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'backup' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Export / Import
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'config'}
-            onClick={() => setActiveTab('config')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'config' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Thresholds
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeTab === 'demo'}
-            onClick={() => setActiveTab('demo')}
- className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              activeTab === 'demo' ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Demo Data
-          </button>
+        <nav
+          aria-label="Settings categories"
+          className="no-scrollbar flex gap-1 overflow-x-auto border-b border-slate-200"
+        >
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              aria-pressed={activeTab === tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-left text-sm transition-colors ${
+                activeTab === tab.key
+                  ? 'border-primary font-semibold text-primary'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </nav>
       )}
 

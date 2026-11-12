@@ -65,12 +65,12 @@ export default function DocumentPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-lg border border-slate-200 shadow-xs w-full sm:w-auto">
-            <label className="text-xs font-bold text-slate-700 pl-2">Filter Entry</label>
+          <label className="flex w-full items-center gap-2 text-sm text-slate-600 sm:w-auto">
+            Inspection
             <select
               value={inspectionId}
               onChange={(event) => setInspectionId(event.target.value)}
-              className="rounded-xl border border-slate-200 px-3.5 py-2 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px] flex-1 sm:flex-initial"
+              className="h-10 min-w-[200px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium sm:flex-initial"
             >
               <option value="">SELECT_INSPECTION</option>
               {visibleInspections.map((inspection) => (
@@ -79,7 +79,7 @@ export default function DocumentPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </label>
 
           {canUseAR && inspectionId && (
             <Link

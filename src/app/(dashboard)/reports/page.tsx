@@ -135,25 +135,26 @@ export default function ReportsPage() {
           
           {/* Actions Container */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-xs">
-              <label htmlFor="report-project" className="text-xs font-bold text-slate-700 pl-2">Site</label>              <select
+            <label htmlFor="report-project" className="flex items-center gap-2 text-sm text-slate-600">
+              Site
+              <select
                 id="report-project"
                 value={projectId}
                 onChange={(event) => setProjectId(event.target.value)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all max-w-[170px] truncate"
+                className="h-10 max-w-[190px] truncate rounded-md border border-slate-300 bg-white px-3 text-sm font-medium"
               >
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>{project.name}</option>
                 ))}
               </select>
-            </div>
+            </label>
 
             {canExportReport && (
               <Button
                 variant="outline"
                 disabled={!hasReports}
                 onClick={handlePrintAll}
-                className="font-bold text-xs px-4 h-11 border-slate-200"
+                className="h-10 px-4 text-sm font-medium"
               >
                 Print All
               </Button>
@@ -164,7 +165,7 @@ export default function ReportsPage() {
                 variant="outline"
                 disabled={!hasReports || exporting}
                 onClick={handleExportCsv}
-                className="font-bold text-xs px-4 h-11 border-slate-200"
+                className="h-10 px-4 text-sm font-medium"
               >
                 {exporting ? 'Exporting…' : 'Export CSV'}
               </Button>
@@ -173,9 +174,9 @@ export default function ReportsPage() {
             {canCreateReport && (
               <Button 
                 onClick={() => setIsCreateModalOpen(true)} 
-                className="font-bold text-xs px-5 h-11 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-white"
+                className="h-10 px-5 text-sm font-semibold"
               >
-                + Add New Log
+                New report
               </Button>
             )}
           </div>
@@ -190,24 +191,24 @@ export default function ReportsPage() {
           resultCount={filteredReports.length}
         />
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-4">
-          <div className="rounded-lg sm:rounded-lg bg-white p-4 sm:p-6 shadow-md border border-slate-200 group hover:shadow-lg transition-all min-w-0">
-            <div className="text-xs font-bold text-slate-500 mb-1 truncate">Total Active Logs</div>
-            <div className="text-3xl sm:text-4xl font-sans font-semibold text-slate-900 tabular-nums">{reportStats.open}</div>
-          </div>
-          <div className="rounded-lg sm:rounded-lg bg-indigo-50/60 p-4 sm:p-6 shadow-md border border-indigo-100 group hover:shadow-lg transition-all min-w-0">
-            <div className="text-xs font-bold text-indigo-600 mb-1 truncate">Pending Review</div>
-            <div className="text-3xl sm:text-4xl font-sans font-semibold text-indigo-700 tabular-nums">{reportStats.in_review}</div>
-          </div>
-          <div className="rounded-lg sm:rounded-lg bg-rose-50/60 p-4 sm:p-6 shadow-md border border-rose-100 group hover:shadow-lg transition-all min-w-0">
-            <div className="text-xs font-bold text-rose-600 mb-1 truncate">Critical Priority</div>
-            <div className="text-3xl sm:text-4xl font-sans font-semibold text-rose-600 tabular-nums">{reportStats.critical}</div>
-          </div>
-          <div className="rounded-lg sm:rounded-lg bg-emerald-50/60 p-4 sm:p-6 shadow-md border border-emerald-100 group hover:shadow-lg transition-all min-w-0">
-            <div className="text-xs font-bold text-emerald-600 mb-1 truncate">Verified Complete</div>
-            <div className="text-3xl sm:text-4xl font-sans font-semibold text-emerald-600 tabular-nums">{reportStats.completed}</div>
-          </div>
-        </div>
+        <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {[
+            { label: 'Active logs', value: reportStats.open, tone: 'text-slate-900' },
+            { label: 'Pending review', value: reportStats.in_review, tone: 'text-primary' },
+            { label: 'Critical priority', value: reportStats.critical, tone: 'text-[#9F2F2D]' },
+            { label: 'Verified complete', value: reportStats.completed, tone: 'text-[#346538]' },
+          ].map((tile) => (
+            <div
+              key={tile.label}
+              className="min-w-0 rounded-lg border border-slate-200 bg-white px-4 py-3.5"
+            >
+              <dt className="truncate text-xs font-medium text-slate-600">{tile.label}</dt>
+              <dd className={`mt-1 text-2xl font-semibold tabular-nums ${tile.tone}`}>
+                {tile.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
 
         <ReportsTable 
           reports={filteredReports} 

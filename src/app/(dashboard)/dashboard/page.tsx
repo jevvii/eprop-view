@@ -77,25 +77,25 @@ export default function DashboardPage() {
             <StatCard
               label="Active projects"
               value={value('active_projects')}
-              className="lg:w-44 xl:w-52 lg:shadow-lg"
+              className="lg:w-44 xl:w-52 lg:shadow-sm"
             />
             <StatCard
               label="Critical risk"
               value={value('critical_risk_reports')}
               variant="critical"
-              className="lg:w-44 xl:w-52 lg:shadow-lg"
+              className="lg:w-44 xl:w-52 lg:shadow-sm"
             />
             <StatCard
               label="In review"
               value={value('reports_in_review')}
               variant="info"
-              className="lg:w-44 xl:w-52 lg:shadow-lg"
+              className="lg:w-44 xl:w-52 lg:shadow-sm"
             />
             <StatCard
               label="Completed"
               value={value('completed_repairs')}
               variant="success"
-              className="lg:w-44 xl:w-52 lg:shadow-lg"
+              className="lg:w-44 xl:w-52 lg:shadow-sm"
             />
           </div>
         </div>
