@@ -196,7 +196,7 @@ export function CostPanel({ report }: { report: Report }) {
         </button>
       </div>
 
-      <div className="border-t border-slate-100 pt-4">
+      <div className="border-t border-slate-200 pt-4">
         <h4 className="text-[11px] font-bold text-slate-500 mb-2">Estimates on this inspection</h4>
         {estimates.length === 0 ? (
           <EmptyState title="No cost estimate yet" message="A saved estimate shows the table value, the AI range and its confirmation state." />
@@ -333,7 +333,7 @@ export function RecommendationPanel({ report }: { report: Report }) {
         </button>
       </div>
 
-      <div className="border-t border-slate-100 pt-4">
+      <div className="border-t border-slate-200 pt-4">
         <h4 className="text-[11px] font-bold text-slate-500 mb-2">On this report</h4>
         {items.length === 0 ? (
           <EmptyState title="No recommendation yet" message="Drafts and signed recommendations appear here with their state and provenance." />

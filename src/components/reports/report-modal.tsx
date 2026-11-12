@@ -51,13 +51,13 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+          <div className="rounded-xl bg-slate-50 p-4 border border-slate-200">
             <div className="text-xs font-bold text-slate-500">Project</div>
             <div className="text-sm font-semibold text-slate-900 mt-0.5">{report.project_name ?? 'Unknown'}</div>
             <div className="mt-3 text-xs font-bold text-slate-500">Location</div>
             <div className="text-sm font-medium text-slate-700 mt-0.5">{report.location}</div>
           </div>
-          <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+          <div className="rounded-xl bg-slate-50 p-4 border border-slate-200">
             <div className="text-xs font-bold text-slate-500">Inspection Date</div>
             <div className="text-sm font-semibold text-slate-900 mt-0.5 tabular-nums">
               {new Date(report.date).toLocaleDateString()}
@@ -65,7 +65,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
             <div className="mt-3 text-xs font-bold text-slate-500">Lead Inspector</div>
             <div className="text-sm font-medium text-slate-700 mt-0.5">{report.lead_inspector_name ?? 'Unassigned'}</div>
           </div>
-          <div className="rounded-xl bg-slate-50 p-4 md:col-span-2 border border-slate-100">
+          <div className="rounded-xl bg-slate-50 p-4 md:col-span-2 border border-slate-200">
             <div className="text-xs font-bold text-slate-500 mb-1">Risk Score</div>
             <div>
               <RiskScore score={report.risk_score} />

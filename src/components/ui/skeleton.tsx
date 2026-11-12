@@ -85,7 +85,7 @@ export function SkeletonTable({
       aria-hidden="true"
  className={`rounded-lg border border-slate-200 bg-white ${className}`}
     >
-      <div className="flex gap-4 border-b border-slate-100 px-4 py-3">
+      <div className="flex gap-4 border-b border-slate-200 px-4 py-3">
         {Array.from({ length: columns }).map((_, index) => (
           <Skeleton key={index} className="h-2.5 flex-1" />
         ))}

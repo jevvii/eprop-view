@@ -135,7 +135,7 @@ export default function ReportsPage() {
           
           {/* Actions Container */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-xs">
+            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-xs">
               <label htmlFor="report-project" className="text-xs font-bold text-slate-700 pl-2">Site</label>              <select
                 id="report-project"
                 value={projectId}
@@ -191,7 +191,7 @@ export default function ReportsPage() {
         />
 
         <div className="grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-4">
-          <div className="rounded-lg sm:rounded-lg bg-white p-4 sm:p-6 shadow-md border border-slate-100 group hover:shadow-lg transition-all min-w-0">
+          <div className="rounded-lg sm:rounded-lg bg-white p-4 sm:p-6 shadow-md border border-slate-200 group hover:shadow-lg transition-all min-w-0">
             <div className="text-xs font-bold text-slate-500 mb-1 truncate">Total Active Logs</div>
             <div className="text-3xl sm:text-4xl font-koulen text-black tabular-nums">{reportStats.open}</div>
           </div>

@@ -245,7 +245,7 @@ function ARPageContent() {
 
   if (profileLoading) {
     return (
-      <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-100 mx-2" />
+      <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-200 mx-2" />
     )
   }
 
@@ -263,7 +263,7 @@ function ARPageContent() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Top Header & Inspection Selector Bar */}
-      <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-lg shadow-md border border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-lg shadow-md border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xl sm:text-2xl font-koulen text-primary tracking-wide uppercase">
@@ -392,7 +392,7 @@ function ARPageContent() {
         <div
           id="ar-viewport"
           ref={viewportRef}
-          className="relative h-[380px] min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-lg sm:rounded-lg overflow-hidden shadow-sm border border-slate-100 bg-slate-950"
+          className="relative h-[380px] min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-lg sm:rounded-lg overflow-hidden shadow-sm border border-slate-200 bg-slate-950"
         >
           <ARCameraView onTapToAnchor={handleTapToAnchor} onAimChange={setAim} aim={aim}
             frame={tracking.frame} viewport={tracking.viewport} placementPose={dbSessionId ? hitPose : null}
@@ -414,7 +414,7 @@ function ARPageContent() {
           )}
 
           {/* Persisted Spatial Anchors Card */}
-          <div className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-100">
+          <div className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-200">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-xs sm:text-xs font-black text-slate-500 tracking-[0.2em]">
                 Saved Markers
@@ -447,7 +447,7 @@ function ARPageContent() {
                   return (
                     <div
                       key={anchor.id}
-                      className="bg-slate-50 hover:bg-slate-100/80 border border-slate-100 rounded-lg p-3 flex items-center justify-between gap-3 transition-colors"
+                      className="bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg p-3 flex items-center justify-between gap-3 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         {snapshotUrl ? (
@@ -515,7 +515,7 @@ function ReferenceARPage() {
     <ARSessionManager>
       <Suspense
         fallback={
-          <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-96 animate-pulse border border-slate-100">
+          <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-96 animate-pulse border border-slate-200">
             <div className="h-6 bg-slate-100 rounded w-1/3 mb-4" />
           </div>
         }

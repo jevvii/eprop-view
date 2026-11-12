@@ -132,7 +132,7 @@ export function MaintenanceTable() {
                 openEditModal(item)
               }
             }}
- className={`p-4 rounded-lg bg-white border border-slate-100 shadow-xs transition-colors group ${
+ className={`p-4 rounded-lg bg-white border border-slate-200 shadow-xs transition-colors group ${
               canManage ? 'cursor-pointer hover:shadow-md hover:border-primary/30' : ''
             }`}
           >
@@ -184,7 +184,7 @@ export function MaintenanceTable() {
       {selectedTask && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 shadow-lg space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
                   Manage Maintenance Task
@@ -262,7 +262,7 @@ export function MaintenanceTable() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
               <Button
                 variant="outline"
                 size="sm"
@@ -291,7 +291,7 @@ export function MaintenanceTable() {
             onSubmit={handleCreate}
             className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 shadow-lg space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
                   Assign Maintenance Task
@@ -418,7 +418,7 @@ export function MaintenanceTable() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
               <Button
                 type="button"
                 variant="outline"

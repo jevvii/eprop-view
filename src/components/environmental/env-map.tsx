@@ -242,7 +242,7 @@ export function EnvMap({ projectId, center }: EnvMapProps) {
   }
 
   return (
-    <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 flex flex-col h-[400px] sm:h-[500px] lg:h-full lg:min-h-[550px]">
+    <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 flex flex-col h-[400px] sm:h-[500px] lg:h-full lg:min-h-[550px]">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
           <h3 className="text-xs font-bold text-slate-700 mb-0.5">Geospatial Hazards</h3>
@@ -255,7 +255,7 @@ export function EnvMap({ projectId, center }: EnvMapProps) {
           <StatusBadge status="flood" label="Flood" />
         </div>
       </div>
-      <div ref={mapContainer} className="flex-1 rounded-xl sm:rounded-lg overflow-hidden border border-slate-100 shadow-inner min-h-[300px]" />
+      <div ref={mapContainer} className="flex-1 rounded-xl sm:rounded-lg overflow-hidden border border-slate-200 shadow-inner min-h-[300px]" />
     </div>
   )
 }

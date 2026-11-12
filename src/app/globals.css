@@ -64,7 +64,7 @@
 
 :root {
   --background: #F6F6F6;
-  --foreground: #000000;
+  --foreground: #111111;
   --card: #FFFFFF;
   --card-foreground: #000000;
   --popover: #FFFFFF;
@@ -74,11 +74,11 @@
   --secondary: #FFFFFF;
   --secondary-foreground: #346BDA;
   --muted: #F6F6F6;
-  --muted-foreground: #666666;
+  --muted-foreground: #787774;
   --accent: #8C7CDB;
   --accent-foreground: #FFFFFF;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #E5E7EB;
+  --border: #EAEAEA;
   /* Form boundaries need 3:1 against their surface (WCAG 1.4.11). */
   --input: #64748B;
   --ring: #346BDA;
@@ -155,10 +155,18 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    line-height: 1.6;
   }
   h1, h2, h3, h4, h5, h6, .font-heading {
     @apply font-koulen;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
     text-wrap: balance;
+  }
+  /* Keystrokes read as physical keys, not text. */
+  kbd {
+    @apply border border-slate-200 bg-[#F7F6F3] font-mono;
+    border-radius: 4px;
   }
   p {
     text-wrap: pretty;
@@ -316,4 +324,12 @@ html.ar-immersive #ar-viewport {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+}
+
+
+/* One card recipe: white, hairline border, crisp radius, no shadow. */
+.surface {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
 }

@@ -93,7 +93,7 @@ export function AuditLog() {
             </thead>
             <tbody>
               {events.map((event) => (
-                <tr key={event.id} className="border-b border-slate-100 last:border-0">
+                <tr key={event.id} className="border-b border-slate-200 last:border-0">
                   <td className="py-2 pr-3 text-xs text-slate-600 font-medium whitespace-nowrap">
                     {formatDate(event.created_at)}
                   </td>

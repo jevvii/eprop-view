@@ -30,7 +30,7 @@ export function CommentThread({ imageId }: CommentThreadProps) {
   if (isLoading) return <div className="h-20 animate-pulse bg-slate-50 rounded-xl" />
 
   return (
-    <div className="space-y-4 pt-4 border-t border-slate-100 mt-4">
+    <div className="space-y-4 pt-4 border-t border-slate-200 mt-4">
       <div className="flex items-center gap-2 mb-2">
         <div className="text-xs font-bold text-slate-700">Discussion Thread</div>
         <div className="h-[1px] flex-1 bg-slate-100" />
@@ -51,7 +51,7 @@ export function CommentThread({ imageId }: CommentThreadProps) {
                   {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium bg-slate-50/70 p-3 rounded-xl border border-slate-100">
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium bg-slate-50/70 p-3 rounded-xl border border-slate-200">
                 {comment.content}
               </p>
             </div>

@@ -80,7 +80,7 @@ export function Sidebar() {
     <aside
  className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white overscroll-contain
-        flex flex-col p-6 border-r border-slate-100 transition-transform duration-300 ease-in-out
+        flex flex-col p-6 border-r border-slate-200 transition-transform duration-300 ease-in-out
         overflow-y-auto
         pt-[max(1.5rem,env(safe-area-inset-top))]
         pb-[max(1.5rem,env(safe-area-inset-bottom))]
@@ -154,7 +154,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="pt-6 border-t border-slate-100">
+      <div className="pt-6 border-t border-slate-200">
         <button
           type="button"
           disabled={isLoggingOut}

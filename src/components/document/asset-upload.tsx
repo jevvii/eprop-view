@@ -84,8 +84,8 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-5">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-5">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
         <div>
           <h3 className="text-xs font-bold text-slate-700">Asset Injection</h3>
         </div>

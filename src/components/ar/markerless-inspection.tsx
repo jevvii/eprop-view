@@ -252,7 +252,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
     <section hidden={state.active} className="rounded-lg border border-slate-200 bg-white p-4 space-y-3" aria-label="Saved inspection records">
       <h3 className="text-base font-semibold">Saved inspection records</h3>
       {!markers.length && <p className="text-sm text-slate-600">No saved inspection points yet.</p>}
-      {markers.map((marker) => <div key={marker.id} className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+      {markers.map((marker) => <div key={marker.id} className="flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
         <div className="min-w-0">
           <p className="font-semibold">{marker.label}</p>
           <p className="text-xs text-slate-600">{marker.pose.sessionTracking?.kind === 'webxr-session-v1' ? 'WebXR session-only record · not a restored checkpoint' : marker.pose.sessionTracking?.kind === 'camera-frame-v1' ? 'Photo annotation · no spatial tracking' : marker.pose.reference ? 'Printed-reference record' : 'Legacy record'}</p>

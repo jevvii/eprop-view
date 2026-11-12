@@ -175,7 +175,7 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
         </form>
       )}
 
-      <div className="border-t border-slate-100 pt-4">
+      <div className="border-t border-slate-200 pt-4">
         <h4 className="text-[11px] font-bold text-slate-500 mb-2">Assessments</h4>
         {loading && <p className="text-xs text-slate-500 font-medium">Loading…</p>}
         {!loading && assessments.length === 0 && (
@@ -186,7 +186,7 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
         )}
         {!loading &&
           assessments.map((assessment) => (
-            <article key={assessment.id} className="py-3 border-b border-slate-100 last:border-0 space-y-2">
+            <article key={assessment.id} className="py-3 border-b border-slate-200 last:border-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Chip tone="info">{assessment.failure_hypothesis}</Chip>
                 <span className="text-[11px] text-slate-500 font-medium">

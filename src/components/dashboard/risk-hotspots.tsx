@@ -84,7 +84,7 @@ export function RiskHotspots() {
 
   if (isLoading) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm animate-pulse h-64 border border-slate-100" aria-busy="true" />
+      <div className="bg-white p-6 rounded-lg shadow-sm animate-pulse h-64 border border-slate-200" aria-busy="true" />
     )
   }
 

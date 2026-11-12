@@ -37,7 +37,7 @@ export function ConfigurationPanel() {
             </thead>
             <tbody>
               {CRACK_WIDTH_BANDS.map((band) => (
-                <tr key={band.band} className="border-b border-slate-100 last:border-0">
+                <tr key={band.band} className="border-b border-slate-200 last:border-0">
                   <td className="py-2 pr-3 text-xs font-semibold text-slate-800 capitalize">{band.band}</td>
                   <td className="py-2 pr-3 text-xs text-slate-600 font-medium">{band.label}</td>
                 </tr>

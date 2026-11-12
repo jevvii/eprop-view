@@ -195,7 +195,7 @@ export function SettlementPanel({ inspection }: { inspection: Inspection }) {
         </div>
       </form>
 
-      <div className="border-t border-slate-100 pt-4">
+      <div className="border-t border-slate-200 pt-4">
         <h4 className="text-[11px] font-bold text-slate-500 mb-2">Recorded readings</h4>
         {loading && <p className="text-xs text-slate-500 font-medium">Loading…</p>}
         {!loading && !loadError && observations.length === 0 && (

@@ -51,7 +51,7 @@ export default function DocumentPage() {
   }, [inspectionId, inspections])
 
   if (isLoading) {
-    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-100 mx-2" />
+    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-200 mx-2" />
   }
 
   return (
@@ -65,7 +65,7 @@ export default function DocumentPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-lg border border-slate-100 shadow-xs w-full sm:w-auto">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-lg border border-slate-200 shadow-xs w-full sm:w-auto">
             <label className="text-xs font-bold text-slate-700 pl-2">Filter Entry</label>
             <select
               value={inspectionId}
@@ -110,7 +110,7 @@ export default function DocumentPage() {
             </div>
           )}
           {!canUpload && !canCreateInspection && (
-            <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-4">
+            <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-4">
               <div className="flex items-center gap-3">
                 <Microscope className="h-6 w-6 text-slate-500" aria-hidden="true" />
                 <div>

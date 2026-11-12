@@ -100,8 +100,8 @@ export function FloorManager() {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h3 className="text-xs font-bold text-slate-600 mb-1">
             Floor & Level Hierarchy
@@ -239,7 +239,7 @@ export function FloorManager() {
             onSubmit={handleSubmit}
             className="w-full max-w-sm rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 shadow-lg space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h4 className="text-base font-bold text-slate-800">
                 {editingFloor ? 'Edit Floor Level' : 'Add Floor Level'}
               </h4>
@@ -285,7 +285,7 @@ export function FloorManager() {
               </p>
             )}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-200">
               <Button
                 type="button"
                 variant="outline"

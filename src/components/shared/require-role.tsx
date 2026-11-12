@@ -56,7 +56,7 @@ export function AccessDenied({
   const targetHref = returnHref || defaultHref
 
   return (
-    <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 text-center max-w-lg mx-auto my-8 sm:my-12 space-y-6">
+    <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 text-center max-w-lg mx-auto my-8 sm:my-12 space-y-6">
       <div className="w-16 h-16 bg-red-50 text-red-500 rounded-lg flex items-center justify-center mx-auto">
         <Lock className="h-7 w-7" aria-hidden="true" />
       </div>

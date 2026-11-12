@@ -117,7 +117,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
           </div>
         )}
 
-        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200">
           {onClose && (
             <Button type="button" variant="outline" onClick={onClose} className="min-h-[44px] text-xs font-bold">
               Cancel

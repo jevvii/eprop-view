@@ -23,7 +23,7 @@ export function Panel({
   children: ReactNode
 }) {
   return (
-    <section className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 min-w-0">
+    <section className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-slate-900">{title}</h3>

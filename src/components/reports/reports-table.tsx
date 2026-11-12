@@ -116,7 +116,7 @@ export function ReportsTable({
   }
 
   if (isLoading) {
-    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-100" />
+    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-200" />
   }
 
   if (isError) {
@@ -129,7 +129,7 @@ export function ReportsTable({
 
   if (!reports || reports.length === 0) {
     return (
-      <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg border border-slate-100 text-slate-500 font-bold text-center italic text-xs sm:text-sm">
+      <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg border border-slate-200 text-slate-500 font-bold text-center italic text-xs sm:text-sm">
         System Status: No technical logs on file for this site.
       </div>
     )
@@ -138,7 +138,7 @@ export function ReportsTable({
   return (
     <div className="grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-[1.6fr_1fr] items-start">
       {/* 1. Log List (Compact) */}
- <div className={`bg-white p-4 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 flex flex-col transition-all duration-300 min-w-0 ${
+ <div className={`bg-white p-4 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 flex flex-col transition-all duration-300 min-w-0 ${
         mobileView === 'detail' ? 'hidden lg:flex' : 'flex'
       }`}>
         <div className="flex items-center justify-between mb-6 px-1">
@@ -153,7 +153,7 @@ export function ReportsTable({
         <div className="overflow-x-auto flex-1 min-h-[350px]">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100">
+              <tr className="border-b border-slate-200">
                 <th scope="col" className="text-left py-3.5 font-bold text-xs text-slate-600 pl-2">Designation</th>
                 <th scope="col" className="text-right py-3.5 font-bold text-xs text-slate-600 pr-2">System Score</th>
               </tr>
@@ -209,12 +209,12 @@ export function ReportsTable({
       </div>
 
       {/* 2. Detail View (Expanded) */}
- <div className={`bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 flex flex-col h-full min-h-[500px] transition-all duration-300 min-w-0 ${
+ <div className={`bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 flex flex-col h-full min-h-[500px] transition-all duration-300 min-w-0 ${
         mobileView === 'list' ? 'hidden lg:flex' : 'flex'
       }`}>
         {selectedReport ? (
           <div className="space-y-6 sm:space-y-8 h-full flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 px-1 gap-2 flex-wrap">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4 px-1 gap-2 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <button 
                   onClick={() => setMobileView('list')}
@@ -274,7 +274,7 @@ export function ReportsTable({
                 <div className="text-xs font-bold text-primary">{selectedReport.project_name ?? 'UNIT_UNSPECIFIED'}</div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 sm:gap-6 bg-slate-50 p-4 sm:p-6 rounded-lg border border-slate-100 shadow-inner">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6 bg-slate-50 p-4 sm:p-6 rounded-lg border border-slate-200 shadow-inner">
                 <div>
                   <div className="text-xs font-semibold text-slate-500 mb-1">Date</div>
                   <div className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">{new Date(selectedReport.date).toLocaleDateString()}</div>
@@ -321,17 +321,17 @@ export function ReportsTable({
               </div>
 
               {canViewAudit && auditTrail && (
-                <div className="bg-slate-50/70 border border-slate-100 rounded-lg p-4 sm:p-6 space-y-3">
+                <div className="bg-slate-50/70 border border-slate-200 rounded-lg p-4 sm:p-6 space-y-3">
                   <div className="text-xs font-bold text-slate-700">Audit Trail</div>
                   <div className="space-y-2 text-xs font-medium text-slate-600">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-100 pb-1.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-200 pb-1.5">
                       <span className="font-bold text-slate-500">Submitted</span>
                       <span className="font-semibold text-slate-800">{auditTrail.submittedBy}</span>
                       <span className="text-slate-500 text-xs sm:text-right tabular-nums">
                         {new Date(auditTrail.submittedAt).toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-100 pb-1.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-200 pb-1.5">
                       <span className="font-bold text-slate-500">Reviewed</span>
                       <span className="font-semibold text-slate-800">{auditTrail.reviewedBy}</span>
                       <span className="text-slate-500 text-xs sm:text-right tabular-nums">

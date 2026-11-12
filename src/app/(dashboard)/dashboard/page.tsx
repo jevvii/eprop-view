@@ -45,7 +45,7 @@ export default function DashboardPage() {
   if (profileLoading) {
     return (
       <div
-        className="bg-white p-6 sm:p-10 rounded-lg shadow-sm h-80 animate-pulse border border-slate-100 mx-2"
+        className="bg-white p-6 sm:p-10 rounded-lg shadow-sm h-80 animate-pulse border border-slate-200 mx-2"
         aria-busy="true"
         aria-label="Loading dashboard"
       />
@@ -123,7 +123,7 @@ export default function DashboardPage() {
           <MaintenanceTable />
         </div>
 
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-slate-200">
           <ConnectionStatus isLoading={statsLoading} isError={statsError} />
         </div>
       </aside>

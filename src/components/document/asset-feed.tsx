@@ -61,7 +61,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
         </div>
         <div className="grid grid-cols-1 gap-6 sm:gap-8">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-lg sm:rounded-lg shadow-sm border border-slate-100 overflow-hidden flex flex-col lg:flex-row h-auto lg:h-[350px] animate-pulse">
+            <div key={i} className="bg-white rounded-lg sm:rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col lg:flex-row h-auto lg:h-[350px] animate-pulse">
               <div className="lg:w-1/2 bg-slate-100 h-64 lg:h-full flex items-center justify-center relative">
                 <ImageOff className="h-10 w-10 text-slate-500" aria-hidden="true" />
               </div>
@@ -108,7 +108,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
             const canDelete = isOwner || isAdmin
 
             return (
-              <div key={image.id} className="bg-white rounded-lg sm:rounded-lg shadow-sm border border-slate-100 overflow-hidden group hover:translate-y-[-2px] transition-all duration-300">
+              <div key={image.id} className="bg-white rounded-lg sm:rounded-lg shadow-sm border border-slate-200 overflow-hidden group hover:translate-y-[-2px] transition-all duration-300">
                 <div className="flex flex-col lg:flex-row">
                   {/* Image Section */}
                   <div className="lg:w-1/2 relative h-[260px] sm:h-[350px] bg-slate-100 overflow-hidden">
@@ -175,7 +175,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
             )
           })
         ) : (
-          <div className="bg-white p-10 sm:p-16 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 text-center">
+          <div className="bg-white p-10 sm:p-16 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 text-center">
             <ImageOff className="mx-auto mb-4 h-10 w-10 text-slate-500" aria-hidden="true" />
             <p className="text-xs sm:text-sm font-bold text-slate-500">No assets found in vault.</p>
           </div>

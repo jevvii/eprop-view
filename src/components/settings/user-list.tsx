@@ -44,7 +44,7 @@ export function UserList() {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-8 rounded-lg shadow-lg h-80 animate-pulse border border-slate-100" />
+    return <div className="bg-white p-8 rounded-lg shadow-lg h-80 animate-pulse border border-slate-200" />
   }
 
   if (isError) {
@@ -56,7 +56,7 @@ export function UserList() {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 flex flex-col h-full">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 flex flex-col h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h3 className="text-xs font-bold text-slate-600 mb-1">User Management & Access Control</h3>

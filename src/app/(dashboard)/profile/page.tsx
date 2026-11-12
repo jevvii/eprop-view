@@ -45,7 +45,7 @@ export default function ProfilePage() {
   }
 
   if (isLoading) {
-    return <div className="h-64 rounded-lg bg-white border border-slate-100 animate-pulse" />
+    return <div className="h-64 rounded-lg bg-white border border-slate-200 animate-pulse" />
   }
 
   return (

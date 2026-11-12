@@ -47,7 +47,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
 
   if (modelsLoading || detectionsLoading || jobsLoading) {
     return (
-      <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-100 animate-pulse h-48">
+      <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 animate-pulse h-48">
         <div className="h-4 bg-slate-100 rounded w-1/3 mb-4"></div>
         <div className="h-8 bg-slate-100 rounded w-1/2"></div>
       </div>
@@ -55,8 +55,8 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="text-xs font-bold text-slate-700">Visual Damage Review</h3>
@@ -130,7 +130,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
             </div>
           </>
         ) : (
-          <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-100">
+          <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
             <ClipboardCheck className="h-4 w-4 text-slate-600" aria-hidden="true" />
             <span className="text-xs font-bold text-slate-700">
               Review & Validation Mode
@@ -140,7 +140,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
 
         {damageScore !== null && (
           <div className="flex flex-col gap-1">
-            <div className="bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-100 flex items-center gap-2 flex-wrap">
+            <div className="bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200 flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-slate-500">Impact Score:</span>
               <span className="text-sm font-bold text-slate-900 tabular-nums">{damageScore.toFixed(1)}/10</span>
               {riskLevel && (
@@ -174,7 +174,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
 
       {detections && detections.length > 0 ? (
         <div className="space-y-4 pt-2">
-          <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+          <div className="flex items-center justify-between border-t border-slate-200 pt-4">
             <span className="text-xs font-bold text-slate-700">
               Identified Defects ({detections.length})
             </span>
@@ -187,7 +187,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
           <DetectionList detections={detections} />
         </div>
       ) : (
-        <div className="text-xs text-slate-500 font-medium border-t border-slate-100 pt-4">
+        <div className="text-xs text-slate-500 font-medium border-t border-slate-200 pt-4">
           {latestJob?.status === 'completed'
             ? 'No defect patterns detected in this image by the heuristic.'
             : 'Not analyzed yet. Run analysis to inspect this image.'}

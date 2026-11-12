@@ -412,7 +412,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
           </p>
         )}
         {shareTokens.length > 0 && (
-          <div className="border-t border-slate-100 pt-4">
+          <div className="border-t border-slate-200 pt-4">
             <h4 className="text-xs font-bold text-slate-600">Recent share links (up to 100)</h4>
             <ul className="mt-2 divide-y divide-slate-100">
               {shareTokens.map((token) => {

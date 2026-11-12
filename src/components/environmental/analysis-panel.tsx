@@ -100,8 +100,8 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6 flex flex-col h-full min-w-0">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6 flex flex-col h-full min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
             <h3 className="text-xs font-bold text-slate-700">Suitability Analysis</h3>
@@ -200,7 +200,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
       {error && <p className="text-xs font-bold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>}
       {success && <p className="text-xs font-bold text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">{success}</p>}
 
-      <div className="flex justify-end pt-4 border-t border-slate-100">
+      <div className="flex justify-end pt-4 border-t border-slate-200">
         {canAssess ? (
           <Button type="submit" disabled={upsertRisk.isPending} className="font-bold text-xs px-8 min-h-[44px]">
             {upsertRisk.isPending ? 'Syncing...' : 'Sync Assessment'}

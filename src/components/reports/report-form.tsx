@@ -272,7 +272,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
           {aiSummary || arAnchors.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               {aiSummary && (
-                <div className="bg-white/90 rounded-xl p-3.5 border border-slate-100 space-y-2">
+                <div className="bg-white/90 rounded-xl p-3.5 border border-slate-200 space-y-2">
                   <div className="text-xs font-bold text-slate-600">AI Detections (<span className="tabular-nums">{aiSummary.total}</span>)</div>
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(aiSummary.countsByType).map(([type, count]) => (
@@ -299,7 +299,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
               )}
 
               {arAnchors.length > 0 ? (
-                <div className="bg-white/90 rounded-xl p-3.5 border border-slate-100 space-y-2">
+                <div className="bg-white/90 rounded-xl p-3.5 border border-slate-200 space-y-2">
                   <div className="text-xs font-bold text-slate-600">AR Spatial Anchors (<span className="tabular-nums">{arAnchors.length}</span>)</div>
                   <div className="flex flex-wrap gap-1.5">
                     {arAnchors.slice(0, 3).map((anchor) => (

@@ -187,7 +187,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                 ? 'bg-emerald-50/40 border-emerald-200/80'
                 : isRejected
                 ? 'bg-slate-100/70 border-slate-200 opacity-75'
-                : 'bg-slate-50 border-slate-100'
+                : 'bg-slate-50 border-slate-200'
             }`}
           >
             <div className="space-y-1.5">
