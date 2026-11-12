@@ -57,7 +57,7 @@ export function CommentThread({ imageId }: CommentThreadProps) {
             </div>
           ))
         ) : (
-          <div className="text-xs text-slate-400 italic uppercase tracking-wider py-4 text-center font-medium">
+          <div className="text-xs text-slate-500 italic uppercase tracking-wider py-4 text-center font-medium">
             No technical observations recorded.
           </div>
         )}

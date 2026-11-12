@@ -325,7 +325,7 @@ export function GeospatialMap() {
 
     if (!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
         return (
-            <div className="flex h-full w-full items-center justify-center bg-slate-50 text-xs font-black text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 rounded-[2rem]">
+            <div className="flex h-full w-full items-center justify-center bg-slate-50 text-xs font-black text-slate-500 uppercase tracking-widest border border-dashed border-slate-200 rounded-lg">
                 Mapbox Access Token Required
             </div>
         );

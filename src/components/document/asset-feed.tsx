@@ -40,9 +40,9 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
 
   if (!inspectionId) {
     return (
-      <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl h-[450px] sm:h-[600px] flex items-center justify-center text-center p-6 sm:p-10">
+      <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-lg sm:rounded-lg h-[450px] sm:h-[600px] flex items-center justify-center text-center p-6 sm:p-10">
         <div className="max-w-xs">
-          <FolderOpen className="mx-auto mb-4 h-10 w-10 text-slate-400" aria-hidden="true" />
+          <FolderOpen className="mx-auto mb-4 h-10 w-10 text-slate-500" aria-hidden="true" />
           <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Registry Initialized</h3>
           <p className="text-xs text-slate-500 font-medium leading-relaxed">
             Select a technical inspection entry from the dropdown above to view the associated asset vault and discussion threads.
@@ -61,9 +61,9 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
         </div>
         <div className="grid grid-cols-1 gap-6 sm:gap-8">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 overflow-hidden flex flex-col lg:flex-row h-auto lg:h-[350px] animate-pulse">
+            <div key={i} className="bg-white rounded-lg sm:rounded-lg shadow-sm border border-slate-100 overflow-hidden flex flex-col lg:flex-row h-auto lg:h-[350px] animate-pulse">
               <div className="lg:w-1/2 bg-slate-100 h-64 lg:h-full flex items-center justify-center relative">
-                <ImageOff className="h-10 w-10 text-slate-400" aria-hidden="true" />
+                <ImageOff className="h-10 w-10 text-slate-500" aria-hidden="true" />
               </div>
               <div className="lg:w-1/2 p-5 sm:p-6 space-y-4 flex flex-col">
                 <div className="h-4 w-28 bg-slate-200 rounded" />
@@ -79,8 +79,8 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
 
   if (isError) {
     return (
-      <div className="bg-red-50 border border-red-100 rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center">
-        <WifiOff className="mx-auto mb-4 h-10 w-10 text-slate-400" aria-hidden="true" />
+      <div className="bg-red-50 border border-red-100 rounded-lg sm:rounded-lg p-8 sm:p-12 text-center">
+        <WifiOff className="mx-auto mb-4 h-10 w-10 text-slate-500" aria-hidden="true" />
         <h3 className="text-sm font-bold text-red-700 uppercase tracking-wider mb-2">Telemetry Failure</h3>
         <p className="text-xs text-red-600 font-medium">
           System was unable to synchronize with the asset vault. Ensure technical database migrations have been deployed.
@@ -108,7 +108,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
             const canDelete = isOwner || isAdmin
 
             return (
-              <div key={image.id} className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 overflow-hidden group hover:translate-y-[-2px] transition-all duration-300">
+              <div key={image.id} className="bg-white rounded-lg sm:rounded-lg shadow-sm border border-slate-100 overflow-hidden group hover:translate-y-[-2px] transition-all duration-300">
                 <div className="flex flex-col lg:flex-row">
                   {/* Image Section */}
                   <div className="lg:w-1/2 relative h-[260px] sm:h-[350px] bg-slate-100 overflow-hidden">
@@ -126,7 +126,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
                         </div>
                       </div>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50 italic">
+                      <div className="h-full flex items-center justify-center text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50 italic">
                         Preview_Unavailable
                       </div>
                     )}
@@ -159,7 +159,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
                         <span className="text-xs sm:text-sm font-bold text-slate-900">{image.uploader_name}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Timestamp</span>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Timestamp</span>
                         <span className="text-xs text-slate-500 font-medium">{new Date(image.uploaded_at).toLocaleString()}</span>
                       </div>
                     </div>
@@ -175,9 +175,9 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
             )
           })
         ) : (
-          <div className="bg-white p-10 sm:p-16 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 text-center">
-            <ImageOff className="mx-auto mb-4 h-10 w-10 text-slate-400" aria-hidden="true" />
-            <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">No assets found in vault.</p>
+          <div className="bg-white p-10 sm:p-16 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 text-center">
+            <ImageOff className="mx-auto mb-4 h-10 w-10 text-slate-500" aria-hidden="true" />
+            <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider">No assets found in vault.</p>
           </div>
         )}
       </div>

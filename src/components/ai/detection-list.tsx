@@ -56,7 +56,7 @@ export function DetectionList({ detections }: DetectionListProps) {
 
   if (detections.length === 0) {
     return (
-      <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+      <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
         No AI detections recorded.
       </p>
     )
@@ -76,7 +76,7 @@ export function DetectionList({ detections }: DetectionListProps) {
           return (
             <div
               key={detection.id}
-              className="border border-primary/30 rounded-2xl p-4 sm:p-5 bg-primary/5 space-y-4 animate-in fade-in"
+              className="border border-primary/30 rounded-lg p-4 sm:p-5 bg-primary/5 space-y-4 animate-in fade-in"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-primary">
@@ -84,7 +84,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                 </span>
                 <button
                   onClick={cancelEdit}
-                  className="min-w-9 min-h-9 flex items-center justify-center text-xs font-bold text-slate-400 hover:text-slate-700 rounded-lg hover:bg-white"
+                  className="min-w-9 min-h-9 flex items-center justify-center text-xs font-bold text-slate-500 hover:text-slate-700 rounded-lg hover:bg-white"
                   aria-label="Cancel editing"
                 >
                   ✕
@@ -182,7 +182,7 @@ export function DetectionList({ detections }: DetectionListProps) {
         return (
           <div
             key={detection.id}
-            className={`border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+            className={`border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
               isVerified
                 ? 'bg-emerald-50/40 border-emerald-200/80'
                 : isRejected

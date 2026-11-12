@@ -77,12 +77,12 @@ export function MaintenanceTable() {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-8 rounded-[2rem] shadow-sm animate-pulse h-80" />
+    return <div className="bg-white p-8 rounded-lg shadow-sm animate-pulse h-80" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-red-100 text-red-600 font-bold uppercase tracking-widest text-center">
+      <div className="bg-white p-8 rounded-lg shadow-sm border border-red-100 text-red-600 font-bold uppercase tracking-widest text-center">
         Maintenance Log Link Offline
       </div>
     )
@@ -132,7 +132,7 @@ export function MaintenanceTable() {
                 openEditModal(item)
               }
             }}
-            className={`p-4 rounded-2xl bg-white border border-slate-100 shadow-xs transition-colors group ${
+            className={`p-4 rounded-lg bg-white border border-slate-100 shadow-xs transition-colors group ${
               canManage ? 'cursor-pointer hover:shadow-md hover:border-primary/30' : ''
             }`}
           >
@@ -158,7 +158,7 @@ export function MaintenanceTable() {
             <div className="flex items-center justify-between text-xs font-medium text-slate-500 mt-2">
               <div className="truncate max-w-[180px]">{item.location}</div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-xs font-medium text-slate-400 uppercase">Score</span>
+                <span className="text-xs font-medium text-slate-500 uppercase">Score</span>
                 <span className="text-xs font-bold text-slate-900 tabular-nums">{item.risk_score}</span>
               </div>
             </div>
@@ -183,7 +183,7 @@ export function MaintenanceTable() {
       {/* Edit / Assign Modal */}
       {selectedTask && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-2xl space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain">
+          <div className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 shadow-lg space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
@@ -195,7 +195,7 @@ export function MaintenanceTable() {
               </div>
               <button
                 onClick={() => setSelectedTask(null)}
-                className="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                className="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                 aria-label="Close modal"
               >
                 ✕
@@ -289,7 +289,7 @@ export function MaintenanceTable() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleCreate}
-            className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-2xl space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 shadow-lg space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
@@ -303,7 +303,7 @@ export function MaintenanceTable() {
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
-                className="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                className="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                 aria-label="Close modal"
               >
                 ✕

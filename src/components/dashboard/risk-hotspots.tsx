@@ -84,13 +84,13 @@ export function RiskHotspots() {
 
   if (isLoading) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-sm animate-pulse h-64 border border-slate-100" aria-busy="true" />
+      <div className="bg-white p-6 rounded-lg shadow-sm animate-pulse h-64 border border-slate-100" aria-busy="true" />
     )
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200" role="alert">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200" role="alert">
         <h3 className="text-sm font-bold text-slate-900">Sector hotspots</h3>
         <p className="mt-1 text-sm text-red-700">Unable to load hotspot data.</p>
         <button
@@ -134,7 +134,7 @@ export function RiskHotspots() {
         </div>
       </div>
 
-      <div className="relative h-56 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden">
+      <div className="relative h-56 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden">
         <div
           className="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.12)_1px,transparent_1px)] bg-[size:24px_24px]"
           aria-hidden="true"
@@ -203,7 +203,7 @@ export function RiskHotspots() {
                   <span className="block truncate text-sm font-medium text-slate-800">{item.title}</span>
                   <span className="block truncate text-xs text-slate-500">{item.subtitle}</span>
                 </span>
-                <span className="shrink-0 text-xs uppercase tracking-wide text-slate-400">{item.type}</span>
+                <span className="shrink-0 text-xs uppercase tracking-wide text-slate-500">{item.type}</span>
               </button>
             </li>
           ))}

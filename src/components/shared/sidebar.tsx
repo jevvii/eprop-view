@@ -85,7 +85,7 @@ export function Sidebar() {
         pt-[max(1.5rem,env(safe-area-inset-top))]
         pb-[max(1.5rem,env(safe-area-inset-bottom))]
         lg:relative lg:translate-x-0
-        ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+        ${isOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full'}
       `}
       aria-label="Main navigation"
       /* Off-screen drawer must not remain in the tab order. */

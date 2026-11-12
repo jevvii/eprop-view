@@ -42,7 +42,7 @@ export function ReferenceTargetControls({ inspectionId, anchors }: Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 shadow-sm" aria-label="Printed reference targets">
+    <section className="rounded-lg border border-slate-200 bg-white p-5 space-y-3 shadow-sm" aria-label="Printed reference targets">
       <div className="flex items-center gap-2">
         <Printer className="h-5 w-5 text-primary" aria-hidden="true" />
         <h3 className="text-sm font-semibold text-slate-900">Printed reference targets</h3>

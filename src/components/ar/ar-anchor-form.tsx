@@ -126,7 +126,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-4"
+      className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-4"
     >
       <div className="flex flex-col items-start border-b border-slate-100 pb-3 gap-3">
         <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
 
       {/* Surface Coordinate Telemetry */}
       <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs">
-        <div className="flex justify-between text-slate-400 font-bold uppercase tracking-wider mb-1">
+        <div className="flex justify-between text-slate-500 font-bold uppercase tracking-wider mb-1">
           <span>Printed reference</span>
           <span className={hitPose ? 'text-emerald-600 font-black' : 'text-amber-600 font-black'}>
             {hitPose ? 'Tracked' : 'Find target'}

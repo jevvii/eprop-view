@@ -245,7 +245,7 @@ function ARPageContent() {
 
   if (profileLoading) {
     return (
-      <div className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-3xl shadow-xl h-80 animate-pulse border border-slate-100 mx-2" />
+      <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-100 mx-2" />
     )
   }
 
@@ -263,7 +263,7 @@ function ARPageContent() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Top Header & Inspection Selector Bar */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-md border border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-lg shadow-md border border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xl sm:text-2xl font-koulen text-primary tracking-wide uppercase">
@@ -334,7 +334,7 @@ function ARPageContent() {
       {/* Capability banner: this is camera AR with screen-space markers, not
           plane-locked spatial tracking, unless WebXR is genuinely available. */}
       {!bannerDismissed && (
-        <div className="bg-sky-50/90 border border-sky-200/80 p-3.5 sm:p-4 rounded-2xl flex items-start justify-between gap-3 shadow-sm">
+        <div className="bg-sky-50/90 border border-sky-200/80 p-3.5 sm:p-4 rounded-lg flex items-start justify-between gap-3 shadow-sm">
           <div className="flex items-start gap-2.5 sm:gap-3">
             <div>
               <h4 className="text-[11px] sm:text-xs font-black text-sky-950 uppercase tracking-wider">
@@ -392,7 +392,7 @@ function ARPageContent() {
         <div
           id="ar-viewport"
           ref={viewportRef}
-          className="relative h-[380px] min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border border-slate-100 bg-slate-950"
+          className="relative h-[380px] min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-lg sm:rounded-lg overflow-hidden shadow-sm border border-slate-100 bg-slate-950"
         >
           <ARCameraView onTapToAnchor={handleTapToAnchor} onAimChange={setAim} aim={aim}
             frame={tracking.frame} viewport={tracking.viewport} placementPose={dbSessionId ? hitPose : null}
@@ -414,7 +414,7 @@ function ARPageContent() {
           )}
 
           {/* Persisted Spatial Anchors Card */}
-          <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100">
+          <div className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-xs sm:text-xs font-black text-slate-500 tracking-[0.2em] uppercase">
                 Saved Markers
@@ -431,8 +431,8 @@ function ARPageContent() {
             )}
 
             {anchors.length === 0 ? (
-              <div className="text-center py-6 px-3 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
-                <MapPin className="mx-auto mb-1 h-6 w-6 text-slate-400" aria-hidden="true" />
+              <div className="text-center py-6 px-3 bg-slate-50/60 rounded-lg border border-dashed border-slate-200">
+                <MapPin className="mx-auto mb-1 h-6 w-6 text-slate-500" aria-hidden="true" />
                 <p className="text-xs sm:text-xs text-slate-500 font-bold uppercase tracking-wider leading-relaxed">
                   No markers saved for this inspection. Print a reference target, start a session and scan it to place a marker.
                 </p>
@@ -447,7 +447,7 @@ function ARPageContent() {
                   return (
                     <div
                       key={anchor.id}
-                      className="bg-slate-50 hover:bg-slate-100/80 border border-slate-100 rounded-2xl p-3 flex items-center justify-between gap-3 transition-colors"
+                      className="bg-slate-50 hover:bg-slate-100/80 border border-slate-100 rounded-lg p-3 flex items-center justify-between gap-3 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         {snapshotUrl ? (
@@ -458,7 +458,7 @@ function ARPageContent() {
                           />
                         ) : (
                           <div className="w-11 h-11 rounded-xl bg-slate-200/60 flex items-center justify-center text-lg shrink-0">
-                            <MapPin className="h-5 w-5 text-slate-400" aria-hidden="true" />
+                            <MapPin className="h-5 w-5 text-slate-500" aria-hidden="true" />
                           </div>
                         )}
 
@@ -472,7 +472,7 @@ function ARPageContent() {
                             </span>
                             {anchor.severity && <SeverityBadge severity={anchor.severity} />}
                           </div>
-                          <div className="text-[8.5px] font-mono text-slate-400 mt-1 tabular-nums">
+                          <div className="text-[8.5px] font-mono text-slate-500 mt-1 tabular-nums">
                             {reference
                               ? `Reference: ${reference.target.label} · ${reference.target.id.slice(0, 8)}`
                               : 'Legacy marker — no printed reference'}
@@ -488,7 +488,7 @@ function ARPageContent() {
                         onClick={() => handleDeleteAnchor(anchor.id)}
                         disabled={deleteARAnchor.isPending}
                         aria-busy={isDeleting}
-                        className="text-slate-400 hover:text-red-600 p-2 rounded-xl hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50"
+                        className="text-slate-500 hover:text-red-600 p-2 rounded-xl hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50"
                         title="Delete marker"
                         aria-label={`Delete marker ${anchor.label}`}
                       >
@@ -515,7 +515,7 @@ function ReferenceARPage() {
     <ARSessionManager>
       <Suspense
         fallback={
-          <div className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-3xl shadow-xl h-96 animate-pulse border border-slate-100">
+          <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-96 animate-pulse border border-slate-100">
             <div className="h-6 bg-slate-100 rounded w-1/3 mb-4" />
           </div>
         }

@@ -91,12 +91,12 @@ export function SettingsCards() {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-6 rounded-2xl shadow-lg h-48 animate-pulse" />
+    return <div className="bg-white p-6 rounded-lg shadow-lg h-48 animate-pulse" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600">
+      <div className="bg-white p-6 rounded-lg shadow-lg text-red-600">
         Failed to load settings
       </div>
     )
@@ -105,7 +105,7 @@ export function SettingsCards() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
       {/* 1. Account Profile */}
-      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6 lg:col-span-2">
+      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6 lg:col-span-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-5">
           <div>
             <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">Account Profile</h3>
@@ -167,7 +167,7 @@ export function SettingsCards() {
 
       {/* 3. AI Model Management (Admin Section) */}
       {isAdmin && (
-        <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6 lg:col-span-2 xl:col-span-3">
+        <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6 lg:col-span-2 xl:col-span-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
             <div>
               <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
@@ -233,7 +233,7 @@ export function SettingsCards() {
       )}
 
       {/* 4. Storage & system health */}
-      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-200/70 space-y-6 lg:col-span-2 xl:col-span-3">
+      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg shadow-sm border border-slate-200/70 space-y-6 lg:col-span-2 xl:col-span-3">
         <div className="flex items-center justify-between border-b border-slate-100 pb-5">
           <div>
             <h3 className="text-sm font-bold text-slate-900">Storage and layers</h3>
@@ -244,7 +244,7 @@ export function SettingsCards() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div className="p-5 rounded-lg bg-slate-50 border border-slate-200">
             <div className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Geohazard layers</div>
             <div className="text-sm font-bold uppercase tracking-tight text-slate-900">
               <span className="tabular-nums">{zones?.length || 0}</span> layers
@@ -252,7 +252,7 @@ export function SettingsCards() {
             <div className="text-xs text-slate-500 mt-1 font-medium">Faults, liquefaction and flood zones</div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div className="p-5 rounded-lg bg-slate-50 border border-slate-200">
             <div className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Inspection bucket</div>
             <div className="text-sm font-bold uppercase tracking-tight text-slate-900">inspection-images</div>
             <div className="text-xs text-slate-500 mt-1 font-medium">Private, signed URLs, 10 MB cap</div>
@@ -265,7 +265,7 @@ export function SettingsCards() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleRegisterModel}
-            className="w-full max-w-lg rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-2xl space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-lg rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 shadow-lg space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
@@ -280,7 +280,7 @@ export function SettingsCards() {
                 type="button"
                 onClick={() => setIsRegisterModelOpen(false)}
                 aria-label="Close modal"
-                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
+                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
               >
                 ✕
               </button>

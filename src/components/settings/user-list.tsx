@@ -44,19 +44,19 @@ export function UserList() {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-8 rounded-[2rem] shadow-lg h-80 animate-pulse border border-slate-100" />
+    return <div className="bg-white p-8 rounded-lg shadow-lg h-80 animate-pulse border border-slate-100" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-8 rounded-[2rem] shadow-lg border border-red-100 text-red-600 font-bold uppercase tracking-widest text-center">
+      <div className="bg-white p-8 rounded-lg shadow-lg border border-red-100 text-red-600 font-bold uppercase tracking-widest text-center">
         Access Denied: Administrative Clearance Required
       </div>
     )
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 flex flex-col h-full">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 flex flex-col h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">User Management & Access Control</h3>
@@ -104,7 +104,7 @@ export function UserList() {
                 <td className="py-4 pl-2">
                   <div className="font-bold text-slate-900 tracking-tight leading-tight">{user.full_name || 'UNNAMED USER'}</div>
                   <div className="text-xs text-slate-500 font-medium mt-0.5">{user.email || 'SYSTEM ACCOUNT'}</div>
-                  {user.department && <div className="text-xs text-slate-400 font-medium mt-0.5">{user.department}</div>}
+                  {user.department && <div className="text-xs text-slate-500 font-medium mt-0.5">{user.department}</div>}
                 </td>
                 <td className="py-4">
                   <select

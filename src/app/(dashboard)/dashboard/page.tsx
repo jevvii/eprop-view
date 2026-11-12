@@ -45,7 +45,7 @@ export default function DashboardPage() {
   if (profileLoading) {
     return (
       <div
-        className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm h-80 animate-pulse border border-slate-100 mx-2"
+        className="bg-white p-6 sm:p-10 rounded-lg shadow-sm h-80 animate-pulse border border-slate-100 mx-2"
         aria-busy="true"
         aria-label="Loading dashboard"
       />
@@ -100,7 +100,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="mx-4 mt-4 lg:m-0 h-[340px] sm:h-[420px] lg:h-auto lg:flex-1 overflow-hidden rounded-2xl lg:rounded-none border border-slate-200/70 lg:border-0">
+        <div className="mx-4 mt-4 lg:m-0 h-[340px] sm:h-[420px] lg:h-auto lg:flex-1 overflow-hidden rounded-lg lg:rounded-none border border-slate-200/70 lg:border-0">
           <GeospatialMap />
         </div>
 

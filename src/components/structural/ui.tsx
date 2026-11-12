@@ -23,7 +23,7 @@ export function Panel({
   children: ReactNode
 }) {
   return (
-    <section className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-100 min-w-0">
+    <section className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">{title}</h3>
@@ -78,7 +78,7 @@ export function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-center">
+    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-5 text-center">
       <p className="text-sm font-bold text-slate-700">{title}</p>
       <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1 max-w-prose mx-auto">{message}</p>
       {action && <div className="mt-3">{action}</div>}

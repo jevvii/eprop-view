@@ -192,7 +192,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
       </div>
       <button type="button" aria-label="Dismiss AR error" onClick={() => setArStartError(null)} className="min-h-[44px] min-w-[44px] rounded-lg px-2 font-semibold">Close</button>
     </div>}
-    <div hidden={state.active} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+    <div hidden={state.active} className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
       <h2 className="text-xl text-primary">Markerless inspection</h2>
       <p className="text-sm text-slate-600">Mark detected surfaces during one AR session. Records are saved, but physical locations are not restored after you end or reload.</p>
       <label className="block text-sm font-semibold">Inspection
@@ -213,7 +213,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
           className="min-h-12 w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 text-sm font-semibold">Use camera/photo inspection</button>
       </div>}
     </div>
-    <div ref={overlayRef} data-markerless-overlay data-xr-active={state.active} className={`relative h-[420px] overflow-hidden rounded-2xl border border-slate-200 ${state.active ? 'bg-transparent' : 'bg-slate-950'}`}>
+    <div ref={overlayRef} data-markerless-overlay data-xr-active={state.active} className={`relative h-[420px] overflow-hidden rounded-lg border border-slate-200 ${state.active ? 'bg-transparent' : 'bg-slate-950'}`}>
       <video ref={videoRef} autoPlay muted playsInline onPlaying={() => setCameraPlaying(true)} onPause={() => setCameraPlaying(false)}
         className="absolute inset-0 h-full w-full object-cover" style={{ display: state.active ? 'none' : 'block' }} />
       {!active && <p className="absolute inset-0 flex items-center justify-center p-6 text-center text-white">Start markerless AR on a supported device, or open camera/photo inspection.</p>}
@@ -249,7 +249,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
     </div>
     {!active && error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {!active && notice && <p role="status" className="rounded-lg bg-sky-50 p-3 text-sm text-sky-900">{notice}</p>}
-    <section hidden={state.active} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3" aria-label="Saved inspection records">
+    <section hidden={state.active} className="rounded-lg border border-slate-200 bg-white p-4 space-y-3" aria-label="Saved inspection records">
       <h3 className="text-base font-semibold">Saved inspection records</h3>
       {!markers.length && <p className="text-sm text-slate-600">No saved inspection points yet.</p>}
       {markers.map((marker) => <div key={marker.id} className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">

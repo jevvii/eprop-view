@@ -1,7 +1,5 @@
 'use client'
 
-import { useWorkspaceFilters } from '@/components/shared/report-filters'
-import { getFilteredRecordIds } from '@/app/actions/filters'
 import { getSettlementOverview } from '@/app/actions/structural'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
@@ -62,12 +60,9 @@ export function useProjects() {
 }
 
 export function useReports(projectId?: string) {
-  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['reports', projectId, filters],
+    queryKey: ['reports', projectId],
     queryFn: async (): Promise<Report[]> => {
-      const matched=await getFilteredRecordIds('reports',filters)
-      if(!matched.length)return []
 
       const baseMapper = (report: any) => ({
         ...report,
@@ -100,7 +95,7 @@ export function useReports(projectId?: string) {
         `)
         .order('date', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
-      const { data, error } = await query.in('id', matched)
+      const { data, error } = await query
 
       if (error) {
         if (process.env.NODE_ENV !== 'production') {
@@ -111,7 +106,7 @@ export function useReports(projectId?: string) {
           .select('*, project_name:projects(name)')
           .order('date', { ascending: false })
         if (projectId) fallbackQuery = fallbackQuery.eq('project_id', projectId)
-        const { data: fallbackData, error: fallbackError } = await fallbackQuery.in('id',matched)
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery
         if (fallbackError) throw error
         return (fallbackData || []).map((report: any) => ({
           ...baseMapper(report),
@@ -149,23 +144,20 @@ export function useMyInspections(projectId?: string) {
 }
 
 export function useInspections(projectId?: string) {
-  const {filters}=useWorkspaceFilters()
   const { data: profile } = useProfile()
   const isInspector = profile?.role === 'inspector'
   const userId = profile?.id
 
   return useQuery({
-    queryKey: ['inspections', projectId, isInspector ? userId : 'all', filters],
+    queryKey: ['inspections', projectId, isInspector ? userId : 'all'],
     queryFn: async (): Promise<Inspection[]> => {
-      const matched=await getFilteredRecordIds('inspections',filters)
-      if(!matched.length)return []
 
       let query = getClient().from('inspections').select('*').order('inspection_date', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
       if (isInspector && userId) {
         query = query.eq('lead_inspector_id', userId)
       }
-      const { data, error } = await query.in('id', matched)
+      const { data, error } = await query
       if (error) throw error
       return data || []
     },
@@ -173,11 +165,10 @@ export function useInspections(projectId?: string) {
 }
 
 export function useDashboardStats() {
-  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['stats',filters],
+    queryKey: ['stats'],
     queryFn: async (): Promise<DashboardStats> => {
-      const { data, error } = await getClient().rpc('filtered_dashboard_stats',{p_filters:filters})
+      const { data, error } = await getClient().rpc('get_dashboard_stats')
       if (error) throw error
       return data as DashboardStats
     },
@@ -197,16 +188,13 @@ export function useEnvironmentalRisk(projectId: string) {
 }
 
 export function useRiskHotspots(projectId?: string) {
-  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['risk-hotspots', projectId, filters],
+    queryKey: ['risk-hotspots', projectId],
     queryFn: async (): Promise<RiskHotspot[]> => {
-      const matched=await getFilteredRecordIds('hotspots',filters)
-      if(!matched.length)return []
 
       let query = getClient().from('risk_hotspots').select('*').order('severity', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
-      const { data, error } = await query.in('id', matched)
+      const { data, error } = await query
       if (error) throw error
       return (data || []).map((h: any) => {
         const lat = h.geom?.coordinates?.[1] ?? h.latitude ?? null
@@ -225,19 +213,16 @@ export function useRiskHotspots(projectId?: string) {
 }
 
 export function useMaintenancePriorities(projectId?: string) {
-  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['maintenance', projectId, filters],
+    queryKey: ['maintenance', projectId],
     queryFn: async (): Promise<MaintenancePriority[]> => {
-      const matched=await getFilteredRecordIds('maintenance',filters)
-      if(!matched.length)return []
 
       let query = getClient()
         .from('maintenance_priorities')
         .select('*, assigned_to_name:profiles(full_name)')
         .order('risk_score', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
-      const { data, error } = await query.in('id', matched)
+      const { data, error } = await query
       if (error) {
         if (process.env.NODE_ENV !== 'production') {
           console.warn('Maintenance priorities query failed, falling back to unjoined fetch:', error)
@@ -247,7 +232,7 @@ export function useMaintenancePriorities(projectId?: string) {
           .select('*')
           .order('risk_score', { ascending: false })
         if (projectId) fallbackQuery = fallbackQuery.eq('project_id', projectId)
-        const { data: fallbackData, error: fallbackError } = await fallbackQuery.in('id',matched)
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery
         if (fallbackError) throw error
         return (fallbackData || []).map((m: any) => ({
           ...m,
@@ -266,13 +251,14 @@ export function useMaintenancePriorities(projectId?: string) {
 }
 
 export function useDamageTrends(projectId?: string) {
-  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['damage-trends', projectId,filters],
+    queryKey: ['damage-trends', projectId],
     queryFn: async (): Promise<DamageTrend[]> => {
-      const { data, error } = await getClient().rpc('filtered_damage_trends', { p_filters: filters })
+      let query = getClient().from('damage_trends').select('*').order('date', { ascending: true })
+      if (projectId) query = query.eq('project_id', projectId)
+      const { data, error } = await query
       if (error) throw error
-      return projectId ? (data || []).filter((row: DamageTrend) => row.project_id === projectId) : data || []
+      return data || []
     },
   })
 }
@@ -514,11 +500,10 @@ export function useAIDetectionsForInspection(inspectionId?: string) {
 }
 
 export function useAllAIDetections(projectId?: string) {
-  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['all-ai-detections', projectId, filters],
+    queryKey: ['all-ai-detections', projectId],
     queryFn: async (): Promise<AIDamageDetection[]> => {
-      return getAllAIDetections(projectId,filters)
+      return getAllAIDetections(projectId)
     },
   })
 }
@@ -558,11 +543,10 @@ export function useARAnchors(inspectionId?: string) {
 }
 
 export function useAllARAnchors(projectId?: string) {
-  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['all-ar-anchors', projectId, filters],
+    queryKey: ['all-ar-anchors', projectId],
     queryFn: async (): Promise<ARAnchor[]> => {
-      return getAllARAnchors(projectId,filters)
+      return getAllARAnchors(projectId)
     },
   })
 }
@@ -637,24 +621,8 @@ export function useReport(reportId?: string) {
 
 
 export function useSettlementOverview() {
-  const { filters } = useWorkspaceFilters()
   return useQuery({
-    queryKey: ['settlement-overview', filters],
-    queryFn: async () => {
-      // Building-only observations need no inspection link. Apply their own
-      // measured date; use inspection matching for defect/status/risk filters.
-      const needsInspection = Object.entries(filters).some(([key, value]) =>
-        !['building', 'from', 'to'].includes(key) && value !== '' && value !== 'all')
-      const [rows, matching] = await Promise.all([
-        getSettlementOverview(),
-        needsInspection ? getFilteredRecordIds('inspections', filters) : Promise.resolve<string[]>([]),
-      ])
-      const ids = new Set(matching)
-      return rows.filter(row =>
-        (!filters.building || row.building_id === filters.building) &&
-        (!filters.from || row.observed_at.slice(0, 10) >= filters.from) &&
-        (!filters.to || row.observed_at.slice(0, 10) <= filters.to) &&
-        (!needsInspection || (row.inspection_id !== null && ids.has(row.inspection_id))))
-    },
+    queryKey: ['settlement-overview'],
+    queryFn: async () => getSettlementOverview(),
   })
 }

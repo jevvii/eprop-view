@@ -108,7 +108,7 @@ export function StorageManager() {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
           <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
@@ -147,19 +147,19 @@ export function StorageManager() {
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
+        <div className="p-4 sm:p-5 rounded-lg bg-slate-50 border border-slate-200">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Total Volume</div>
           <div className="text-lg sm:text-xl font-bold text-slate-900 tabular-nums">{formatBytes(summary?.totalBytes || 0)}</div>
           <div className="text-xs text-slate-500 font-medium mt-1 tabular-nums">{summary?.totalObjects || 0} Registered Objects</div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
+        <div className="p-4 sm:p-5 rounded-lg bg-slate-50 border border-slate-200">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Standard Storage</div>
           <div className="text-lg sm:text-xl font-bold text-slate-900 tabular-nums">{formatBytes(summary?.classStats.standard.sizeBytes || 0)}</div>
           <div className="text-xs text-slate-500 font-medium mt-1 tabular-nums">{summary?.classStats.standard.objectCount || 0} Active Files</div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
+        <div className="p-4 sm:p-5 rounded-lg bg-slate-50 border border-slate-200">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Archived copies</div>
           <div className="text-lg sm:text-xl font-bold text-emerald-600 tabular-nums">
             {formatBytes((summary?.classStats.cold.sizeBytes || 0) + (summary?.classStats.archive.sizeBytes || 0))}
@@ -167,7 +167,7 @@ export function StorageManager() {
           <div className="text-xs text-slate-500 font-medium mt-1">Private Supabase archive bucket</div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
+        <div className="p-4 sm:p-5 rounded-lg bg-slate-50 border border-slate-200">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Orphaned Files</div>
           <div className="text-lg sm:text-xl font-bold text-amber-600 tabular-nums">{summary?.orphanedCount || 0}</div>
           <div className="text-xs text-slate-500 font-medium mt-1">No DB Association</div>
@@ -207,13 +207,13 @@ export function StorageManager() {
 
       {/* Objects Table */}
       {loading ? (
-        <div className="h-40 bg-slate-50 animate-pulse rounded-2xl" />
+        <div className="h-40 bg-slate-50 animate-pulse rounded-lg" />
       ) : objects.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-slate-200 rounded-2xl">
+        <div className="text-center py-10 border border-dashed border-slate-200 rounded-lg">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             No storage audit records found matching filters.
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Click &quot;Sync Storage Audit&quot; to scan cloud storage buckets.
           </p>
         </div>

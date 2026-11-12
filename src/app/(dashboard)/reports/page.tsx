@@ -91,7 +91,7 @@ export default function ReportsPage() {
   }
 
   if (isLoading || profileLoading) {
-    return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
+    return <div className="bg-white p-6 rounded-lg shadow-lg h-40 animate-pulse" />
   }
 
   if (profile && !canViewReports) {
@@ -107,7 +107,7 @@ export default function ReportsPage() {
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600">
+      <div className="bg-white p-6 rounded-lg shadow-lg text-red-600">
         Failed to load reports
       </div>
     )
@@ -115,7 +115,7 @@ export default function ReportsPage() {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-slate-500">
+      <div className="bg-white p-6 rounded-lg shadow-lg text-slate-500">
         Add a project to start creating reports.
       </div>
     )
@@ -191,19 +191,19 @@ export default function ReportsPage() {
         />
 
         <div className="grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-4">
-          <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-md border border-slate-100 group hover:shadow-lg transition-all min-w-0">
+          <div className="rounded-lg sm:rounded-lg bg-white p-4 sm:p-6 shadow-md border border-slate-100 group hover:shadow-lg transition-all min-w-0">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Total Active Logs</div>
             <div className="text-3xl sm:text-4xl font-koulen text-black tabular-nums">{reportStats.open}</div>
           </div>
-          <div className="rounded-2xl sm:rounded-3xl bg-indigo-50/60 p-4 sm:p-6 shadow-md border border-indigo-100 group hover:shadow-lg transition-all min-w-0">
+          <div className="rounded-lg sm:rounded-lg bg-indigo-50/60 p-4 sm:p-6 shadow-md border border-indigo-100 group hover:shadow-lg transition-all min-w-0">
             <div className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1 truncate">Pending Review</div>
             <div className="text-3xl sm:text-4xl font-koulen text-indigo-700 tabular-nums">{reportStats.in_review}</div>
           </div>
-          <div className="rounded-2xl sm:rounded-3xl bg-rose-50/60 p-4 sm:p-6 shadow-md border border-rose-100 group hover:shadow-lg transition-all min-w-0">
+          <div className="rounded-lg sm:rounded-lg bg-rose-50/60 p-4 sm:p-6 shadow-md border border-rose-100 group hover:shadow-lg transition-all min-w-0">
             <div className="text-xs font-bold text-rose-600 uppercase tracking-wider mb-1 truncate">Critical Priority</div>
             <div className="text-3xl sm:text-4xl font-koulen text-rose-600 tabular-nums">{reportStats.critical}</div>
           </div>
-          <div className="rounded-2xl sm:rounded-3xl bg-emerald-50/60 p-4 sm:p-6 shadow-md border border-emerald-100 group hover:shadow-lg transition-all min-w-0">
+          <div className="rounded-lg sm:rounded-lg bg-emerald-50/60 p-4 sm:p-6 shadow-md border border-emerald-100 group hover:shadow-lg transition-all min-w-0">
             <div className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1 truncate">Verified Complete</div>
             <div className="text-3xl sm:text-4xl font-koulen text-emerald-600 tabular-nums">{reportStats.completed}</div>
           </div>

@@ -37,7 +37,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl rounded-2xl bg-white p-5 sm:p-7 shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain"
+        className="w-full max-w-2xl rounded-lg bg-white p-5 sm:p-7 shadow-lg max-h-[90dvh] overflow-y-auto overscroll-contain"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 mb-4">

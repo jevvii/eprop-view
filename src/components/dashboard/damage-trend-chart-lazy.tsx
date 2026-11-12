@@ -8,7 +8,7 @@ export const DamageTrendChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-48 w-full animate-pulse rounded-2xl bg-slate-100" aria-hidden="true" />
+      <div className="h-48 w-full animate-pulse rounded-lg bg-slate-100" aria-hidden="true" />
     ),
   }
 )

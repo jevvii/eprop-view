@@ -58,7 +58,7 @@ export function ProjectGrid() {
     return (
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm h-64 animate-pulse border border-slate-100" />
+          <div key={index} className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg shadow-sm h-64 animate-pulse border border-slate-100" />
         ))}
       </div>
     )
@@ -66,7 +66,7 @@ export function ProjectGrid() {
 
   if (isError) {
     return (
-      <div className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-red-100 text-red-600 font-bold uppercase tracking-wider text-center text-xs sm:text-sm">
+      <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg border border-red-100 text-red-600 font-bold uppercase tracking-wider text-center text-xs sm:text-sm">
         Telemetry Error: Database unreachable.
       </div>
     )
@@ -74,7 +74,7 @@ export function ProjectGrid() {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 text-slate-400 font-bold uppercase tracking-wider text-center italic text-xs sm:text-sm">
+      <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg border border-slate-100 text-slate-500 font-bold uppercase tracking-wider text-center italic text-xs sm:text-sm">
         System Status: No active projects on file.
       </div>
     )
@@ -82,7 +82,7 @@ export function ProjectGrid() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-slate-100 shadow-xs w-full sm:w-fit">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-lg border border-slate-100 shadow-xs w-full sm:w-fit">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Filter State</label>
         <select
           value={statusFilter}
@@ -104,7 +104,7 @@ export function ProjectGrid() {
           const lastInspection = latestInspectionDate.get(project.id)
 
           return (
-            <div key={project.id} className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg border border-slate-100 flex flex-col group hover:shadow-xl transition-all duration-300 min-w-0">
+            <div key={project.id} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-md sm:shadow-lg border border-slate-100 flex flex-col group hover:shadow-sm transition-all duration-300 min-w-0">
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xl sm:text-2xl font-koulen text-black tracking-wide leading-tight mb-1 group-hover:text-primary transition-colors truncate">{project.name}</h3>

@@ -100,7 +100,7 @@ export function FloorManager() {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
           <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
@@ -155,19 +155,19 @@ export function FloorManager() {
       </div>
 
       {isLoading ? (
-        <div className="h-32 bg-slate-50 animate-pulse rounded-2xl" />
+        <div className="h-32 bg-slate-50 animate-pulse rounded-lg" />
       ) : !activeBuildingId ? (
-        <div className="text-center py-8 border border-dashed border-slate-200 rounded-2xl">
+        <div className="text-center py-8 border border-dashed border-slate-200 rounded-lg">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             Select or register a building first to manage floors.
           </p>
         </div>
       ) : !floors || floors.length === 0 ? (
-        <div className="text-center py-8 border border-dashed border-slate-200 rounded-2xl">
+        <div className="text-center py-8 border border-dashed border-slate-200 rounded-lg">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             No floor levels defined for this building.
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Click &quot;+ Add Floor&quot; to define ground level, basements, or upper stories.
           </p>
         </div>
@@ -237,7 +237,7 @@ export function FloorManager() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-sm rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-7 shadow-2xl space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-sm rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 shadow-lg space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h4 className="text-base font-bold uppercase tracking-wider text-slate-800">
@@ -247,7 +247,7 @@ export function FloorManager() {
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 aria-label="Close modal"
-                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
+                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
               >
                 ✕
               </button>

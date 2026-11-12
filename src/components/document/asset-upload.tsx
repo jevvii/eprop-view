@@ -84,7 +84,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-5">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-5">
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
           <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">Asset Injection</h3>
@@ -96,7 +96,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50/70 hover:bg-slate-100/70 transition-all group min-h-[72px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-lg p-4 bg-slate-50/70 hover:bg-slate-100/70 transition-all group min-h-[72px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <input
             ref={fileInputRef}
@@ -113,7 +113,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
         <button
           type="button"
           onClick={() => cameraInputRef.current?.click()}
-          className="flex flex-col items-center justify-center border-2 border-slate-200 rounded-2xl p-4 bg-primary/[0.03] hover:bg-primary/[0.08] transition-all group min-h-[72px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="flex flex-col items-center justify-center border-2 border-slate-200 rounded-lg p-4 bg-primary/[0.03] hover:bg-primary/[0.08] transition-all group min-h-[72px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <input
             ref={cameraInputRef}

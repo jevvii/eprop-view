@@ -12,7 +12,7 @@ export function ReportDialog({ title, onClose, children }: { title: string; onCl
     return () => { element?.close(); trigger?.focus() }
   }, [])
   return (
-    <dialog ref={dialog} aria-label={title} onCancel={onClose} className="m-auto w-[calc(100%-2rem)] max-w-2xl max-h-[90dvh] rounded-2xl border-0 bg-white p-5 sm:p-8 shadow-2xl overscroll-contain backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm no-print">
+    <dialog ref={dialog} aria-label={title} onCancel={onClose} className="m-auto w-[calc(100%-2rem)] max-w-2xl max-h-[90dvh] rounded-lg border-0 bg-white p-5 sm:p-8 shadow-lg overscroll-contain backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm no-print">
       {children}
     </dialog>
   )

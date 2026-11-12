@@ -250,7 +250,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
       </div>
 
       {inspectionId && (
-        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50/40 p-4 sm:p-5 space-y-3">
+        <div className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50/40 p-4 sm:p-5 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="flex h-2.5 w-2.5 rounded-full bg-blue-600 animate-pulse" />

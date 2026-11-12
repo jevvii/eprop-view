@@ -1,6 +1,10 @@
 'use client'
 
-import { WorkspaceFilterBar } from '@/components/shared/report-filters'
+import { WorkspaceFilterBar, useReportFilters } from '@/components/shared/report-filters'
+import {
+  INSPECTION_FILTER_FIELDS,
+  filterInspections,
+} from '@/app/lib/workspace-filtering'
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
@@ -15,17 +19,24 @@ import { hasCapability } from '@/app/lib/role-utils'
 export default function DocumentPage() {
   const { data: profile } = useProfile()
   const { data: inspections, isLoading } = useInspections()
+  const { filters } = useReportFilters()
   const [inspectionId, setInspectionId] = useState('')
+
+  // Filtering happens in memory; the fetch no longer depends on it.
+  const visibleInspections = useMemo(
+    () => filterInspections(inspections, filters),
+    [inspections, filters]
+  )
 
   const canCreateInspection = hasCapability(profile?.role, 'inspection:create')
   const canUpload = hasCapability(profile?.role, 'image:upload')
   const canUseAR = hasCapability(profile?.role, 'ar:use')
 
   useEffect(() => {
-    if (!inspectionId && inspections && inspections.length > 0) {
-      setInspectionId(inspections[0].id)
+    if (!inspectionId && visibleInspections.length > 0) {
+      setInspectionId(visibleInspections[0].id)
     }
-  }, [inspectionId, inspections])
+  }, [inspectionId, visibleInspections])
 
   const selectedInspectionLabel = useMemo(() => {
     if (!inspectionId || !inspections) return null
@@ -40,11 +51,11 @@ export default function DocumentPage() {
   }, [inspectionId, inspections])
 
   if (isLoading) {
-    return <div className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-3xl shadow-xl h-80 animate-pulse border border-slate-100 mx-2" />
+    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-100 mx-2" />
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8"><WorkspaceFilterBar />
+    <div className="space-y-6 sm:space-y-8"><WorkspaceFilterBar fields={INSPECTION_FILTER_FIELDS} />
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-1 sm:px-2">
         <div>
           <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Asset Vault & Registry</h2>
@@ -54,7 +65,7 @@ export default function DocumentPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-slate-100 shadow-xs w-full sm:w-auto">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-lg border border-slate-100 shadow-xs w-full sm:w-auto">
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Filter Entry</label>
             <select
               value={inspectionId}
@@ -62,7 +73,7 @@ export default function DocumentPage() {
               className="rounded-xl border border-slate-200 px-3.5 py-2 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px] flex-1 sm:flex-initial"
             >
               <option value="">SELECT_INSPECTION</option>
-              {inspections?.map((inspection) => (
+              {visibleInspections.map((inspection) => (
                 <option key={inspection.id} value={inspection.id}>
                   {new Date(inspection.inspection_date).toLocaleDateString()} · {inspection.location}
                 </option>
@@ -99,12 +110,12 @@ export default function DocumentPage() {
             </div>
           )}
           {!canUpload && !canCreateInspection && (
-            <div className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-4">
+            <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-4">
               <div className="flex items-center gap-3">
                 <Microscope className="h-6 w-6 text-slate-500" aria-hidden="true" />
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Engineering Review Mode</h3>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Inspection Vault Read-Only</p>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Inspection Vault Read-Only</p>
                 </div>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">

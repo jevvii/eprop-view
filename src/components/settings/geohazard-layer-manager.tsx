@@ -60,7 +60,7 @@ export function GeohazardLayerManager() {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
           <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
@@ -113,13 +113,13 @@ export function GeohazardLayerManager() {
       )}
 
       {isLoading ? (
-        <div className="h-32 bg-slate-50 animate-pulse rounded-2xl" />
+        <div className="h-32 bg-slate-50 animate-pulse rounded-lg" />
       ) : !zones || zones.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-slate-200 rounded-2xl">
+        <div className="text-center py-10 border border-dashed border-slate-200 rounded-lg">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             No geohazard layers uploaded yet.
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Upload GeoJSON or ESRI Shapefile datasets to visualize fault traces and flood risks.
           </p>
         </div>

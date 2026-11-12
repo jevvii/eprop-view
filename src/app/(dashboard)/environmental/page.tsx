@@ -32,7 +32,7 @@ export default function EnvironmentalPage() {
   )
 
   if (profileLoading) {
-    return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
+    return <div className="bg-white p-6 rounded-lg shadow-lg h-40 animate-pulse" />
   }
 
   if (profile && !canViewEnv) {
@@ -62,12 +62,12 @@ export default function EnvironmentalPage() {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
+    return <div className="bg-white p-6 rounded-lg shadow-lg h-40 animate-pulse" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600">
+      <div className="bg-white p-6 rounded-lg shadow-lg text-red-600">
         Failed to load projects for environmental view
       </div>
     )
@@ -75,7 +75,7 @@ export default function EnvironmentalPage() {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-slate-500">
+      <div className="bg-white p-6 rounded-lg shadow-lg text-slate-500">
         Add a project to begin environmental analysis.
       </div>
     )
@@ -89,7 +89,7 @@ export default function EnvironmentalPage() {
           <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">Analyze hazard zones and update site suitability scores.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 rounded-2xl border border-slate-100 shadow-xs w-full sm:w-auto">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 rounded-lg border border-slate-100 shadow-xs w-full sm:w-auto">
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Current Project</label>
             <select
               value={projectId}
@@ -137,12 +137,12 @@ export default function EnvironmentalPage() {
         </div>
       )}
 
-      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-lg border border-slate-100">
+      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-lg border border-slate-100">
         <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-6 ml-1">Sector Risk Hotspots</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {hotspots && hotspots.length > 0 ? (
             hotspots.slice(0, 6).map((hotspot) => (
-              <div key={hotspot.id} className="flex flex-col gap-3 rounded-2xl border border-slate-100 p-5 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group">
+              <div key={hotspot.id} className="flex flex-col gap-3 rounded-lg border border-slate-100 p-5 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group">
                 <div className="flex justify-between items-start gap-2">
                   <div className="text-xs font-bold text-slate-900 uppercase tracking-tight group-hover:text-primary transition-colors">{hotspot.title}</div>
                   <StatusBadge status={hotspot.severity} />
@@ -151,7 +151,7 @@ export default function EnvironmentalPage() {
               </div>
             ))
           ) : (
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider italic ml-1">No active hotspots recorded for this project.</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider italic ml-1">No active hotspots recorded for this project.</p>
           )}
         </div>
       </div>

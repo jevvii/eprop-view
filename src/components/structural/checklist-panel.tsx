@@ -161,7 +161,7 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
         const answered = items.filter((item) => item.answer !== null && !item.prefilled).length
 
         return (
-          <section key={template.id} className="rounded-2xl border border-slate-200 p-4 space-y-3">
+          <section key={template.id} className="rounded-lg border border-slate-200 p-4 space-y-3">
             <header className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h4 className="text-sm font-bold text-slate-900">{template.title}</h4>

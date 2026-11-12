@@ -128,7 +128,7 @@ export function InspectionForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6 flex flex-col h-full min-w-0">
+    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6 flex flex-col h-full min-w-0">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4 px-1">
         <div>
           <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-0.5">Field Inspection Registry</h3>
@@ -179,7 +179,7 @@ export function InspectionForm() {
               ))}
             </select>
           ) : (
-            <div className="w-full rounded-xl border border-dashed border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-medium text-slate-400 bg-slate-50">
+            <div className="w-full rounded-xl border border-dashed border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-medium text-slate-500 bg-slate-50">
               Main Structure (Single Building)
             </div>
           )}

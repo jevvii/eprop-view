@@ -67,12 +67,12 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-6 rounded-2xl shadow-lg h-72 animate-pulse" />
+    return <div className="bg-white p-6 rounded-lg shadow-lg h-72 animate-pulse" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600">
+      <div className="bg-white p-6 rounded-lg shadow-lg text-red-600">
         Failed to load environmental analysis
       </div>
     )
@@ -100,7 +100,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6 flex flex-col h-full min-w-0">
+    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6 flex flex-col h-full min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -206,7 +206,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             {upsertRisk.isPending ? 'Syncing...' : 'Sync Assessment'}
           </Button>
         ) : (
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide py-2">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide py-2">
             Read-Only Geohazard Telemetry (Engineering Required to Edit)
           </span>
         )}
