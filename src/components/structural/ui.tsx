@@ -1,6 +1,12 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import {
+  isActionResult,
+  isSanitisedServerError,
+  SANITISED_SERVER_MESSAGE,
+} from '@/app/lib/action-result'
+
 import type { ReactNode } from 'react'
 
 /**
@@ -139,10 +145,23 @@ export function useAsyncAction() {
       setSuccess(null)
       try {
         const result = await fn()
+
+        // Actions that refuse by value are unwrapped here, so call sites keep
+        // receiving data (or null with a message) exactly as before.
+        if (isActionResult(result)) {
+          if (!result.ok) {
+            setError(result.error)
+            return null
+          }
+          setSuccess(label)
+          return result.data as T
+        }
+
         setSuccess(label)
         return result
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : 'The action failed.')
+        const message = caught instanceof Error ? caught.message : 'The action failed.'
+        setError(isSanitisedServerError(message) ? SANITISED_SERVER_MESSAGE : message)
         return null
       } finally {
         setPending(false)

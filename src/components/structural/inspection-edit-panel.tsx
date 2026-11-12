@@ -30,11 +30,11 @@ export function InspectionEditPanel({ inspection }: { inspection: Inspection }) 
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
     if (locked) return
-    const result = await run('Inspection updated.', () => updateInspectionRecord({
+    const result = (await run('Inspection updated.', () => updateInspectionRecord({
       inspectionId: inspection.id, inspectionDate: date, location: location.trim(), notes,
       status: reopen && status === 'completed' ? 'in_progress' : status,
       buildingId: building || null, floorId: floor || null, structuralElementId: element || null, reopen,
-    }))
+    }))) as Inspection | null
     if (result) {
       setReopen(false)
       setStatus(result.status)
