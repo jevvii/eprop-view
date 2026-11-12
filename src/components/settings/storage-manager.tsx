@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
   getStorageSummary,
@@ -21,6 +22,7 @@ function formatBytes(bytes: number): string {
 }
 
 export function StorageManager() {
+  const queryClient = useQueryClient()
   const [summary, setSummary] = useState<StorageSummary | null>(null)
   const [objects, setObjects] = useState<StorageAuditEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,7 +43,7 @@ export function StorageManager() {
       })
       setObjects(list)
     } catch (err) {
-      console.warn('Failed to load storage telemetry:', err)
+      setFeedback(`Storage data unavailable: ${err instanceof Error ? err.message : 'Could not read storage records.'}`)
     } finally {
       setLoading(false)
     }
@@ -71,12 +73,14 @@ export function StorageManager() {
     try {
       const res = await applyStorageLifecyclePolicies()
       setFeedback(
-        `Lifecycle policy executed: ${res.archived} objects transitioned to cold storage, ${res.cleaned} stale orphans cleaned (${res.retentionExpired} past 7-year regulatory retention).`
+        `Lifecycle policy executed: ${res.archived} verified archive copies created, ${res.cleaned} stale orphans cleaned (${res.retentionExpired} older than the seven-year review threshold).`
       )
       await loadData()
     } catch (err) {
       setFeedback(`Lifecycle error: ${err instanceof Error ? err.message : 'Unknown'}`)
     } finally {
+      await queryClient.invalidateQueries({ queryKey: ['inspection-images'] })
+      await queryClient.invalidateQueries({ queryKey: ['ar-anchors'] })
       setIsApplyingLifecycle(false)
     }
   }
@@ -97,6 +101,9 @@ export function StorageManager() {
       await loadData()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to update class')
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: ['inspection-images'] })
+      await queryClient.invalidateQueries({ queryKey: ['ar-anchors'] })
     }
   }
 
@@ -105,10 +112,10 @@ export function StorageManager() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
           <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
-            Object Storage Lifecycle & S3 Manager
+            Evidence Storage & Archive
           </h3>
           <p className="text-xs text-slate-500 font-medium">
-            Monitor bucket capacity, tier data to cold archive, and clean orphaned assets.
+            Verify archive copies in private Supabase buckets and clean unreferenced files. Storage labels are administrative; no S3 or Glacier service is configured.
           </p>
         </div>
 
@@ -119,7 +126,7 @@ export function StorageManager() {
             variant="outline"
             className="text-xs font-bold uppercase tracking-wider px-3.5 py-2 min-h-[38px]"
           >
-            {isApplyingLifecycle ? 'Archiving…' : 'Start 1-year archival'}
+            {isApplyingLifecycle ? 'Archiving…' : 'Archive files older than 1 year'}
           </Button>
 
           <Button
@@ -133,7 +140,7 @@ export function StorageManager() {
       </div>
 
       {feedback && (
-        <div className="p-3 bg-blue-50 text-blue-800 text-xs font-bold rounded-xl border border-blue-200">
+        <div role="status" className="p-3 bg-blue-50 text-blue-800 text-xs font-bold rounded-xl border border-blue-200">
           ℹ {feedback}
         </div>
       )}
@@ -153,11 +160,11 @@ export function StorageManager() {
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Cold & Glacier</div>
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Archived copies</div>
           <div className="text-lg sm:text-xl font-bold text-emerald-600 tabular-nums">
             {formatBytes((summary?.classStats.cold.sizeBytes || 0) + (summary?.classStats.archive.sizeBytes || 0))}
           </div>
-          <div className="text-xs text-slate-500 font-medium mt-1">Storj DCS / S3 Glacier</div>
+          <div className="text-xs text-slate-500 font-medium mt-1">Private Supabase archive bucket</div>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
@@ -249,7 +256,7 @@ export function StorageManager() {
                     >
                       <option value="standard">Standard</option>
                       <option value="cold">Cold</option>
-                      <option value="glacier">Glacier</option>
+                      <option value="glacier" disabled>Glacier (provider not configured)</option>
                       <option value="archive">Archive</option>
                     </select>
                   </td>

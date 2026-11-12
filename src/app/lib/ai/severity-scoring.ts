@@ -2,10 +2,10 @@ import type { DamageType, SeverityLevel, BoundingBox } from '@/app/types'
 
 /**
  * Base severity weights per structural damage classification.
- * Derived from civil structural engineering failure impact standards.
+ * Project-defined screening weights; not validated engineering failure probabilities.
  */
 const BASE_DAMAGE_WEIGHTS: Record<DamageType, { baseScore: number; criticalThresholdArea: number }> = {
-  spalling: { baseScore: 78, criticalThresholdArea: 0.04 }, // Spalling exposes core rebar, immediate structural integrity risk
+  spalling: { baseScore: 78, criticalThresholdArea: 0.04 }, // Spalling-like appearance warrants engineer review
   deformation: { baseScore: 65, criticalThresholdArea: 0.08 }, // Structural deflection / sagging / twist
   crack: { baseScore: 50, criticalThresholdArea: 0.05 }, // Tension / shear / shrinkage cracks
   corrosion: { baseScore: 42, criticalThresholdArea: 0.06 }, // Surface or deep rebar oxidation
@@ -14,7 +14,7 @@ const BASE_DAMAGE_WEIGHTS: Record<DamageType, { baseScore: number; criticalThres
 }
 
 /**
- * Maps calibrated numerical damage severity score (0 - 100) to standard categorical severity.
+ * Maps an advisory visual screening score (0 - 100) to standard categorical severity.
  */
 export function scoreToSeverityLevel(score: number): SeverityLevel {
   if (score >= 80) return 'critical'
@@ -24,7 +24,7 @@ export function scoreToSeverityLevel(score: number): SeverityLevel {
 }
 
 /**
- * Computes a calibrated structural severity score (0 - 100) based on defect type,
+ * Computes a project-defined visual screening score (0 - 100) based on defect type,
  * bounding box surface area ratio, and model detection confidence.
  */
 export function calculateDefectSeverity(
@@ -48,7 +48,7 @@ export function calculateDefectSeverity(
   const areaRatio = Math.min(2.0, boxArea / criticalThresholdArea)
   const areaMultiplier = 0.8 + areaRatio * 0.4
 
-  // Confidence scaling: higher certainty yields firmer score assessment
+  // Confidence scaling: heuristic response strength adjusts the screening priority
   const confidenceFactor = 0.9 + Math.min(0.2, confidence * 0.2)
 
   // Aspect ratio penalty for cracks: elongated vertical/diagonal cracks indicate shear stress

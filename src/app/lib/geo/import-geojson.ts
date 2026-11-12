@@ -29,7 +29,8 @@ function extractZoneType(props: Record<string, any>): ZoneType {
   if (candidate.includes('fault') || candidate.includes('seismic')) return 'fault_line'
   if (candidate.includes('liquefaction') || candidate.includes('soil')) return 'liquefaction'
   if (candidate.includes('flood') || candidate.includes('inundation')) return 'flood'
-  if (candidate.includes('erosion') || candidate.includes('landslide')) return 'erosion'
+  if (candidate.includes('landslide')) return 'landslide'
+  if (candidate.includes('erosion')) return 'erosion'
   return 'general'
 }
 
@@ -43,8 +44,15 @@ function extractRiskLevel(props: Record<string, any>): ZoneRiskLevel {
     ''
   ).toLowerCase()
 
-  if (candidate.includes('high') || candidate.includes('critical') || candidate.includes('a')) return 'zone_a'
-  if (candidate.includes('mod') || candidate.includes('medium') || candidate.includes('b')) return 'zone_b'
+  return normalizeZoneRisk(candidate)
+
+}
+
+/** Normalize risk labels shared by GeoJSON and shapefile imports. */
+export function normalizeZoneRisk(input: string): ZoneRiskLevel {
+  const value = input.trim().toLowerCase()
+  if (/^(zone[_ -]?)?a$/.test(value) || /\b(high|critical|severe)\b/.test(value)) return 'zone_a'
+  if (/^(zone[_ -]?)?b$/.test(value) || /\b(moderate|medium)\b/.test(value)) return 'zone_b'
   return 'zone_c'
 }
 
@@ -53,9 +61,9 @@ function extractRiskLevel(props: Record<string, any>): ZoneRiskLevel {
  */
 export function validateCoordinatesBounds(coords: number[][]): boolean {
   for (const pt of coords) {
-    if (!Array.isArray(pt) || pt.length < 2) continue
+    if (!Array.isArray(pt) || pt.length < 2) return false
     const [lon, lat] = pt
-    if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
+    if (!Number.isFinite(lon) || !Number.isFinite(lat) || lon < -180 || lon > 180 || lat < -90 || lat > 90) {
       return false
     }
   }
@@ -108,7 +116,7 @@ export function parseGeoJSON(content: string | object): ParsedGeoZone[] {
 
     // Extract 2D ring coordinates representation for mapbox polygon/linestring
     let flatCoords: number[][] = []
-    let sanitizedGeom = { ...feat.geometry }
+    const sanitizedGeom = { ...feat.geometry }
 
     if (geomType === 'Polygon' && Array.isArray(rawCoords[0])) {
       const closedRing = ensureClosedRing(rawCoords[0])
@@ -117,6 +125,7 @@ export function parseGeoJSON(content: string | object): ParsedGeoZone[] {
     } else if (geomType === 'MultiPolygon' && Array.isArray(rawCoords[0]?.[0])) {
       const closedRing = ensureClosedRing(rawCoords[0][0])
       flatCoords = closedRing
+      sanitizedGeom.coordinates = rawCoords.map((polygon: number[][][]) => polygon.map(ensureClosedRing))
     } else if (geomType === 'LineString') {
       flatCoords = rawCoords
     } else if (geomType === 'MultiLineString' && Array.isArray(rawCoords[0])) {
@@ -125,7 +134,14 @@ export function parseGeoJSON(content: string | object): ParsedGeoZone[] {
       flatCoords = [rawCoords]
     }
 
-    if (!validateCoordinatesBounds(flatCoords)) {
+    const allCoordinates: number[][] = []
+    const collectCoordinates = (value: unknown): void => {
+      if (!Array.isArray(value)) throw new Error('Invalid coordinates: expected an array')
+      if (value.length >= 2 && typeof value[0] === 'number') allCoordinates.push(value as number[])
+      else for (const child of value) collectCoordinates(child)
+    }
+    collectCoordinates(sanitizedGeom.coordinates)
+    if (allCoordinates.length === 0 || !validateCoordinatesBounds(allCoordinates)) {
       throw new Error(`Invalid coordinates in feature "${props.name || i + 1}": Coordinates exceed WGS84 range [-180..180, -90..90]`)
     }
 

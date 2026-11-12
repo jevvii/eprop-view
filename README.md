@@ -1,336 +1,73 @@
-# 🏢 EPROPVIEW — Enterprise Geospatial Property & Risk Intelligence Platform
+# EPROPVIEW
 
-<div align="center">
+EPROPVIEW is an undergraduate computer science capstone for recording property inspections, organizing photographic evidence, reviewing environmental hazards, and preparing engineer-reviewed reports. It uses Next.js 16, React 19, TypeScript, Supabase Auth/PostgreSQL/PostGIS/Storage, Mapbox, and TanStack Query.
 
-![Next.js 16](https://img.shields.io/badge/Next.js-16.2.6-black?style=for-the-badge&logo=next.js&logoColor=white)
-![React 19](https://img.shields.io/badge/React-19.2.4-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_%2B_PostGIS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![Mapbox GL](https://img.shields.io/badge/Mapbox_GL-3.20.0-000000?style=for-the-badge&logo=mapbox&logoColor=white)
-![License](https://img.shields.io/badge/License-Proprietary-blue?style=for-the-badge)
+## Features and boundaries
 
-**A next-generation structural inspection, environmental hazard assessment, and real-time geospatial property intelligence platform designed for engineering teams, safety inspectors, and municipal asset managers.**
+- Projects, buildings, floors, structural elements, inspections, and role-based access for admins, engineers, inspectors, and viewers.
+- A geospatial dashboard with stored hazard layers, fault proximity, hazard-zone membership, erosion observations, maintenance priorities, and manually entered movement observations. Missing source coverage is identified explicitly.
+- Private inspection photographs, comments, signed evidence URLs, and verified archival copies. Archival uses a second Supabase bucket; it is not an implemented external S3/Storj replication service.
+- Browser AR reference tracking and markerless inspection records. Tracking is device-dependent; saved photographs can be deliberately submitted for deeper analysis. AR does not measure structural capacity, crack width, tilt, or settlement.
+- Camera and AR access are requested from the Start button. If a saved denial suppresses the prompt, restore this site’s Camera permission to Allow or Ask, check the browser’s camera access in device settings, then tap Start again. Previously granted access may start without another prompt. See the [browser permission rules](https://w3c.github.io/mediacapture-main/#dom-mediadevices-getusermedia).
+- Deterministic visual heuristics for live analysis, plus optional Gemini image classification, repair-cost suggestions, recommendations, and report narrative drafts. There is no trained defect-detection model or validated prediction-accuracy claim.
+- Structural observations including crack taxonomy, manually measured crack widths, settlement, rebound-hammer readings, soil investigation, erosion, and forensic assessments. Rebound strength correlation is indicative and requires calibration. Crack width bands are project-defined; ACI exposure limits are separate serviceability guidance.
+- Report revisions, optimistic concurrency checks, review requirements, engineer signatures, completed-report locking and reopening, printable evidence and limitations, and expiring/revocable public snapshots.
+- Shared URL filters and local saved filter presets across the dashboard, document workspace, and reports. Structural/detection filters for project-level maintenance and hotspots match inspections in that project.
+- CSV export and versioned JSON record export/import. JSON is an operational record subset, not a database or infrastructure backup. Binaries, users, audit/revision history, public links, and some evidence links are omitted. Imports invalidate approvals and restore reports as open drafts.
 
-[System Architecture](#-system-architecture) • [Key Features](#-key-features) • [Tech Stack](#-technology-stack) • [Quick Start](#-quick-start) • [Database & Migrations](#-database--migrations) • [RBAC Security](#-role-based-access-control-rbac) • [Client Handoff Plan](#-client-handoff--migration)
+## Local development
 
-</div>
+Use Node.js 24 and install dependencies with `npm ci`. Set these in an untracked `.env.local` for the database you intend to use:
 
----
-
-## 🌟 Executive Overview
-
-**EPROPVIEW** transforms complex structural and environmental data into actionable geospatial intelligence. Built on Next.js 16 App Router, React 19, and Supabase PostGIS, the platform enables engineering teams and safety auditors to conduct high-fidelity site inspections, track structural damage trends, evaluate seismic and liquefaction vulnerabilities, and manage compliance reporting through a unified, collaborative control plane.
-
-### Core Value Propositions
-* 🌐 **Geospatial Precision**: Native PostGIS integration for spatial hazard boundary modeling, fault line proximity analysis, and dynamic risk hotspot coordinate mapping.
-* 🛡️ **Zero-Trust Security**: Multi-tiered Role-Based Access Control (RBAC) enforced via PostgreSQL Row-Level Security (RLS) policies and Next.js Edge Middleware.
-* 🗄️ **Private Asset Vault**: Secure multi-media storage utilizing time-bound signed URLs, image audit trails, and collaborative commenting threads.
-* 📊 **Predictive Risk Modeling**: Composite environmental scoring combining soil liquefaction zones, fault line proximity, and historical erosion metrics.
-* 📄 **Audit-Ready Compliance**: Multi-signer report authoring workflows with immutable timestamps and print-ready PDF export layouts.
-
----
-
-## 🏗️ System Architecture
-
-```mermaid
-flowchart TB
-    subgraph ClientLayer ["Client Presentation Layer (Next.js 16 & React 19)"]
-        UI["Tailwind CSS v4 + Shadcn UI"]
-        Map["Mapbox GL JS Geospatial Engine"]
-        State["TanStack React Query Cache"]
-    end
-
-    subgraph EdgeLayer ["Edge & Middleware Layer"]
-        MW["Next.js Middleware (Session & RBAC Guard)"]
-        SA["Next.js Server Actions (Admin & Auth)"]
-    end
-
-    subgraph DataLayer ["Data & Storage Layer (Supabase / Storj)"]
-        Auth["Supabase Auth (JWT & Roles)"]
-        Postgres["PostgreSQL + PostGIS Extension"]
-        RLS["Row-Level Security (RLS Engine)"]
-        Vault["Private Storage Bucket ('inspection-images')"]
-        Storj["Storj DCS (S3 Gateway Archive)"]
-    end
-
-    UI --> State
-    State --> SA
-    State --> MW
-    MW --> Auth
-    SA --> Postgres
-    UI --> Map
-    Postgres --> RLS
-    State --> Vault
-    Vault -.-> Storj
-```
-
----
-
-## ✨ Key Features
-
-### 1. 🗺️ Interactive Geospatial Dashboard
-* **Mapbox GL Integration**: Real-time vector tiles, 3D building models, satellite terrain layers, and interactive hazard heatmaps.
-* **Risk Hotspot Visualizer**: Spatial point rendering with customizable severity markers (Critical, Moderate, Low) linked directly to maintenance priority queues.
-* **Live KPI Counters**: Instant metric aggregation for active inspections, critical vulnerabilities, and reports awaiting sign-off via database-level RPC stored procedures.
-
-### 2. 🗄️ Secure Asset Vault & Photo Commenting
-* **Private Bucket Isolation**: Inspection images are stored in private storage buckets and served exclusively through short-lived cryptographic signed URLs.
-* **In-Feed Annotation & Comments**: Real-time discussion threads attached directly to individual photographic evidence items.
-* **Automated Notification Badging**: Unread comment indicators dynamically updated for active inspectors and supervising engineers.
-
-### 3. 🌋 Environmental Risk & Hazard Modeling
-* **Seismic Fault Line Proximity**: Geodesic distance calculation to active tectonic faults with 5-tier classification (`none` to `very_high`).
-* **Soil Liquefaction Zonation**: Multi-polygon spatial mapping (`zone_a`, `zone_b`, `zone_c`) overlaying municipal zoning districts.
-* **Erosion Vulnerability Engine**: Multi-factorial risk synthesis generating normalized 0–10 risk indices.
-
-### 4. 📄 Compliance Reports & Audit Trail
-* **Lifecycle Workflow**: Structured transitions through `open` ➔ `in_review` ➔ `critical` ➔ `completed`.
-* **Multi-Signer Provenance**: Full audit logging tracking `created_by`, `last_edited_by`, `reviewed_by`, and respective ISO timestamps.
-* **Print & Export Layout**: Dedicated CSS media query styling optimized for official PDF document generation and paper audits.
-
-### 5. 👥 Administrative RBAC & User Management
-* **Role Hierarchy**: Strict permission partitioning between **Admin**, **Engineer**, **Inspector**, and **Viewer** roles.
-* **Inspector Provisioning**: Administrative console to create, invite, activate, or deactivate inspection personnel.
-* **Legacy Migration Utility**: Built-in CLI and API data migrator bridging legacy SQLite/Django backends into Supabase PostgreSQL.
-
-### 6. 🤖 Real-Time AI Damage Detection Pipeline & Registry v2
-* **Computer Vision Pipeline**: Aspect-ratio-preserving letterboxing, luminance stretching, crack contrast enhancement, and Non-Maximum Suppression (NMS).
-* **Calibrated Severity Scoring**: Standardized civil structural formulas combining defect classification, normalized area, and confidence.
-* **Model Registry v2**: Live deployment of ONNX/TensorRT architectures (`yolov8`, `resnet50`) with configurable input dimensions and IoU thresholds.
-
-### 7. 📱 Markerless and printed-reference inspection
-* **Markerless Session Tracking**: On supported immersive WebXR devices, place points using real surface hit tests. Native anchors are used when available; live viewer/projection matrices keep current-session points aligned as the camera moves.
-* **Saved Records, Session-only Locations**: Point labels, notes and coordinates remain saved after AR ends. They are not restored as physical checkpoints in a later session. Browser WebXR persistence cannot be assumed across the targeted devices. See [the markerless behavior and test plan](MARKERLESS_AR_SPEC.md).
-* **Camera/Photo Alternative**: Devices without immersive WebXR can save a real photo and centre-point annotation without any QR. This mode is explicitly non-spatial. WebXR passthrough camera pixels are not exposed by this implementation, so WebXR points can be saved without fabricated photo evidence.
-* **Camera Permissions**: Start requests camera or AR access directly from the button click. A saved browser denial can reject without showing another prompt; the app displays instructions to restore access. Set this site's Camera permission to Allow or Ask, check the browser's camera access in device settings, and tap Start again. Previously granted access can start without a new prompt. See the [browser permission rules](https://w3c.github.io/mediacapture-main/#dom-mediadevices-getusermedia).
-* **Physical Reference Tracking**: Download a uniquely identified QR reference as a PNG image (or SVG for printing) for an inspection and surface. The web camera detects its corners and keeps saved marker points aligned as the target moves or changes perspective.
-* **Evidence Capture**: Quick Marker saves a target-relative point with a real camera photo. The detailed form associates the captured point and photo with manual classification, severity and notes.
-* **Loss and Reacquisition**: Placement stops and overlays hide when tracking is lost. Scanning the original target restores saved markers after a new session or page reload. Existing markers without reference metadata remain available in the saved list.
-* **Saved Marker Deletion**: Inspectors can delete markers from their own sessions, including completed sessions; admins can delete any marker. Confirmed deletion updates the saved list and viewport. Failed deletion keeps the marker visible and shows a retry message. Deleting a marker preserves captured evidence files.
-
-For the optional printed-reference mode, print at actual size, check the declared QR width excluding its white border, and attach the target to the same flat stationary surface as the marked points. Keep the target visible. This mode is planar reference-based AR and does not measure depth or certify structural safety. Analysis is labelled heuristic. Physical Android/iPhone verification is still required. See [the reference tracking device checklist](AR_REFERENCE_TRACKING_SPEC.md). Native bridge scaffolding remains separate from these web workflows; see [native status](native/README.md).
-
-### 8. 🏢 Building, Floor & Structural Element Master Data
-* **Complex Multi-Structure Hierarchy**: Projects contain distinct physical buildings with structural codes and geographic coordinates.
-* **Vertical Floor Levels**: Reorderable elevations supporting basements through roof decks.
-* **Structural Member Catalog**: Tag inspections against specific load-bearing columns, transfer beams, and shear walls, with bulk CSV schedule import.
-
-### 9. 🗺️ Geohazard GIS Layer Management & Auto-Scoring
-* **GeoJSON & ESRI Shapefile Ingestion**: Upload vector fault line traces and polygonal liquefaction/flood datasets.
-* **Automated Risk Calibration**: Auto-calculate project environmental risk by evaluating real-time spatial intersections with active GIS layers.
-
-### 10. 📦 Object Storage Lifecycle & S3/Storj Archival Manager
-* **Multi-Bucket Telemetry**: Continuous auditing across `inspection-images`, `ai-models`, and `reports-archive`.
-* **Automated Cold Archival**: 1-year automated transition to cold/archive storage classes (Storj DCS / AWS S3 Glacier).
-* **Orphaned Asset Detection**: Automated cross-referencing between cloud storage files and PostgreSQL records.
-
----
-
-## 🛠️ Technology Stack
-
-| Domain | Technology / Library | Version | Description |
-| :--- | :--- | :--- | :--- |
-| **Framework** | [Next.js (App Router)](https://nextjs.org/) | `16.2.6` | React Server Components, Server Actions, Edge Middleware |
-| **UI Library** | [React](https://react.dev/) | `19.2.4` | Modern component architecture and concurrent features |
-| **Styling** | [Tailwind CSS](https://tailwindcss.com/) | `v4.0` | Next-generation zero-config CSS framework |
-| **Database** | [PostgreSQL + PostGIS](https://supabase.com/) | `15+` | Spatial database engine with geometry types |
-| **Auth & Storage** | [Supabase](https://supabase.com/) | `@supabase/ssr ^0.10` | JWT authentication, RLS policies, and private bucket storage |
-| **Decentralized Storage** | [Storj DCS](https://www.storj.io/) | `S3 Gateway` | Zero-knowledge encrypted decentralized object archive |
-| **Mapping Engine** | [Mapbox GL JS](https://www.mapbox.com/) | `3.20.0` | Geospatial mapping, vector tiles, and hazard overlays |
-| **State Management** | [TanStack React Query](https://tanstack.com/query) | `^5.100` | Async server-state management and query caching |
-| **Data Visualization** | [Chart.js](https://www.chartjs.org/) & [react-chartjs-2](https://react-chartjs-2.js.org/) | `^4.5` | Dynamic damage trend graphs and severity breakdown charts |
-| **Type Safety** | [TypeScript](https://www.typescriptlang.org/) & [Zod](https://zod.dev/) | `^5.0` / `^4.4` | End-to-end type validation and runtime schema safety |
-
----
-
-## 📂 Repository Directory Structure
-
-```text
-EPROPVIEW/
-├── docs/                           # Official Technical Documentation & Handoff Plans
-│   ├── ACCOUNT_MIGRATION_PLAN.docx # Comprehensive client account migration guide (Word format)
-│   ├── STORAGE_FIX.md              # Supabase Storage RLS & bucket initialization manual
-│   └── superpowers/                # Architecture specifications & rebuild roadmap
-├── public/                         # Static web assets, favicons, and branding
-├── src/
-│   ├── app/                        # Next.js App Router root
-│   │   ├── (dashboard)/            # Authenticated layout group
-│   │   │   ├── dashboard/          # Analytics overview, map canvas, trend charts
-│   │   │   ├── document/           # Asset Vault, image uploader, commenting threads
-│   │   │   ├── environmental/      # PostGIS risk analysis, liquefaction polygons
-│   │   │   ├── projects/           # Geospatial project catalog and status filters
-│   │   │   ├── reports/            # Compliance reports authoring, audit log, PDF export
-│   │   │   └── settings/           # Admin user management and inspector provisioning
-│   │   ├── actions/                # Server Actions (Auth, User Admin, Session management)
-│   │   ├── api/                    # RESTful endpoint handlers (Data migration pipeline)
-│   │   ├── lib/                    # Core business logic, queries, mutations, Supabase clients
-│   │   │   ├── dal.ts              # Data Access Layer & role validation
-│   │   │   ├── migrate.ts          # Automated SQLite-to-Supabase migration engine
-│   │   │   ├── mutations.ts        # React Query mutation hooks
-│   │   │   ├── queries.ts          # React Query data fetching hooks & signed URL mappers
-│   │   │   └── supabase/           # SSR Browser, Server, and Middleware clients
-│   │   ├── login/                  # Enterprise login portal
-│   │   └── types/                  # Global TypeScript type definitions and interfaces
-│   ├── components/                 # Modular UI Components
-│   │   ├── auth/                   # Authentication forms and password handlers
-│   │   ├── dashboard/              # Mapbox canvas, KPI cards, damage trend charts
-│   │   ├── document/               # Asset feed, camera capture, comment threads
-│   │   ├── environmental/          # PostGIS analysis panels, risk gauges
-│   │   ├── reports/                # Report forms, review modals, printable view
-│   │   ├── settings/               # Inspector creation modals, user status tables
-│   │   ├── shared/                 # Navbar, Sidebar, status badges, risk score pill
-│   │   └── ui/                     # Base UI design system primitives
-│   └── scripts/                    # CLI execution utilities (Database migration runner)
-├── supabase/
-│   └── migrations/                 # PostgreSQL & PostGIS migration scripts (001 - 005)
-├── .env.example                    # Master environment variables template
-├── middleware.ts                   # Next.js Edge authentication and RBAC routing guard
-├── next.config.ts                  # Next.js security headers & image domain rules
-├── package.json                    # Project dependencies and operational scripts
-└── tsconfig.json                   # Strict TypeScript compiler configuration
-```
-
----
-
-## 🚀 Quick Start & Installation
-
-### 1. Prerequisites
-* **Node.js**: `v20.x` or `v22.x` (LTS recommended)
-* **Package Manager**: `npm` (v10+), `pnpm`, or `bun`
-* **Cloud Accounts**: Supabase (PostgreSQL with PostGIS) & Mapbox (Public Access Token)
-
-### 2. Clone and Install Dependencies
-```bash
-# Clone the repository
-git clone https://github.com/[YourOrg]/eprop-view.git
-cd eprop-view
-
-# Install dependencies
-npm install
-```
-
-### 3. Environment Variables Configuration
-Copy the sample environment template and populate your credentials:
-
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` with your active service keys:
-
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_your-service-role-key
-
-# Mapbox Geospatial Configuration
-NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.eyJ1IjoieW91ci11c2VybmFtZSIsImEiOiJ5b3VyLXRva2VuIn0...
-
-# Application URL
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-public-key
+SUPABASE_SERVICE_ROLE_KEY=your-server-only-key
+NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your-mapbox-token
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
-
-# Legacy Data Migration Credentials (Optional)
-MIGRATION_ADMIN_PASSWORD=your-secure-admin-password
-MIGRATION_DEFAULT_PASSWORD=your-secure-inspector-password
+GEMINI_API_KEY=your-optional-server-only-key
 ```
 
-### 4. Run the Development Server
+Never put service-role or Gemini keys in `NEXT_PUBLIC_*` variables. `npm run dev` starts development; `npm run build` and `npm run start` run the production build.
+
+## Database and Preview verification
+
+SQL migrations live in `supabase/migrations/`. Apply them in numeric order to a Supabase project, including migrations 017–022 for the structural features and audit remediation. The legacy SQLite migration utility has been removed.
+
+The CLI migration commands enforce the agreed Preview project, `gbuwldihkmapzondxkto`, and read `.env.preview.local`. Set its actual PostgreSQL URI as `PREVIEW_DATABASE_URL` in that file or the shell environment, then run:
+
 ```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## 🗄️ Database Setup & Migrations
-
-EPROPVIEW utilizes PostgreSQL 15+ hosted on Supabase, accelerated with the PostGIS spatial engine.
-
-### Step 1: Enable PostGIS Extension
-Run this command in the **Supabase SQL Editor**:
-```sql
-CREATE EXTENSION IF NOT EXISTS postgis SCHEMA extensions;
+npm run verify:preview
+npm run db:migrate:preview
 ```
 
-### Step 2: Apply Migration Scripts
-Execute the SQL migration scripts in [`supabase/migrations/`](./supabase/migrations/) sequentially:
+`npm run db:migrate` uses the same Preview guard. An existing database without an application migration ledger requires inspection of its applied migrations first. Pass `-- --baseline=016` only if migration 016 is confirmed as its last applied migration; substitute the actual confirmed version. Subsequent runs skip tracked migrations and record each successful migration transactionally. Early legacy migrations are not all safe to replay.
 
-1. **`001_initial_schema.sql`**: Provisions tables (`profiles`, `projects`, `inspections`, `reports`, `environmental_risks`, `risk_hotspots`, `maintenance_priorities`, `damage_trends`, `geospatial_zones`), RPC functions (`get_dashboard_stats`, `create_report_with_id`), auth triggers, and baseline RLS policies.
-2. **`002_add_user_status.sql`**: Appends the `is_active` boolean flag to the `profiles` table.
-3. **`002_reports_audit_trail.sql`**: Introduces multi-user audit columns (`created_by`, `reviewed_by`, `last_edited_by`, `reviewed_at`, `last_edited_at`).
-4. **`003_setup_storage.sql`**: Registers the `inspection-images` private storage bucket and applies storage RLS policies.
-5. **`004_image_ownership.sql`**: Binds the `uploader_id` foreign key to `inspection_images`.
-6. **`005_asset_commenting.sql`**: Deploys the `image_comments` discussion table and unread notification counter.
+Vercel CLI environment exports replace sensitive values with `[SENSITIVE]`. Those placeholders are not credentials and cannot establish whether the deployed key works. A Supabase API key is also not a PostgreSQL connection string. The verifier reports missing schema and absent demonstration roles rather than presenting setup as complete. Provision active admin, engineer, inspector, and viewer accounts for the capstone demonstration.
 
-### Step 3: Run Data Migration (Optional)
-To import historical datasets from a legacy SQLite database (`backend/db.sqlite3`):
+## Gemini behavior
+
+Remote analysis happens on deliberate actions, not live camera frames. Validated Gemini responses are identified as `gemini`; deterministic fallback results are identified as `heuristic`. Reviewed engineering inputs and signatures remain separate. Model confidence and heuristic response strength are uncalibrated scores, not measured accuracy. Costs are provisional PHP planning ranges, not quotations.
+
+The client tries `gemini-3.8-flash`, then `gemini-3.5-flash-lite` on quota exhaustion, temporary HTTP 408/500/502/503/504 errors, or connection timeouts/failures. Each model is attempted at most once; authorization, request and validation errors are not retried. Availability failures surface an identified fallback; malformed output is rejected. Existing reviewed findings survive replacement failures. Photos without a calibrated scale cannot create physical crack-width readings.
+
+An admin can use **Settings → System Health → Verify Gemini** on the runtime that holds the actual key. This makes up to four synthetic integration requests for image analysis, cost, recommendation, and narrative output. Passing these probes establishes connectivity and schema behavior, not engineering accuracy. Meaningful performance still requires an annotated evaluation set and engineer review. Free-tier submissions may be used by Google to improve products; use demonstration data without confidential/client-identifiable imagery.
+
+## Verification
+
 ```bash
-npm run migrate
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm run test:ar-browser
+npm run test:markerless-browser
 ```
 
----
+Lint explicitly includes server `.ts` and React `.tsx` files. CI also applies all migrations to a disposable PostGIS database and runs the SQL suites in `supabase/tests/`. `bootstrap.sql` emulates Supabase platform boundaries for local/CI tests; it must not be applied to a managed Supabase instance.
 
-## 🛡️ Role-Based Access Control (RBAC)
+See [REMEDIATION_STATUS.md](./REMEDIATION_STATUS.md) for the audit findings, verification evidence, and outstanding external checks. The scope contract is in `docs/capstone_v2_scope_contract.md` when the accompanying project documentation is present.
 
-The platform enforces three distinct user authorization tiers:
-
-```text
-┌─────────────────────────┬───────────────┬───────────────────┬────────────────┐
-│ Privilege / Capability  │ Admin         │ Inspector         │ Viewer         │
-├─────────────────────────┼───────────────┼───────────────────┼────────────────┤
-│ View Dashboard & Maps   │  Full Access  │  Full Access      │  Full Access   │
-│ Create Inspections      │  Full Access  │  Full Access      │  Read-Only     │
-│ Upload Vault Imagery    │  Full Access  │  Full Access      │  Read-Only     │
-│ Post Image Comments     │  Full Access  │  Full Access      │  Full Access   │
-│ Author/Edit Reports     │  Full Access  │  Assigned Only    │  Read-Only     │
-│ Review & Approve Reports│  Full Access  │  Assigned Only    │  Read-Only     │
-│ Manage User Accounts    │  Full Access  │  Restricted (403) │  Restricted    │
-│ Delete Projects/Assets  │  Full Access  │  Restricted (403) │  Restricted    │
-└─────────────────────────┴───────────────┴───────────────────┴────────────────┘
-```
-
----
-
-## 📜 Available Scripts
-
-| Command | Action |
-| :--- | :--- |
-| `npm run dev` | Launches the Next.js development server on port `3000` with hot reload. |
-| `npm run build` | Compiles TypeScript, runs Next.js optimizations, and generates production bundles. |
-| `npm run start` | Runs the compiled Next.js application in production mode. |
-| `npm run lint` | Runs ESLint 9 to validate codebase syntax and Next.js best practices. |
-| `npm run migrate` | Executes the automated SQLite-to-Supabase migration script via `tsx`. |
-
----
-
-## 🤝 Client Handoff & Migration
-
-For detailed, step-by-step technical instructions on transferring ownership of GitHub, Vercel, Supabase, Storj DCS, and Mapbox accounts to your organization, consult the official Word document in the repository:
-
-📄 **[`docs/ACCOUNT_MIGRATION_PLAN.docx`](./docs/ACCOUNT_MIGRATION_PLAN.docx)**
-
-The handoff guide includes:
-* Detailed transfer procedures for GitHub Organizations and repositories.
-* Supabase PostgreSQL PostGIS replication and storage bucket provisioning.
-* Storj DCS S3 Gateway credentials setup and asset synchronization commands.
-* Mapbox access token generation with domain restriction security rules.
-* Vercel production deployment, environment variable mapping, and DNS setup.
-* 10-point end-to-end verification and smoke testing suite.
-* Master credentials and secret key handover matrix.
-
----
-
-## 🔒 Security & Best Practices
-
-* **Zero Leaked Secrets**: All server keys (`SUPABASE_SERVICE_ROLE_KEY`) are restricted to Server Actions and never exposed to the client bundle.
-* **Cryptographic Asset Delivery**: All uploaded inspection photographs require signed tokens generated on demand with 60-minute expiration windows.
-* **PostGIS SRID Standardization**: All geographical coordinates and polygon rings are strictly projected in `SRID=4326` (WGS 84).
-* **HTTP Security Headers**: Enforces strict `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and content security boundaries via `next.config.ts`.
-
----
-
-## 📄 License & Ownership
+## License and ownership
 
 This software and its associated documentation are proprietary and confidential. Unauthorized copying, distribution, or modification is strictly prohibited. All rights reserved by the client organization upon completion of official handoff sign-off.

@@ -5,6 +5,8 @@ import { requireRole } from '@/app/lib/dal'
 import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { computeFinalDamageScore, scoreToRiskLevel } from '@/app/lib/damage-score'
 import { z } from 'zod'
+import { createServiceClient } from '@/app/lib/supabase/service'
+import { resolveEvidenceLocation } from '@/app/lib/storage-location'
 import type {
   AIModel,
   AIDamageDetection,
@@ -129,7 +131,7 @@ export async function runAIAnalysis(
   // Verify image exists and (if inspector) belongs to inspection owned by inspector
   const { data: img, error: imgError } = await supabase
     .from('inspection_images')
-    .select('id, inspection_id, storage_path, inspections(lead_inspector_id)')
+    .select('id, inspection_id, storage_path, storage_bucket, inspections(lead_inspector_id)')
     .eq('id', imageId)
     .single()
 
@@ -207,9 +209,10 @@ export async function runAIAnalysis(
       throw new Error('This image has no stored file to analyze.')
     }
 
+    const location = resolveEvidenceLocation(img)
     const { data: downloadedBlob, error: downloadError } = await supabase.storage
-      .from('inspection-images')
-      .download(img.storage_path)
+      .from(location.bucket)
+      .download(location.path)
 
     if (downloadError || !downloadedBlob) {
       throw new Error(`Stored image could not be read: ${downloadError?.message ?? 'object missing'}`)
@@ -218,33 +221,14 @@ export async function runAIAnalysis(
     const { runDetection } = await import('@/app/lib/ai/inference-worker')
     const inferenceResult = await runDetection(downloadedBlob, targetModel)
 
-    // 5. Replace previous detections only after inference succeeds, so a failed
-    //    run cannot erase the last valid result.
-    const { error: deleteError } = await supabase
-      .from('ai_damage_detections')
-      .delete()
-      .eq('image_id', imageId)
-
-    if (deleteError) throw deleteError
-
-    const rows = inferenceResult.detections.map((result) => ({
-      ...result,
-      image_id: imageId,
-      model_id: resolvedModelId,
-      provenance: 'heuristic' as const,
-    }))
-
-    let detections: AIDamageDetection[] = []
-    if (rows.length > 0) {
-      const { data: inserted, error: insertError } = await supabase
-        .from('ai_damage_detections')
-        .insert(rows)
-        .select()
-
-      if (insertError) throw insertError
-      detections = (inserted || []) as AIDamageDetection[]
-    }
-    // Zero detections is a valid completed result.
+    // Persist a whole validated run, including no findings, atomically. Other
+    // methods and engineering confirmations are independent evidence.
+    const { data: inserted, error: insertError } = await createServiceClient().rpc('replace_image_detections', {
+      p_image_id: imageId, p_actor_id: userId, p_provenance: 'heuristic',
+      p_rows: inferenceResult.detections.map(result => ({ ...result, model_id: resolvedModelId })),
+    })
+    if (insertError) throw insertError
+    const detections = (inserted ?? []) as AIDamageDetection[]
 
     // 5. Mark job completed
     const { data: completedJob, error: updateError } = await supabase
@@ -469,8 +453,19 @@ export async function getDetectionsForInspection(inspectionId: string): Promise<
 /**
  * Return all AI detections across all inspections (optionally filtered by project).
  */
-export async function getAllAIDetections(projectId?: string): Promise<AIDamageDetection[]> {
+export async function getAllAIDetections(projectId?: string, filters?: import('@/app/lib/workspace-filters').WorkspaceFilters): Promise<AIDamageDetection[]> {
   const supabase = await createClient()
+  if(filters){
+    const {getFilteredRecordIds}=await import('./filters')
+    const ids=await getFilteredRecordIds('inspections',filters)
+    if(!ids.length)return []
+    let query=supabase.from('ai_damage_detections').select('*, inspection_images!inner(inspection_id,inspections!inner(project_id))').in('inspection_images.inspection_id',ids)
+    if(projectId)query=query.eq('inspection_images.inspections.project_id',projectId)
+    const {data,error}=await query.order('created_at',{ascending:false}).limit(500)
+    if(error)throw error
+    return (data??[]) as AIDamageDetection[]
+  }
+
 
   if (projectId) {
     const { data: inspections } = await supabase

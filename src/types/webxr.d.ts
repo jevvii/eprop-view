@@ -46,7 +46,7 @@ declare global {
     readonly emulatedPosition: boolean
   }
 
-  interface XRSpace extends EventTarget {}
+  type XRSpace = EventTarget
 
   interface XRReferenceSpace extends XRSpace {
     getOffsetReferenceSpace(originOffset: XRRigidTransform): XRReferenceSpace

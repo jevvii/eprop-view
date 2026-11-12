@@ -11,7 +11,7 @@ type ReportFormProps = {
   onClose?: () => void
 }
 
-const statusOptions = ['open', 'in_review', 'critical', 'completed'] as const
+const statusOptions = ['open', 'in_review', 'critical'] as const
 
 export function ReportForm({ projectId, onClose }: ReportFormProps) {
   const { data: projects } = useProjects()

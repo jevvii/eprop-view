@@ -1,7 +1,11 @@
 'use client'
 
+import { useWorkspaceFilters } from '@/components/shared/report-filters'
+import { getFilteredRecordIds } from '@/app/actions/filters'
+import { getSettlementOverview } from '@/app/actions/structural'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from './supabase/client'
+import { resolveEvidenceLocation } from './storage-location'
 import { getAllProfilesWithEmails } from '@/app/actions/admin'
 import {
   getActiveAIModels,
@@ -58,9 +62,13 @@ export function useProjects() {
 }
 
 export function useReports(projectId?: string) {
+  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['reports', projectId],
+    queryKey: ['reports', projectId, filters],
     queryFn: async (): Promise<Report[]> => {
+      const matched=await getFilteredRecordIds('reports',filters)
+      if(!matched.length)return []
+
       const baseMapper = (report: any) => ({
         ...report,
         project_name: typeof report.project_name === 'string'
@@ -92,7 +100,7 @@ export function useReports(projectId?: string) {
         `)
         .order('date', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
-      const { data, error } = await query
+      const { data, error } = await query.in('id', matched)
 
       if (error) {
         if (process.env.NODE_ENV !== 'production') {
@@ -103,7 +111,7 @@ export function useReports(projectId?: string) {
           .select('*, project_name:projects(name)')
           .order('date', { ascending: false })
         if (projectId) fallbackQuery = fallbackQuery.eq('project_id', projectId)
-        const { data: fallbackData, error: fallbackError } = await fallbackQuery
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery.in('id',matched)
         if (fallbackError) throw error
         return (fallbackData || []).map((report: any) => ({
           ...baseMapper(report),
@@ -141,19 +149,23 @@ export function useMyInspections(projectId?: string) {
 }
 
 export function useInspections(projectId?: string) {
+  const {filters}=useWorkspaceFilters()
   const { data: profile } = useProfile()
   const isInspector = profile?.role === 'inspector'
   const userId = profile?.id
 
   return useQuery({
-    queryKey: ['inspections', projectId, isInspector ? userId : 'all'],
+    queryKey: ['inspections', projectId, isInspector ? userId : 'all', filters],
     queryFn: async (): Promise<Inspection[]> => {
+      const matched=await getFilteredRecordIds('inspections',filters)
+      if(!matched.length)return []
+
       let query = getClient().from('inspections').select('*').order('inspection_date', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
       if (isInspector && userId) {
         query = query.eq('lead_inspector_id', userId)
       }
-      const { data, error } = await query
+      const { data, error } = await query.in('id', matched)
       if (error) throw error
       return data || []
     },
@@ -161,10 +173,11 @@ export function useInspections(projectId?: string) {
 }
 
 export function useDashboardStats() {
+  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['stats'],
+    queryKey: ['stats',filters],
     queryFn: async (): Promise<DashboardStats> => {
-      const { data, error } = await getClient().rpc('get_dashboard_stats')
+      const { data, error } = await getClient().rpc('filtered_dashboard_stats',{p_filters:filters})
       if (error) throw error
       return data as DashboardStats
     },
@@ -184,22 +197,22 @@ export function useEnvironmentalRisk(projectId: string) {
 }
 
 export function useRiskHotspots(projectId?: string) {
+  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['risk-hotspots', projectId],
+    queryKey: ['risk-hotspots', projectId, filters],
     queryFn: async (): Promise<RiskHotspot[]> => {
+      const matched=await getFilteredRecordIds('hotspots',filters)
+      if(!matched.length)return []
+
       let query = getClient().from('risk_hotspots').select('*').order('severity', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
-      const { data, error } = await query
+      const { data, error } = await query.in('id', matched)
       if (error) throw error
       return (data || []).map((h: any) => {
-        let lat = h.geom?.coordinates?.[1] ?? h.latitude ?? null
-        let lng = h.geom?.coordinates?.[0] ?? h.longitude ?? null
+        const lat = h.geom?.coordinates?.[1] ?? h.latitude ?? null
+        const lng = h.geom?.coordinates?.[0] ?? h.longitude ?? null
 
-        // Fallback: If lat/lng missing from geom, derive spatial coordinates relative to site center
-        if ((lat == null || lng == null) && h.position_x != null && h.position_y != null) {
-          lng = 121.0437 + ((h.position_x - 50) * 0.00015)
-          lat = 14.676 + ((h.position_y - 50) * 0.00015)
-        }
+
 
         return {
           ...h,
@@ -212,15 +225,19 @@ export function useRiskHotspots(projectId?: string) {
 }
 
 export function useMaintenancePriorities(projectId?: string) {
+  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['maintenance', projectId],
+    queryKey: ['maintenance', projectId, filters],
     queryFn: async (): Promise<MaintenancePriority[]> => {
+      const matched=await getFilteredRecordIds('maintenance',filters)
+      if(!matched.length)return []
+
       let query = getClient()
         .from('maintenance_priorities')
         .select('*, assigned_to_name:profiles(full_name)')
         .order('risk_score', { ascending: false })
       if (projectId) query = query.eq('project_id', projectId)
-      const { data, error } = await query
+      const { data, error } = await query.in('id', matched)
       if (error) {
         if (process.env.NODE_ENV !== 'production') {
           console.warn('Maintenance priorities query failed, falling back to unjoined fetch:', error)
@@ -230,7 +247,7 @@ export function useMaintenancePriorities(projectId?: string) {
           .select('*')
           .order('risk_score', { ascending: false })
         if (projectId) fallbackQuery = fallbackQuery.eq('project_id', projectId)
-        const { data: fallbackData, error: fallbackError } = await fallbackQuery
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery.in('id',matched)
         if (fallbackError) throw error
         return (fallbackData || []).map((m: any) => ({
           ...m,
@@ -249,14 +266,13 @@ export function useMaintenancePriorities(projectId?: string) {
 }
 
 export function useDamageTrends(projectId?: string) {
+  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['damage-trends', projectId],
+    queryKey: ['damage-trends', projectId,filters],
     queryFn: async (): Promise<DamageTrend[]> => {
-      let query = getClient().from('damage_trends').select('*').order('date', { ascending: true })
-      if (projectId) query = query.eq('project_id', projectId)
-      const { data, error } = await query
+      const { data, error } = await getClient().rpc('filtered_damage_trends', { p_filters: filters })
       if (error) throw error
-      return data || []
+      return projectId ? (data || []).filter((row: DamageTrend) => row.project_id === projectId) : data || []
     },
   })
 }
@@ -292,10 +308,11 @@ export function useInspectionImages(inspectionId?: string) {
       const mapResults = async (rows: any[]) => {
         return Promise.all(
           rows.map(async (image) => {
+            const location = resolveEvidenceLocation(image)
             const { data: signedData, error: signedError } = await getClient()
               .storage
-              .from('inspection-images')
-              .createSignedUrl(image.storage_path, 60 * 60)
+              .from(location.bucket)
+              .createSignedUrl(location.path, 60 * 60)
             
             return {
               ...image,
@@ -497,10 +514,11 @@ export function useAIDetectionsForInspection(inspectionId?: string) {
 }
 
 export function useAllAIDetections(projectId?: string) {
+  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['all-ai-detections', projectId],
+    queryKey: ['all-ai-detections', projectId, filters],
     queryFn: async (): Promise<AIDamageDetection[]> => {
-      return getAllAIDetections(projectId)
+      return getAllAIDetections(projectId,filters)
     },
   })
 }
@@ -540,10 +558,11 @@ export function useARAnchors(inspectionId?: string) {
 }
 
 export function useAllARAnchors(projectId?: string) {
+  const {filters}=useWorkspaceFilters()
   return useQuery({
-    queryKey: ['all-ar-anchors', projectId],
+    queryKey: ['all-ar-anchors', projectId, filters],
     queryFn: async (): Promise<ARAnchor[]> => {
-      return getAllARAnchors(projectId)
+      return getAllARAnchors(projectId,filters)
     },
   })
 }
@@ -581,4 +600,61 @@ export function useStructuralElements(floorId?: string) {
   })
 }
 
+/**
+ * A single report by primary key, for the review workbench.
+ *
+ * The list query selects a page of reports; the workbench needs one row with its
+ * joined names, so it fetches directly rather than filtering the list.
+ */
+export function useReport(reportId?: string) {
+  return useQuery({
+    queryKey: ['report', reportId],
+    enabled: Boolean(reportId),
+    queryFn: async (): Promise<Report | null> => {
+      if (!reportId) return null
+      const { data, error } = await getClient()
+        .from('reports')
+        .select('*, project_name:projects(name), lead_inspector_name:profiles!reports_lead_inspector_id_fkey(full_name)')
+        .eq('id', reportId)
+        .maybeSingle()
 
+      if (error) throw error
+      if (!data) return null
+
+      return {
+        ...data,
+        project_name:
+          typeof data.project_name === 'string' ? data.project_name : data.project_name?.name ?? '',
+        lead_inspector_name:
+          typeof data.lead_inspector_name === 'string'
+            ? data.lead_inspector_name
+            : data.lead_inspector_name?.full_name ?? '',
+      } as Report
+    },
+  })
+}
+
+
+
+export function useSettlementOverview() {
+  const { filters } = useWorkspaceFilters()
+  return useQuery({
+    queryKey: ['settlement-overview', filters],
+    queryFn: async () => {
+      // Building-only observations need no inspection link. Apply their own
+      // measured date; use inspection matching for defect/status/risk filters.
+      const needsInspection = Object.entries(filters).some(([key, value]) =>
+        !['building', 'from', 'to'].includes(key) && value !== '' && value !== 'all')
+      const [rows, matching] = await Promise.all([
+        getSettlementOverview(),
+        needsInspection ? getFilteredRecordIds('inspections', filters) : Promise.resolve<string[]>([]),
+      ])
+      const ids = new Set(matching)
+      return rows.filter(row =>
+        (!filters.building || row.building_id === filters.building) &&
+        (!filters.from || row.observed_at.slice(0, 10) >= filters.from) &&
+        (!filters.to || row.observed_at.slice(0, 10) <= filters.to) &&
+        (!needsInspection || (row.inspection_id !== null && ids.has(row.inspection_id))))
+    },
+  })
+}

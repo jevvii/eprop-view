@@ -1,4 +1,5 @@
 'use client'
+import { DeepAnalysisButton } from './deep-analysis-button'
 import { ClipboardCheck } from 'lucide-react'
 
 import { useState } from 'react'
@@ -58,7 +59,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">AI Structural Diagnostics</h3>
+            <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">Visual Damage Review</h3>
             {activeModel && (
               <span className="text-xs font-semibold uppercase px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
                 {activeModel.format === 'heuristic' || activeModel.format === 'mock'
@@ -71,7 +72,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
             </span>
           </div>
           <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
-            {activeModel ? `Active Checkpoint: ${activeModel.name} (v${activeModel.version})` : 'No active AI models registered'}
+            {activeModel ? `Active method: ${activeModel.name} (v${activeModel.version})` : 'No active AI models registered'}
           </p>
         </div>
         {isRunning ? (
@@ -94,6 +95,8 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
           <span>Running heuristic analysis…</span>
         </div>
       )}
+
+      {(canTriggerAI || profile?.role === 'engineer') && <DeepAnalysisButton imageId={imageId} />}
 
       {/* Model Selection and Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">

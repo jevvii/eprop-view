@@ -1,6 +1,8 @@
 'use client'
 
-import { useDashboardStats, useProfile } from '@/app/lib/queries'
+import { WorkspaceFilterBar } from '@/components/shared/report-filters'
+
+import { useDashboardStats, useProfile, useSettlementOverview } from '@/app/lib/queries'
 import { hasCapability } from '@/app/lib/role-utils'
 import { AccessDenied } from '@/components/shared/require-role'
 import { StatCard } from '@/components/dashboard/stats-cards'
@@ -37,6 +39,7 @@ function ConnectionStatus({
 
 export default function DashboardPage() {
   const { data: profile, isLoading: profileLoading } = useProfile()
+  const {data: movement,isError: movementError}=useSettlementOverview()
   const { data: stats, isLoading: statsLoading, isError: statsError } = useDashboardStats()
 
   const canViewDashboard = hasCapability(profile?.role, 'dashboard:view')
@@ -67,7 +70,7 @@ export default function DashboardPage() {
   ) => (statsLoading ? '—' : (stats?.[key] ?? 0))
 
   return (
-    <div className="flex flex-col lg:flex-row w-full min-w-0 min-h-0 lg:h-full bg-background">
+    <div className="flex flex-col min-h-0 lg:h-full"><WorkspaceFilterBar /><div className="flex flex-1 flex-col lg:flex-row w-full min-w-0 min-h-0 bg-background">
       {/* One map instance for both layouts. Previously the mobile and desktop
           branches mounted two Mapbox WebGL contexts per page load. */}
       <section className="relative flex flex-1 flex-col min-w-0 min-h-0">
@@ -110,6 +113,14 @@ export default function DashboardPage() {
 
       <aside className="w-full lg:w-[380px] xl:w-[420px] shrink-0 bg-white border-t lg:border-t-0 lg:border-l border-slate-200/70 flex flex-col min-h-0">
         <div className="flex-1 lg:overflow-y-auto p-4 sm:p-6 space-y-8 overscroll-contain">
+          <section aria-label="Building movement" className="rounded-xl border border-slate-200 p-3 space-y-2">
+            <h2 className="text-sm font-bold">Tilt and settlement</h2>
+            {movementError?<p role="alert" className="text-xs text-red-700">Movement readings unavailable. Check database setup.</p>:<>
+              <p className="text-sm font-semibold">{movement?.filter(row=>row.classification==='action_required').length??0} buildings requiring assessment</p>
+              {!movement?.length&&<p className="text-xs text-slate-600">No movement measurements recorded.</p>}
+              {movement?.map(row=><p key={row.building_id} className="text-xs text-slate-700">{row.building_name}: {row.classification.replaceAll('_',' ')} · tilt {row.tilt_mm_per_m??'not measured'} mm/m · settlement {row.differential_settlement_mm??'not measured'} mm</p>)}
+            </>}
+          </section>
           <RiskHotspots />
           <MaintenanceTable />
         </div>
@@ -118,6 +129,6 @@ export default function DashboardPage() {
           <ConnectionStatus isLoading={statsLoading} isError={statsError} />
         </div>
       </aside>
-    </div>
+    </div></div>
   )
 }

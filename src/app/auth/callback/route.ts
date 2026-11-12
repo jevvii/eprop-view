@@ -18,8 +18,9 @@ export async function GET(request: Request) {
     }
   }
 
-  if (next && next.startsWith('/')) {
-    return NextResponse.redirect(new URL(next, url.origin))
+  if (next?.startsWith('/') && !next.startsWith('//') && !/[\\\u0000-\u001f]/.test(next)) {
+    const destination = new URL(next, url.origin)
+    if (destination.origin === url.origin) return NextResponse.redirect(destination)
   }
 
   return NextResponse.redirect(new URL('/dashboard', url.origin))

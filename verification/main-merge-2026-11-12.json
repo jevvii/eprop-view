@@ -1,0 +1,72 @@
+{
+  "date": "2026-11-12T08:20:26.376Z",
+  "operation": "Validated local merge of staging and fetched origin/main",
+  "originMain": "c0ff9a2159efd435edd543f8b6a30bb6de0789ca",
+  "stagingSource": "894da6d132dd27793533d1c3df64529ba9f0aa59",
+  "conflictResolution": {
+    "file": "README.md",
+    "preserved": [
+      "current capstone feature and limitation documentation",
+      "main camera-permission recovery guidance",
+      "existing ownership/license notice"
+    ]
+  },
+  "validation": {
+    "testsPassed": 206,
+    "testsFailed": 0,
+    "typecheck": "passed",
+    "lint": {
+      "errors": 0,
+      "warnings": 55
+    },
+    "productionBuild": "passed",
+    "referenceAR": "390/1280px and denied/prompt/restored real-camera permission fixtures passed",
+    "markerlessAR": "390/1280px and denied/prompt/restored real-camera permission fixtures passed",
+    "preview": {
+      "url": "https://eprop-view-gdippwqde-jevviis-projects.vercel.app",
+      "checks": [
+        {
+          "test": "preview login and server rate budget",
+          "path": "/dashboard"
+        },
+        {
+          "test": "preview schema and service health",
+          "preview": true,
+          "missingSchema": false,
+          "failedCounts": false
+        },
+        {
+          "test": "server workspace filters",
+          "risk": "critical",
+          "error": 0
+        },
+        {
+          "test": "responsive preview",
+          "width": 390,
+          "scrollWidth": 390
+        },
+        {
+          "test": "responsive preview",
+          "width": 320,
+          "scrollWidth": 320
+        },
+        {
+          "test": "preview modal Escape",
+          "open": 0
+        }
+      ],
+      "errors": []
+    }
+  },
+  "safety": {
+    "backupRefs": [
+      "backup/main-before-capstone-20261112-080525",
+      "backup/staging-before-capstone-20261112-080525"
+    ],
+    "existingMainFileCollisions": [],
+    "configuredSecretsInAddedLines": false,
+    "forcedOperations": false,
+    "remotePush": false,
+    "productionDeployment": false
+  }
+}

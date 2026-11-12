@@ -8,6 +8,17 @@ function copyCookies(from: NextResponse, to: NextResponse) {
 }
 
 /**
+ * Segment-aware path match.
+ *
+ * `path.startsWith('/ar')` also matches `/archive` and `/area`, which silently
+ * applied the AR role guard to unrelated routes. A prefix only counts when it is
+ * the whole segment.
+ */
+function isPath(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`)
+}
+
+/**
  * Next.js 16 proxy convention (replaces middleware.ts).
  * Routing guard only — authorization is enforced again in the DAL and in RLS.
  */
@@ -16,18 +27,19 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   const isProtectedRoute =
-    path.startsWith('/dashboard') ||
-    path.startsWith('/projects') ||
-    path.startsWith('/environmental') ||
-    path.startsWith('/reports') ||
-    path.startsWith('/document') ||
-    path.startsWith('/ar') ||
-    path.startsWith('/settings')
+    isPath(path, '/dashboard') ||
+    isPath(path, '/projects') ||
+    isPath(path, '/environmental') ||
+    isPath(path, '/reports') ||
+    isPath(path, '/document') ||
+    isPath(path, '/ar') ||
+    isPath(path, '/profile') ||
+    isPath(path, '/settings')
   const isAuthRoute = path === '/' || path === '/login' || path === '/signup'
 
   // Role comes from profiles only. Never from user_metadata.
   const role = user ? (profileRole ?? 'viewer') : 'viewer'
-  const homeRoute = role === 'inspector' ? '/document' : '/dashboard'
+  const homeRoute = role === 'inspector' ? '/document' : role === 'viewer' ? '/reports' : '/dashboard'
 
   if (isProtectedRoute && !user) {
     const redirectResponse = NextResponse.redirect(new URL('/', request.url))
@@ -41,20 +53,34 @@ export async function proxy(request: NextRequest) {
     return redirectResponse
   }
 
-  if (path.startsWith('/settings') && user && role !== 'admin') {
+  if (isPath(path, '/settings') && user && role !== 'admin') {
     const redirectResponse = NextResponse.redirect(new URL(homeRoute, request.url))
     copyCookies(supabaseResponse, redirectResponse)
     return redirectResponse
   }
 
-  if (path.startsWith('/ar') && user && role !== 'inspector' && role !== 'admin') {
+  if (isPath(path, '/ar') && user && role !== 'inspector' && role !== 'admin') {
     const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
     copyCookies(supabaseResponse, redirectResponse)
     return redirectResponse
   }
 
+  // Viewers are read-only consumers of published reports. The operational
+  // workspaces — asset vault, project registry — were previously reachable by
+  // direct URL because only the sidebar hid them. RLS still protects the data,
+  // but the surfaces themselves are not part of the viewer role.
   if (
-    (path.startsWith('/dashboard') || path.startsWith('/environmental') || path.startsWith('/reports')) &&
+    user &&
+    role === 'viewer' &&
+    (isPath(path, '/document') || isPath(path, '/projects'))
+  ) {
+    const redirectResponse = NextResponse.redirect(new URL('/reports', request.url))
+    copyCookies(supabaseResponse, redirectResponse)
+    return redirectResponse
+  }
+
+  if (
+    (isPath(path, '/dashboard') || isPath(path, '/environmental') || isPath(path, '/reports')) &&
     user &&
     role === 'inspector'
   ) {

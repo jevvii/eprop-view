@@ -1,6 +1,7 @@
 'use server'
 
 import sharp from 'sharp'
+import { resolveEvidenceLocation } from '@/app/lib/storage-location'
 import type { Metadata as SharpMetadata } from 'sharp'
 import { z } from 'zod'
 import { createClient } from '@/app/lib/supabase/server'
@@ -201,7 +202,7 @@ export async function deleteInspectionImage(imageId: string): Promise<void> {
 
   const { data: image, error: imgError } = await supabase
     .from('inspection_images')
-    .select('uploader_id, storage_path')
+    .select('uploader_id, storage_path, storage_bucket')
     .eq('id', parsedId.data)
     .maybeSingle()
 
@@ -217,7 +218,8 @@ export async function deleteInspectionImage(imageId: string): Promise<void> {
   if (delError) throw delError
 
   if (image.storage_path) {
-    const { error: storageError } = await supabase.storage.from(BUCKET).remove([image.storage_path])
+    const location = resolveEvidenceLocation(image)
+    const { error: storageError } = await supabase.storage.from(location.bucket).remove([location.path])
     if (storageError) {
       console.error('Orphaned storage object after row delete:', image.storage_path, storageError.message)
     }

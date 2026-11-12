@@ -1,11 +1,11 @@
 import 'server-only'
-import { createClient } from './supabase/server'
+import { createServiceClient } from './supabase/service'
 
 /**
  * Shared-store rate limiter backed by the `consume_rate_limit` RPC.
  *
- * RLS is enabled on rate_limits with no policies, so only the SECURITY DEFINER
- * function can touch it. Keys are scoped by caller in the action.
+ * Only the server's service role may choose keys and budgets. Anonymous login
+ * attempts must use this same shared store before an authenticated session exists.
  */
 export async function enforceRateLimit(
   key: string,
@@ -13,7 +13,10 @@ export async function enforceRateLimit(
   windowSeconds: number,
   options: { failClosed?: boolean } = {}
 ): Promise<void> {
-  const supabase = await createClient()
+  if (!key || key.length > 256 || !Number.isInteger(limit) || limit < 1 || !Number.isInteger(windowSeconds) || windowSeconds < 1) {
+    throw new Error('Invalid rate limit configuration')
+  }
+  const supabase = createServiceClient()
   const { data, error } = await supabase.rpc('consume_rate_limit', {
     p_key: key,
     p_limit: limit,
@@ -22,7 +25,7 @@ export async function enforceRateLimit(
 
   if (error) {
     console.error('Rate limiter unavailable:', error.message)
-    if (options.failClosed) throw new Error('RATE_LIMIT_UNAVAILABLE')
+    if (options.failClosed !== false) throw new Error('RATE_LIMIT_UNAVAILABLE')
     return
   }
 
