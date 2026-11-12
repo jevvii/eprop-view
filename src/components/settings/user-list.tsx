@@ -44,19 +44,19 @@ export function UserList() {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-8 rounded-lg shadow-lg h-80 animate-pulse border border-slate-200" />
+    return <div className="bg-white p-8 rounded-lg h-80 animate-pulse border border-slate-200" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-8 rounded-lg shadow-lg border border-red-100 text-red-600 font-bold text-center">
+      <div className="bg-white p-8 rounded-lg border border-red-100 text-red-600 font-bold text-center">
         Access Denied: Administrative Clearance Required
       </div>
     )
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 flex flex-col h-full">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 flex flex-col h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h3 className="text-xs font-bold text-slate-600 mb-1">User Management & Access Control</h3>
@@ -126,7 +126,7 @@ export function UserList() {
                 <td className="py-4">
                   <div className="flex items-center gap-2">
  <span className={`h-2 w-2 rounded-full ${
-                      user.is_active !== false ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]'
+ user.is_active !== false ? 'bg-emerald-500 ' : 'bg-rose-500 '
                     }`} />
  <span className={`text-xs font-bold ${
                       user.is_active !== false ? 'text-emerald-700' : 'text-rose-700'
@@ -143,7 +143,7 @@ export function UserList() {
                       user.is_active !== false 
                         ? 'text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300' 
                         : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300'
-                    } disabled:opacity-50 active:scale-95 shadow-sm`}
+ } disabled:opacity-50 active:scale-95 `}
                   >
                     {isToggling === user.id ? '...' : user.is_active !== false ? 'Deactivate' : 'Authorize'}
                   </button>

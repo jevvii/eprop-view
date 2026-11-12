@@ -47,7 +47,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
 
   if (modelsLoading || detectionsLoading || jobsLoading) {
     return (
-      <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 animate-pulse h-48">
+      <div className="bg-white p-8 rounded-lg border border-slate-200 animate-pulse h-48">
         <div className="h-4 bg-slate-100 rounded w-1/3 mb-4"></div>
         <div className="h-8 bg-slate-100 rounded w-1/2"></div>
       </div>
@@ -55,7 +55,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-5">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -123,7 +123,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
               <Button
                 onClick={handleRun}
                 disabled={!activeModel?.is_active || isRunning}
-                className="text-xs font-bold px-5 py-2.5 min-h-[44px] shadow-md shadow-primary/10"
+                className="text-xs font-bold px-5 py-2.5 min-h-[44px]"
               >
                 {isRunning ? 'Analyzing Image…' : detections && detections.length > 0 ? 'Re-Run Analysis' : 'Run AI Analysis'}
               </Button>

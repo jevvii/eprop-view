@@ -251,7 +251,7 @@ html.ar-immersive #ar-viewport {
     position: sticky;
     right: 0;
     background: #ffffff;
-    box-shadow: -8px 0 12px -12px rgba(15, 23, 42, 0.4);
+    border-left: 1px solid var(--border);
   }
 }
 

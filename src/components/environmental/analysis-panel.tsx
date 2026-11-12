@@ -67,12 +67,12 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-6 rounded-lg shadow-lg h-72 animate-pulse" />
+    return <div className="bg-white p-6 rounded-lg h-72 animate-pulse" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-lg text-red-600">
+      <div className="bg-white p-6 rounded-lg text-red-600">
         Failed to load environmental analysis
       </div>
     )
@@ -100,7 +100,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6 flex flex-col h-full min-w-0">
+    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-6 flex flex-col h-full min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <div className="flex items-center gap-3 flex-wrap">

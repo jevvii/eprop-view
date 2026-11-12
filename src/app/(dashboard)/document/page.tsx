@@ -51,7 +51,7 @@ export default function DocumentPage() {
   }, [inspectionId, inspections])
 
   if (isLoading) {
-    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-200 mx-2" />
+    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg h-80 animate-pulse border border-slate-200 mx-2" />
   }
 
   return (
@@ -65,12 +65,12 @@ export default function DocumentPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-lg border border-slate-200 shadow-xs w-full sm:w-auto">
-            <label className="text-xs font-bold text-slate-700 pl-2">Filter Entry</label>
+          <label className="flex w-full items-center gap-2 text-sm text-slate-600 sm:w-auto">
+            Inspection
             <select
               value={inspectionId}
               onChange={(event) => setInspectionId(event.target.value)}
-              className="rounded-xl border border-slate-200 px-3.5 py-2 text-base sm:text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px] flex-1 sm:flex-initial"
+              className="h-10 min-w-[200px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium sm:flex-initial"
             >
               <option value="">SELECT_INSPECTION</option>
               {visibleInspections.map((inspection) => (
@@ -79,12 +79,12 @@ export default function DocumentPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </label>
 
           {canUseAR && inspectionId && (
             <Link
               href={`/ar?inspectionId=${encodeURIComponent(inspectionId)}`}
-              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-colors min-h-[44px]"
+              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition-colors min-h-[44px]"
             >
               <ScanLine className="h-4 w-4" aria-hidden="true" />
               <span>Launch AR inspection</span>
@@ -110,7 +110,7 @@ export default function DocumentPage() {
             </div>
           )}
           {!canUpload && !canCreateInspection && (
-            <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-4">
+            <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-4">
               <div className="flex items-center gap-3">
                 <Microscope className="h-6 w-6 text-slate-500" aria-hidden="true" />
                 <div>

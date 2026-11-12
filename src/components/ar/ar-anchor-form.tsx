@@ -126,7 +126,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-4"
+      className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg border border-slate-200 space-y-4"
     >
       <div className="flex flex-col items-start border-b border-slate-200 pb-3 gap-3">
         <div className="flex items-center gap-2">
@@ -271,7 +271,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
               <img
                 src={snapshot}
                 alt="Captured visual evidence"
-                className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-500 shadow-md shrink-0"
+                className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-500 shrink-0"
               />
               <div className="text-xs text-slate-500 leading-tight">
                 <span className="font-bold text-emerald-600">Frame staged.</span> It will be re-encoded
@@ -290,7 +290,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
       <Button
         type="submit"
         disabled={createAnchor.isPending || !hitPose?.reference || isScanningAI}
-        className="w-full text-xs font-black tracking-[0.15em] py-3.5 h-auto shadow-lg shadow-primary/20 min-h-[44px] rounded-xl"
+        className="w-full text-xs font-black tracking-[0.15em] py-3.5 h-auto min-h-[44px] rounded-xl"
       >
         {createAnchor.isPending ? 'Saving marker…' : 'Save marker + evidence'}
       </Button>

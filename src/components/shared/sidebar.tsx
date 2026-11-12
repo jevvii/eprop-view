@@ -85,7 +85,7 @@ export function Sidebar() {
         pt-[max(1.5rem,env(safe-area-inset-top))]
         pb-[max(1.5rem,env(safe-area-inset-bottom))]
         lg:relative lg:translate-x-0
-        ${isOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full'}
+ ${isOpen ? 'translate-x-0 ' : '-translate-x-full'}
       `}
       aria-label="Main navigation"
       /* Off-screen drawer must not remain in the tab order. */
@@ -93,7 +93,7 @@ export function Sidebar() {
     >
       <div className="flex items-center justify-between mb-8 sm:mb-12 px-2">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 relative drop-shadow-sm">
+          <div className="w-10 h-10 relative drop-">
             <Image 
               src="/logo-blue.png" 
               alt="EPROP VIEW Logo" 
@@ -145,7 +145,7 @@ export function Sidebar() {
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full shadow-md shadow-red-200 tabular-nums">
+                <span className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full -200 tabular-nums">
                   {item.badge}
                 </span>
               )}
@@ -159,7 +159,7 @@ export function Sidebar() {
           type="button"
           disabled={isLoggingOut}
           onClick={handleLogout}
-          className="w-full min-h-[44px] py-3.5 bg-primary text-white font-bold text-xs tracking-[0.18em] rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+          className="w-full min-h-[44px] py-3.5 bg-primary text-white font-bold text-xs tracking-[0.18em] rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
         >
           {isLoggingOut ? 'Logging out...' : 'Logout'}
         </button>

@@ -96,7 +96,7 @@ export function BuildingsManager() {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h3 className="text-xs font-bold text-slate-600 mb-1">
@@ -195,7 +195,7 @@ export function BuildingsManager() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 shadow-lg space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h4 className="text-base font-bold text-slate-800">

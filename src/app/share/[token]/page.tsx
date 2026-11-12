@@ -71,7 +71,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
 
   return (
     <main className="min-h-screen bg-slate-50 py-10 px-4">
-      <article className="mx-auto max-w-3xl rounded-lg bg-white p-6 sm:p-10 shadow-sm border border-slate-200 space-y-8">
+      <article className="mx-auto max-w-3xl rounded-lg bg-white p-6 sm:p-10 border border-slate-200 space-y-8">
         <header className="border-b border-slate-200 pb-5">
           <p className="text-[11px] font-bold text-slate-500">Shared inspection report</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">{typedReport.title}</h1>
@@ -137,7 +137,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <div className="max-w-md rounded-lg bg-white p-8 shadow-sm border border-slate-200 text-center">
+      <div className="max-w-md rounded-lg bg-white p-8 border border-slate-200 text-center">
         <h1 className="text-lg font-bold text-slate-900">{title}</h1>
         <p className="text-sm text-slate-600 font-medium mt-2">{children}</p>
       </div>

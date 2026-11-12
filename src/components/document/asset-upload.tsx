@@ -84,7 +84,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-5">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-5">
       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
         <div>
           <h3 className="text-xs font-bold text-slate-700">Asset Injection</h3>
@@ -139,7 +139,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
           <Button 
             onClick={handleUpload} 
             disabled={uploading} 
-            className="w-full min-h-[44px] py-3 text-xs font-bold shadow-md shadow-primary/10"
+            className="w-full min-h-[44px] py-3 text-xs font-bold"
           >
             {uploading ? 'Injecting...' : 'Confirm Upload'}
           </Button>

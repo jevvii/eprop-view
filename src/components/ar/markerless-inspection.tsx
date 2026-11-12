@@ -185,7 +185,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
   if (!hasCapability(profile.role, 'ar:use')) return <p>Inspection capture is available to inspectors and admins.</p>
 
   return <section className="space-y-4">
-    {arStartError && <div role="alert" aria-atomic="true" className="fixed inset-x-4 top-4 z-[120] mx-auto flex max-w-md items-start gap-3 rounded-xl border border-red-200 bg-white p-4 text-sm text-red-800 shadow-lg">
+    {arStartError && <div role="alert" aria-atomic="true" className="fixed inset-x-4 top-4 z-[120] mx-auto flex max-w-md items-start gap-3 rounded-xl border border-red-200 bg-white p-4 text-sm text-red-800">
       <div className="min-w-0 flex-1">
         <p className="font-semibold">Markerless AR unavailable</p>
         <p className="mt-1">{arStartError.message}</p>

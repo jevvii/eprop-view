@@ -147,7 +147,7 @@ export function StructuralElementManager() {
   })
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h3 className="text-xs font-bold text-slate-600 mb-1">
@@ -243,7 +243,7 @@ export function StructuralElementManager() {
           <button
             onClick={() => setFilterType('all')}
  className={`text-xs font-bold px-3.5 py-1.5 min-h-[36px] rounded-xl transition-all ${
-              filterType === 'all' ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+ filterType === 'all' ? 'bg-primary text-white ' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
             All (<span className="tabular-nums">{elements.length}</span>)
@@ -256,7 +256,7 @@ export function StructuralElementManager() {
                 key={t.value}
                 onClick={() => setFilterType(t.value)}
  className={`text-xs font-bold px-3.5 py-1.5 min-h-[36px] rounded-xl transition-all ${
-                  filterType === t.value ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+ filterType === t.value ? 'bg-primary text-white ' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {t.label} (<span className="tabular-nums">{count}</span>)
@@ -335,7 +335,7 @@ export function StructuralElementManager() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-sm rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 shadow-lg space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-sm rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h4 className="text-base font-bold text-slate-800">
@@ -424,7 +424,7 @@ export function StructuralElementManager() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleCsvImport}
-            className="w-full max-w-lg rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 shadow-lg space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-lg rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>

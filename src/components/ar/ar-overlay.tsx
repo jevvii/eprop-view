@@ -15,7 +15,7 @@ export function AROverlay({ anchors, frame, viewport }: AROverlayProps) {
       return <div key={anchor.id} data-marker-id={anchor.id}
         className="absolute flex flex-col items-center -translate-x-1/2 -translate-y-full"
         style={{ left: point.x, top: point.y }}>
-        <div className="max-w-[180px] rounded-xl border border-white/20 bg-slate-900/95 p-2 text-white shadow-lg">
+        <div className="max-w-[180px] rounded-xl border border-white/20 bg-slate-900/95 p-2 text-white">
           <p className="truncate text-xs font-semibold">{anchor.label}</p>
           {anchor.severity && <SeverityBadge severity={anchor.severity} />}
           {anchor.image_url && <img src={anchor.image_url} alt={`Evidence for ${anchor.label}`} className="mt-1 h-10 w-14 rounded object-cover" />}
