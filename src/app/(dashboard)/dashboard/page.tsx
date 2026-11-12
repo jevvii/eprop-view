@@ -1,7 +1,5 @@
 'use client'
 
-import { WorkspaceFilterBar } from '@/components/shared/report-filters'
-
 import { useDashboardStats, useProfile, useSettlementOverview } from '@/app/lib/queries'
 import { hasCapability } from '@/app/lib/role-utils'
 import { AccessDenied } from '@/components/shared/require-role'
@@ -70,7 +68,7 @@ export default function DashboardPage() {
   ) => (statsLoading ? '—' : (stats?.[key] ?? 0))
 
   return (
-    <div className="flex flex-col min-h-0 lg:h-full"><WorkspaceFilterBar /><div className="flex flex-1 flex-col lg:flex-row w-full min-w-0 min-h-0 bg-background">
+    <div className="flex flex-col min-h-0 lg:h-full"><div className="flex flex-1 flex-col lg:flex-row w-full min-w-0 min-h-0 bg-background">
       {/* One map instance for both layouts. Previously the mobile and desktop
           branches mounted two Mapbox WebGL contexts per page load. */}
       <section className="relative flex flex-1 flex-col min-w-0 min-h-0">
