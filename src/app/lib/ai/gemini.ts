@@ -15,7 +15,7 @@ import 'server-only'
  *  - no live AR frame path may call this module
  */
 
-export const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'] as const
+export const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'] as const
 export type GeminiModel = (typeof GEMINI_MODELS)[number]
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
@@ -201,6 +201,16 @@ export async function generateStructured<T>(
       }
       throw error
     }
+  }
+
+  // A 5xx across the whole chain is a provider spike, not a configuration fault.
+  // Say so, or an admin reads "unavailable" as a missing key.
+  if (lastError && typeof lastError.status === 'number' && lastError.status >= 500) {
+    throw new GeminiUnavailableError(
+      `Gemini is temporarily overloaded (HTTP ${lastError.status}). This is a provider-side condition, not a key or quota problem; retry in a minute.`,
+      'transport',
+      lastError.status
+    )
   }
 
   throw lastError ?? new GeminiUnavailableError('No Gemini model is available.', 'transport')

@@ -77,3 +77,32 @@ test('Gemini 3 requests omit deprecated temperature controls', async () => {
   })
   await api.generateStructured({ prompt: 'Test', schema: {}, temperature: 0.4, parse: raw => raw })
 })
+
+test('an overloaded primary and secondary still reach the third model', async () => {
+  let calls = 0
+  const api = client('unit-test-key', async () => {
+    calls++
+    if (calls <= 2) {
+      return Response.json({ error: { message: 'This model is currently experiencing high demand.' } }, { status: 503 })
+    }
+    return Response.json({ candidates: [{ content: { parts: [{ text: '{"answer":"third model answered"}' }] } }] })
+  })
+  const result = await api.generateStructured({
+    prompt: 'Test',
+    schema: {},
+    parse: raw => raw as { answer: string },
+  })
+  assert.equal(calls, 3)
+  assert.equal(result.model, 'gemini-3.1-flash-lite')
+  assert.equal(result.value.answer, 'third model answered')
+})
+
+test('a 5xx across the whole chain reads as provider overload, not missing configuration', async () => {
+  const api = client('unit-test-key', async () =>
+    Response.json({ error: { message: 'high demand' } }, { status: 503 })
+  )
+  await assert.rejects(
+    api.generateStructured({ prompt: 'Test', schema: {}, parse: raw => raw }),
+    /temporarily overloaded/
+  )
+})

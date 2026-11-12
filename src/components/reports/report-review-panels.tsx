@@ -273,7 +273,19 @@ export function RecommendationPanel({ report }: { report: Report }) {
 
   const handleDraft = async () => {
     const draft = await run('Draft generated.', () =>
-      getRecommendationDraftContext(report.id).then((context) => draftRecommendation(context))
+      getRecommendationDraftContext(report.id).then((context) => {
+        if (!context.available) {
+          // Thrown on the client so the sentence survives production error
+          // sanitisation, unlike a server-side throw.
+          throw new Error(context.reason)
+        }
+        return draftRecommendation({
+          damageType: context.damageType,
+          severity: context.severity,
+          elementType: context.elementType,
+          context: context.context,
+        })
+      })
     )
     if (draft) {
       setProvenance(draft.provenance)

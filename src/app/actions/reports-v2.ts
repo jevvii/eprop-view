@@ -497,25 +497,47 @@ export async function getReportPublication(reportId: string): Promise<{
 }
 
 /** Load reviewed findings on the server so drafting never invents a default defect or severity. */
-export async function getRecommendationDraftContext(reportId: string): Promise<{
-  damageType: import('@/app/types').DamageType
-  severity: import('@/app/types').SeverityLevel
-  elementType: import('@/app/types').StructuralElement
-  context: string
-}> {
+/**
+ * A refusal is returned, never thrown: production strips messages from thrown
+ * server-action errors, so an expected "verify a detection first" guard would
+ * reach the browser as an opaque React error instead of a sentence.
+ */
+export type RecommendationDraftContext =
+  | {
+      available: true
+      damageType: import('@/app/types').DamageType
+      severity: import('@/app/types').SeverityLevel
+      elementType: import('@/app/types').StructuralElement
+      context: string
+    }
+  | { available: false; reason: string }
+
+export async function getRecommendationDraftContext(
+  reportId: string
+): Promise<RecommendationDraftContext> {
   await requireRole(['engineer', 'admin'])
   const supabase = await createClient()
   const { data: report, error } = await supabase.from('reports')
     .select('id, inspection_id, key_findings').eq('id', uuid.parse(reportId)).single()
-  if (error || !report?.inspection_id) throw new Error('Link this report to an inspection before drafting from its evidence.')
+  if (error || !report?.inspection_id) {
+    return { available: false, reason: 'Link this report to an inspection before drafting from its evidence.' }
+  }
   const { getDetectionsForInspection } = await import('./ai')
   const [allDetections, costs, inspectionResult] = await Promise.all([
     getDetectionsForInspection(report.inspection_id), getCostEstimates({ reportId }),
     supabase.from('inspections').select('structural_element, notes, location').eq('id', report.inspection_id).single(),
   ])
-  if (inspectionResult.error) throw inspectionResult.error
+  if (inspectionResult.error) {
+    return { available: false, reason: 'The linked inspection could not be read.' }
+  }
   const reviewed = allDetections.filter((item) => item.verified_by && item.provenance !== 'legacy_synthetic')
-  if (reviewed.length === 0) throw new Error('Review and verify at least one detection before drafting a recommendation from evidence. You can still write a recommendation manually.')
+  if (reviewed.length === 0) {
+    return {
+      available: false,
+      reason:
+        'This inspection has no verified detections yet. Run the AI analysis on an image and verify a detection before drafting from evidence — or write the recommendation manually.',
+    }
+  }
   const dominant = [...reviewed].sort((a, b) => b.severity_score - a.severity_score)[0]
   const allowedElements = ['beam','column','slab','wall','foundation','facade','roof','general','other']
   const element = inspectionResult.data?.structural_element
@@ -525,7 +547,7 @@ export async function getRecommendationDraftContext(reportId: string): Promise<{
     `Verified findings: ${JSON.stringify(reviewed.map((item) => ({ type: item.damage_type, severity: item.severity, score: item.severity_score, notes: item.notes, provenance: item.provenance })))}`,
     `Planning costs (PHP): ${JSON.stringify(costs.map((item) => ({ table: item.table_estimate_php, low: item.ai_low_php, likely: item.ai_likely_php, high: item.ai_high_php, confirmed: Boolean(item.confirmed_at), divergent: item.divergence_flag })))}`,
   ].join('\n').slice(0, 2000)
-  return { damageType: dominant.damage_type, severity: dominant.severity, elementType: (allowedElements.includes(element) ? element : 'general') as import('@/app/types').StructuralElement, context }
+  return { available: true, damageType: dominant.damage_type, severity: dominant.severity, elementType: (allowedElements.includes(element) ? element : 'general') as import('@/app/types').StructuralElement, context }
 }
 
 
