@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   ScanLine,
   Settings,
+  UserCircle,
 } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import { createClient } from '@/app/lib/supabase/client'
@@ -69,6 +70,7 @@ export function Sidebar() {
       roles: ['admin', 'engineer', 'inspector'],
     },
     { href: '/ar', label: 'AR Inspection', Icon: ScanLine, roles: ['inspector', 'admin'] },
+    { href: '/profile', label: 'My Profile', Icon: UserCircle, roles: ['admin', 'engineer', 'inspector', 'viewer'] },
     { href: '/settings', label: 'Settings', Icon: Settings, roles: ['admin'] },
   ]
 

@@ -1,0 +1,17 @@
+node_modules/
+.git/
+.next/
+.vercel/
+.env*
+docs/
+backend/
+EPROPVIEW_v1/
+native/
+coverage/
+out/
+build/
+*.zip
+*.rar
+*.pem
+*.log
+*.tsbuildinfo

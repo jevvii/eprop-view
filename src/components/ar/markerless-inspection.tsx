@@ -1,5 +1,7 @@
 'use client'
 
+import { DeepAnalysisButton } from '@/components/ai/deep-analysis-button'
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ARPose } from '@/app/types'
 import { useProfile, useInspections, useARAnchors } from '@/app/lib/queries'
@@ -254,6 +256,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
         <div className="min-w-0">
           <p className="font-semibold">{marker.label}</p>
           <p className="text-xs text-slate-600">{marker.pose.sessionTracking?.kind === 'webxr-session-v1' ? 'WebXR session-only record · not a restored checkpoint' : marker.pose.sessionTracking?.kind === 'camera-frame-v1' ? 'Photo annotation · no spatial tracking' : marker.pose.reference ? 'Printed-reference record' : 'Legacy record'}</p>
+          {marker.snapshot_path && <DeepAnalysisButton anchorId={marker.id} />}
           {marker.notes && <p className="text-sm text-slate-600">{marker.notes}</p>}
           {marker.image_url && <img src={marker.image_url} alt={`Evidence for ${marker.label}`} className="mt-2 h-24 w-36 rounded-lg object-cover" />}
         </div>

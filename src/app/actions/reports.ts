@@ -3,6 +3,7 @@
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
 import { reportFormSchema } from '@/app/lib/validators'
+import { updateReportWithRevision } from './reports-v2'
 import type { Report } from '@/app/types'
 
 /**
@@ -17,7 +18,12 @@ export async function createReportAction(input: unknown): Promise<Report> {
     throw new Error(parsed.error.issues[0]?.message ?? 'Invalid report parameters')
   }
 
+  if (parsed.data.status === 'completed') {
+    throw new Error('Create a draft first. Complete it after recommendations and limitations are reviewed.')
+  }
+
   const supabase = await createClient()
+
 
   const payload = {
     ...parsed.data,
@@ -52,42 +58,12 @@ export async function updateReportAction(
   updates: Partial<Pick<Report, 'status' | 'risk_score' | 'key_findings'>>,
   previousStatus?: Report['status']
 ): Promise<Partial<Report>> {
-  const { userId } = await requireRole(['engineer', 'admin'])
-  const supabase = await createClient()
-
-  const now = new Date().toISOString()
-  const payload: Record<string, unknown> = {
-    ...updates,
-    last_edited_by: userId,
-    last_edited_at: now,
-  }
-
-  if (updates.status === 'completed' && previousStatus !== 'completed') {
-    payload.reviewed_by = userId
-    payload.reviewed_at = now
-  }
-
-  const { data, error } = await supabase
-    .from('reports')
-    .update(payload)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) {
-    // If audit columns are missing in some environment, fallback to updates without audit fields
-    if (error.code === '42703') {
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('reports')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-      if (fallbackError) throw fallbackError
-      return fallbackData
-    }
-    throw error
-  }
-
-  return data
+  void previousStatus // The database, never a client-supplied status, determines the transition.
+  const result = await updateReportWithRevision({
+    reportId: id,
+    status: updates.status,
+    riskScore: updates.risk_score,
+    keyFindings: updates.key_findings ?? undefined,
+  })
+  return result.report as Partial<Report>
 }

@@ -1,0 +1,54 @@
+{
+  "testedAt": "2026-11-12T07:16:32.790Z",
+  "method": "Actual Gemini action and client code with real Google HTTP responses. Operator admin context and PostgreSQL rate budgets; no web session or evidence mutation.",
+  "initialPrimaryAvailability": "Gemini 3.8 returned HTTP 503 or timed out. Secondary model fallback was expanded to bounded transient failures and tested.",
+  "results": [
+    {
+      "scenario": "vision negative control",
+      "status": "passed",
+      "model": "gemini-3.5-flash-lite",
+      "detail": "No visible defects such as cracks, corrosion, spalling, deformation, or leakage were detected in the image."
+    },
+    {
+      "scenario": "repair cost",
+      "status": "passed",
+      "model": "gemini-3.5-flash-lite",
+      "detail": "PHP 15000–120000, likely 35000. Assumes a single column with high-severity spalling. The low range covers minor patching, the likely range covers chipping, rebar treatment, and polymer-modified mortar repair over an estimated 0.5 sqm area, and the high range accounts for potential structural jacking and partial column replacement due to unseen core damage."
+    },
+    {
+      "scenario": "recommendation",
+      "status": "passed",
+      "model": "gemini-3.5-flash-lite",
+      "detail": "Assess the column and verify conditions to determine the appropriate repair strategy for the exposed reinforcement. High severity spalling with exposed reinforcement on a column requires professional engineering evaluation and site measurements before repair specifications can be finalized."
+    },
+    {
+      "scenario": "narrative",
+      "status": "passed",
+      "model": "gemini-3.5-flash-lite",
+      "detail": "A structural inspection was conducted for the synthetic column. The overall computed risk score for the inspected element is 7.2 out of 10, categorizing the risk level as high. During the site assessment, concrete spalling was observed on one column, which has been identified as a synthetic fixture only. No measured data regarding structural strength, crack width, tilt, or settlement was supplied for this evaluation.",
+      "retryNote": "The first batch exhausted availability on both models. A separate action retry succeeded."
+    }
+  ],
+  "interpretation": "Synthetic integration checks only. No physical measurements or engineering accuracy were established. Costs include hypothetical assumptions and require engineer review.",
+  "authenticatedWebVerification": {
+    "preview": "https://eprop-view-5w3rmqz2f-jevviis-projects.vercel.app",
+    "vision": {
+      "provenance": "gemini",
+      "summary": "Gemini (gemini-3.5-flash-lite): Visual inspection reveals a distinct crack pattern running vertically with a branch segment. Further on-site measurement and crack mapping are recommended to determine the underlying cause.",
+      "physicalCrackWidthStored": false
+    },
+    "narrative": {
+      "provenance": "gemini",
+      "requiredAvailabilityRetry": true
+    },
+    "repairCost": {
+      "provenance": "gemini",
+      "divergenceFlag": false
+    },
+    "recommendation": {
+      "provenance": "gemini",
+      "status": "signed"
+    },
+    "notes": "Actual image upload, analysis, reviewed finding, saved narrative/cost and recommendation signature were exercised through the authenticated web UI. Temporary records and binary were subsequently removed."
+  }
+}

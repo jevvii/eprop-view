@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import type { Report } from '@/app/types'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { RiskScore } from '@/components/shared/risk-score'
@@ -235,6 +236,12 @@ export function ReportsTable({
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <Link
+                  href={`/reports/${selectedReport.id}`}
+                  className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-3.5 h-9 text-xs font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Review
+                </Link>
                 <Button
                   variant="outline"
                   disabled={!selectedReport}

@@ -1,4 +1,6 @@
 'use client'
+
+import { DeepAnalysisButton } from '@/components/ai/deep-analysis-button'
 import { MapPin, Trash2 } from 'lucide-react'
 
 import { useSearchParams } from 'next/navigation'
@@ -477,6 +479,8 @@ function ARPageContent() {
                           </div>
                         </div>
                       </div>
+
+                      {anchor.snapshot_path && <DeepAnalysisButton anchorId={anchor.id} />}
 
                       {/* Delete Anchor Action */}
                       <button

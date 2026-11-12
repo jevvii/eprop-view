@@ -208,7 +208,8 @@ export function DetectionList({ detections }: DetectionListProps) {
                 )}
               </div>
               <div className="text-xs text-slate-500 font-medium uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                <span className="tabular-nums">Confidence {(detection.confidence * 100).toFixed(1)}%</span>
+                <span>Method: {detection.provenance ?? 'unrecorded'}</span>
+                <span className="tabular-nums" title="This value is not a calibrated measure of accuracy.">{detection.provenance === 'gemini' ? 'Model confidence' : 'Response strength'} {(detection.confidence * 100).toFixed(1)}% (uncalibrated)</span>
                 <span>·</span>
                 <span className="tabular-nums">Score {detection.severity_score}/100</span>
                 {detection.notes && (

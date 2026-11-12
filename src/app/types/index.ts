@@ -17,7 +17,7 @@ export type ReportStatus = 'open' | 'in_review' | 'critical' | 'completed'
 export type RiskLevel = 'low' | 'moderate' | 'high' | 'critical'
 export type Severity = 'critical' | 'moderate' | 'low'
 export type MaintenanceStatus = 'pending' | 'in_progress' | 'completed' | 'deferred'
-export type ZoneType = 'fault_line' | 'liquefaction' | 'erosion' | 'flood' | 'general'
+export type ZoneType = 'fault_line' | 'liquefaction' | 'erosion' | 'flood' | 'landslide' | 'general'
 export type ZoneRiskLevel = 'zone_a' | 'zone_b' | 'zone_c'
 
 export interface Profile {
@@ -44,6 +44,9 @@ export interface Project {
   updated_at: string
   inspection_count?: number
   report_count?: number
+  // Capstone v2 (migration 017)
+  archived_at?: string | null
+  archived_by?: string | null
 }
 
 export interface Inspection {
@@ -67,9 +70,16 @@ export interface Inspection {
   notes: string
   created_at: string
   updated_at: string
+  // Capstone v2 (migration 017)
+  erosion_condition?: ErosionCondition | null
+  erosion_type?: ErosionType | null
+  erosion_notes?: string | null
+  reopened_at?: string | null
+  reopened_by?: string | null
 }
 
 export interface Report {
+  content_updated_at?: string
   id: string
   report_id: string
   title: string
@@ -177,6 +187,7 @@ export interface InspectionImage {
   id: string
   inspection_id: string
   storage_path: string
+  storage_bucket?: string
   caption: string
   uploader_id: string | null
   uploader_name?: string
@@ -202,7 +213,7 @@ export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical'
 export type AIModelTask = 'classification' | 'detection' | 'segmentation'
 export type AIModelFormat = 'tfjs' | 'onnx' | 'heuristic' | 'mock'
 export type AIJobStatus = 'pending' | 'running' | 'completed' | 'failed'
-export type DetectionProvenance = 'model' | 'heuristic' | 'synthetic' | 'legacy_synthetic'
+export type DetectionProvenance = 'model' | 'heuristic' | 'synthetic' | 'legacy_synthetic' | 'gemini'
 
 export interface BoundingBox {
   x: number
@@ -245,6 +256,13 @@ export interface AIDamageDetection {
   verified_at: string | null
   notes: string
   created_at: string
+  // Capstone v2 (migration 017) — ACI 224R-01 / ACI 201.1R
+  crack_width_mm?: number | null
+  crack_width_band?: CrackWidthBand | null
+  crack_orientation?: CrackOrientation | null
+  crack_pattern?: CrackPattern | null
+  crack_cause?: CrackCause | null
+  aci_reference?: string | null
 }
 
 export interface AIAnalysisJob {
@@ -317,6 +335,7 @@ export interface ARAnchor {
   world_position: Vector3 | null
   notes: string
   snapshot_path: string | null
+  snapshot_bucket?: string
   /** Short-lived signed URL generated at read time; never persisted. */
   image_url?: string
   created_at: string
@@ -387,5 +406,250 @@ export interface StorageSummary {
   }[]
   classStats: Record<StorageClass, { sizeBytes: number; objectCount: number }>
   orphanedCount: number
+}
+
+// =================================================================
+// Capstone v2 — panelist additions (migration 017)
+// =================================================================
+
+// A2. Crack taxonomy — ACI 224R-01 width bands, ACI 201.1R cause
+export type CrackWidthBand = 'hairline' | 'fine' | 'medium' | 'wide' | 'severe'
+export type CrackOrientation = 'vertical' | 'horizontal' | 'diagonal' | 'stepped' | 'map_cracking' | 'none'
+export type CrackPattern = 'single' | 'multiple' | 'parallel' | 'random' | 'none'
+export type CrackCause = 'settlement' | 'shrinkage' | 'thermal' | 'overload' | 'corrosion_induced' | 'unknown' | 'none'
+export type ConcreteExposure = 'dry_air' | 'humid' | 'deicing_chemicals' | 'seawater' | 'water_retaining'
+
+// A1. Tilt / sinking
+export type SettlementClassification = 'none' | 'monitor' | 'action_required'
+export type SettlementMethod = 'manual' | 'level' | 'plumb' | 'instrument'
+
+export interface SettlementObservation {
+  id: string
+  building_id: string
+  inspection_id: string | null
+  observed_at: string
+  tilt_mm_per_m: number | null
+  differential_settlement_mm: number | null
+  classification: SettlementClassification
+  measurement_method: SettlementMethod
+  notes: string
+  recorded_by: string | null
+  created_at: string
+}
+
+// B1. Rebound hammer
+export type ReboundImpactDirection = 'horizontal' | 'upward' | 'downward' | 'any'
+
+export interface ReboundTest {
+  id: string
+  inspection_id: string
+  structural_element_id: string | null
+  test_date: string
+  impact_direction: ReboundImpactDirection
+  instrument_serial: string | null
+  readings_count: number
+  outlier_count: number
+  mean_rebound: number | null
+  corrected_rebound: number | null
+  estimated_strength_mpa: number | null
+  correlation_reference: string | null
+  performed_by: string | null
+  notes: string
+  created_at: string
+  readings?: ReboundReading[]
+}
+
+export interface ReboundReading {
+  id: string
+  test_id: string
+  reading_index: number
+  rebound_value: number
+  is_outlier: boolean
+  created_at: string
+}
+
+// B2. Soil investigation
+export type LiquefactionSusceptibility = 'none' | 'low' | 'moderate' | 'high' | 'unknown'
+export type SoilSource = 'field' | 'laboratory' | 'third_party' | 'desk_study'
+
+export interface SoilInvestigation {
+  id: string
+  project_id: string | null
+  building_id: string | null
+  borehole_id: string
+  depth_m: number | null
+  soil_classification: string | null
+  spt_n_value: number | null
+  groundwater_depth_m: number | null
+  liquefaction_susceptibility: LiquefactionSusceptibility
+  investigation_date: string
+  source: SoilSource
+  notes: string
+  recorded_by: string | null
+  created_at: string
+}
+
+// B3. Erosion
+export type ErosionCondition = 'none' | 'minor' | 'moderate' | 'severe'
+export type ErosionType = 'surface' | 'gully' | 'coastal' | 'riverbank' | 'internal' | 'other'
+
+// B4. Forensic engineering
+export type ForensicHypothesis =
+  | 'material'
+  | 'design'
+  | 'construction'
+  | 'overload'
+  | 'settlement'
+  | 'deterioration'
+  | 'other'
+  | 'unknown'
+
+export interface ForensicAssessment {
+  id: string
+  inspection_id: string
+  report_id: string | null
+  failure_hypothesis: ForensicHypothesis
+  mechanism_narrative: string | null
+  conclusion: string | null
+  recommended_next_step: string | null
+  author_id: string | null
+  created_at: string
+  updated_at: string
+  evidence?: ForensicEvidence[]
+}
+
+export interface ForensicEvidence {
+  id: string
+  assessment_id: string
+  image_id: string | null
+  detection_id: string | null
+  note: string | null
+  created_at: string
+}
+
+// A8. Checklists
+export interface ChecklistTemplateItem {
+  key: string
+  label: string
+  auto?: 'flood_zone_membership' | 'fault_line_proximity' | 'liquefaction_zone_membership'
+    | 'erosion_zone_membership' | 'landslide_zone_membership'
+}
+
+export interface ChecklistTemplate {
+  id: string
+  code: string
+  version: number
+  title: string
+  items: ChecklistTemplateItem[]
+  is_active: boolean
+  created_at: string
+}
+
+export type ChecklistAnswer = 'yes' | 'no' | 'na'
+
+export interface ChecklistResponseItem {
+  key: string
+  answer: ChecklistAnswer | null
+  note?: string
+  prefilled?: boolean
+}
+
+export interface ChecklistResponse {
+  id: string
+  inspection_id: string
+  template_code: string
+  template_version: number
+  responses: ChecklistResponseItem[]
+  prefilled_from: string
+  completed_by: string | null
+  completed_at: string | null
+  created_at: string
+}
+
+// A4. Report revisions
+export interface ReportRevision {
+  id: string
+  report_id: string
+  revision_number: number
+  snapshot: Record<string, unknown>
+  changed_by: string | null
+  changed_at: string
+}
+
+// A7. Assessment limitations
+export interface ReportLimitation {
+  id: string
+  report_id: string
+  standard_exclusions: string[]
+  free_text: string | null
+  element_notes: Record<string, string>
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+// A6. Cost estimates
+export type CostProvenance = 'table' | 'gemini' | 'engineer'
+
+export interface CostEstimate {
+  id: string
+  inspection_id: string | null
+  detection_id: string | null
+  report_id: string | null
+  ai_low_php: number | null
+  ai_likely_php: number | null
+  ai_high_php: number | null
+  ai_basis: string | null
+  ai_confidence: number | null
+  table_estimate_php: number | null
+  divergence_flag: boolean
+  provenance: CostProvenance
+  override_php: number | null
+  override_reason: string | null
+  confirmed_by: string | null
+  confirmed_at: string | null
+  created_at: string
+}
+
+// A5. Recommendations
+export type RecommendationStatus = 'draft' | 'signed' | 'superseded'
+
+export interface Recommendation {
+  id: string
+  inspection_id: string | null
+  report_id: string | null
+  detection_id: string | null
+  draft_text: string | null
+  final_text: string | null
+  status: RecommendationStatus
+  provenance: Exclude<DetectionProvenance, 'model' | 'synthetic' | 'legacy_synthetic'>
+  signed_by: string | null
+  signed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Admin: audit trail and sharing
+export interface AuditEvent {
+  id: number
+  actor_id: string | null
+  actor_role: string | null
+  action: string
+  entity_type: string
+  entity_id: string | null
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export interface ShareToken {
+  id: string
+  report_id: string
+  token: string
+  created_by: string | null
+  expires_at: string | null
+  revoked_at: string | null
+  created_at: string
 }
 

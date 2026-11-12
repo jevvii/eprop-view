@@ -118,32 +118,32 @@ export function SettingsCards() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Full Designation</label>
-            <input
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="settings-full-name">Full Designation</label>
+            <input id="settings-full-name"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
               className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Secure Email</label>
-            <input
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="settings-email">Secure Email</label>
+            <input id="settings-email"
               value={profile?.email || 'SYSTEM_NODE'}
               disabled
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-base sm:text-sm font-medium text-slate-500 cursor-not-allowed"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Contact Protocol</label>
-            <input
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="settings-phone">Contact Protocol</label>
+            <input id="settings-phone"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Assigned Department</label>
-            <input
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" htmlFor="settings-department">Assigned Department</label>
+            <input id="settings-department"
               value={department}
               onChange={(event) => setDepartment(event.target.value)}
               className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base sm:text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all"
@@ -171,17 +171,17 @@ export function SettingsCards() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
             <div>
               <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
-                AI Model Management & Checkpoints
+                Analysis Method Registry
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Deploy, version, and activate computer vision models.
+                Select and configure registered analysis methods. This does not deploy or train model weights.
               </p>
             </div>
             <button
               onClick={() => setIsRegisterModelOpen(true)}
               className="text-xs font-bold uppercase tracking-wider bg-primary text-white px-4 py-2.5 min-h-[40px] rounded-xl shadow-md hover:bg-primary/90 transition-all self-start sm:self-auto"
             >
-              + Deploy Model Checkpoint
+              + Register Analysis Method
             </button>
           </div>
 
@@ -193,7 +193,7 @@ export function SettingsCards() {
                   <th className="text-left py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Version</th>
                   <th className="text-left py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Format</th>
                   <th className="text-left py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Target Labels</th>
-                  <th className="text-right py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pr-2">Deployment Status</th>
+                  <th className="text-right py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pr-2">Registry Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -270,7 +270,7 @@ export function SettingsCards() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <h3 className="text-base font-bold uppercase tracking-wider text-slate-800">
-                  Deploy AI Model Checkpoint
+                  Register Analysis Method
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
                   Register neural network weights
@@ -375,7 +375,7 @@ export function SettingsCards() {
                 disabled={registerAIModel.isPending}
                 className="text-xs font-bold uppercase bg-primary text-white min-h-[44px]"
               >
-                {registerAIModel.isPending ? 'Deploying...' : 'Deploy Checkpoint'}
+                {registerAIModel.isPending ? 'Saving…' : 'Register method'}
               </Button>
             </div>
           </form>

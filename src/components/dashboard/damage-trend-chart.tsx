@@ -82,7 +82,7 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
         <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
           <p className="text-sm font-medium text-slate-700">No trend data yet</p>
           <p className="mt-1 max-w-xs text-sm text-slate-500">
-            Trends appear after inspections are recorded for a project.
+            Trends appear after inspections matching these filters are recorded.
           </p>
         </div>
       </div>
@@ -137,7 +137,7 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
       <div className="mb-2">
         <h3 className="text-sm font-bold text-slate-900">Damage severity trend</h3>
         <p className="mt-0.5 text-sm text-slate-500">
-          Average recorded severity per month ({rows.length} entr{rows.length === 1 ? 'y' : 'ies'}).
+          Average recorded inspection risk per month (0–10) ({rows.length} entr{rows.length === 1 ? 'y' : 'ies'}).
         </p>
       </div>
       <div className="relative min-h-0 flex-1">

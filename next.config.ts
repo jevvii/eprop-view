@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Existing snapshot validation caps decoded evidence at 8 MB (base64 adds 1/3).
   experimental: { serverActions: { bodySizeLimit: '12mb' } },
+  // Exposed so the AR device panel can prove which deployment a phone is
+  // actually running; a stale cached build makes every other observation lie.
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: process.env.VERCEL_GIT_COMMIT_SHA ?? 'local',
+  },
   // A lockfile in the parent directory makes Next infer the wrong workspace
   // root and scan (and recompile against) an unrelated tree.
   turbopack: {
