@@ -3,6 +3,7 @@
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
 import { recordAuditEvent } from '@/app/lib/audit'
+import { actionOk, actionRefuse, type ActionResult } from '@/app/lib/action-result'
 import { classifySettlement } from '@/app/lib/structural/settlement'
 import { assessCrack } from '@/app/lib/structural/crack-taxonomy'
 import { summarizeReadings } from '@/app/lib/structural/rebound'
@@ -375,7 +376,7 @@ const inspectionUpdateSchema = z
 
 export async function updateInspectionRecord(
   input: z.input<typeof inspectionUpdateSchema>
-): Promise<Inspection> {
+): Promise<ActionResult<Inspection>> {
   const { userId, role } = await requireRole(['inspector', 'engineer', 'admin'])
   const parsed = inspectionUpdateSchema.parse(input)
   const supabase = await createClient()
@@ -386,19 +387,19 @@ export async function updateInspectionRecord(
     .eq('id', parsed.inspectionId)
     .single()
 
-  if (readError || !existing) throw new Error('Inspection not found')
+  if (readError || !existing) return actionRefuse('Inspection not found')
 
   if (role === 'inspector') {
     if (existing.lead_inspector_id !== userId) {
-      throw new Error('Access denied: inspectors may only edit their own inspections.')
+      return actionRefuse('Access denied: inspectors may only edit their own inspections.')
     }
     if (existing.status === 'completed') {
-      throw new Error('This inspection is completed. An engineer or admin must reopen it first.')
+      return actionRefuse('This inspection is completed. An engineer or admin must reopen it first.')
     }
   }
 
   if (existing.status === 'completed' && !parsed.reopen) {
-    throw new Error('Completed inspections are locked. Set reopen to edit them.')
+    return actionRefuse('Completed inspections are locked. Set reopen to edit them.')
   }
 
   const buildingId = parsed.buildingId === undefined ? existing.building_id : parsed.buildingId
@@ -406,20 +407,20 @@ export async function updateInspectionRecord(
   const elementId = parsed.structuralElementId === undefined ? existing.structural_element_id : parsed.structuralElementId
   let floorName: string | undefined
   let elementType: string | undefined
-  if (floorId && !buildingId) throw new Error('Link a building before selecting a floor.')
-  if (elementId && !floorId) throw new Error('Link a floor before selecting a structural element.')
+  if (floorId && !buildingId) return actionRefuse('Link a building before selecting a floor.')
+  if (elementId && !floorId) return actionRefuse('Link a floor before selecting a structural element.')
   if (buildingId) {
     const { data: building, error: buildingError } = await supabase.from('buildings').select('project_id').eq('id', buildingId).single()
-    if (buildingError || !building || building.project_id !== existing.project_id) throw new Error('The building must belong to this inspection project.')
+    if (buildingError || !building || building.project_id !== existing.project_id) return actionRefuse('The building must belong to this inspection project.')
   }
   if (floorId) {
     const { data: floor, error: floorError } = await supabase.from('floors').select('building_id, name').eq('id', floorId).single()
-    if (floorError || !floor || floor.building_id !== buildingId) throw new Error('The floor must belong to the selected building.')
+    if (floorError || !floor || floor.building_id !== buildingId) return actionRefuse('The floor must belong to the selected building.')
     floorName = floor.name
   }
   if (elementId) {
     const { data: element, error: elementError } = await supabase.from('structural_elements').select('floor_id, element_type').eq('id', elementId).single()
-    if (elementError || !element || element.floor_id !== floorId) throw new Error('The structural element must belong to the selected floor.')
+    if (elementError || !element || element.floor_id !== floorId) return actionRefuse('The structural element must belong to the selected floor.')
     elementType = element.element_type
   }
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
@@ -459,7 +460,7 @@ export async function updateInspectionRecord(
     after: updates,
   })
 
-  return updated as Inspection
+  return actionOk(updated as Inspection)
 }
 
 // -----------------------------------------------------------------
