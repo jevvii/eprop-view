@@ -122,7 +122,7 @@ export function RiskHotspots() {
               type="button"
               onClick={() => setActiveTab(tab.key)}
               aria-pressed={activeTab === tab.key}
-              className={`min-h-[36px] rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums transition-colors ${
+ className={`min-h-[36px] rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums transition-colors ${
                 activeTab === tab.key
                   ? 'bg-slate-900 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -162,7 +162,7 @@ export function RiskHotspots() {
                 style={{ top: `${item.position.y}%`, left: `${item.position.x}%` }}
               >
                 <span
-                  className={`block h-3 w-3 rounded-full ring-2 ring-white ${
+ className={`block h-3 w-3 rounded-full ring-2 ring-white ${
                     severityDot[item.severity] ?? 'bg-slate-500'
                   } ${isSelected ? 'scale-150' : ''}`}
                   aria-hidden="true"
@@ -176,7 +176,7 @@ export function RiskHotspots() {
       {selected && (
         <div className="rounded-xl border border-slate-200 bg-white p-3" role="status">
           <p className="text-sm font-semibold text-slate-900">{selected.title}</p>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{selected.subtitle}</p>
+          <p className="text-xs font-medium text-slate-500">{selected.subtitle}</p>
           <p className="mt-1 text-sm text-slate-600">{selected.description}</p>
         </div>
       )}
@@ -196,14 +196,14 @@ export function RiskHotspots() {
                 className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-slate-50 min-h-[44px]"
               >
                 <span
-                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${severityDot[item.severity] ?? 'bg-slate-500'}`}
+ className={`h-2.5 w-2.5 shrink-0 rounded-full ${severityDot[item.severity] ?? 'bg-slate-500'}`}
                   aria-hidden="true"
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-slate-800">{item.title}</span>
                   <span className="block truncate text-xs text-slate-500">{item.subtitle}</span>
                 </span>
-                <span className="shrink-0 text-xs uppercase tracking-wide text-slate-500">{item.type}</span>
+                <span className="shrink-0 text-xs text-slate-500">{item.type}</span>
               </button>
             </li>
           ))}

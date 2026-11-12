@@ -52,14 +52,14 @@ export function AuditLog() {
             aria-label="Filter by entity type"
             value={entityType}
             onChange={(event) => setEntityType(event.target.value)}
-            className={`${inputClass} max-w-[180px]`}
+ className={`${inputClass} max-w-[180px]`}
             placeholder="entity type"
           />
           <input
             aria-label="Filter by action"
             value={action}
             onChange={(event) => setAction(event.target.value)}
-            className={`${inputClass} max-w-[180px]`}
+ className={`${inputClass} max-w-[180px]`}
             placeholder="action"
           />
         </div>
@@ -84,7 +84,7 @@ export function AuditLog() {
                   <th
                     key={heading}
                     scope="col"
-                    className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pb-2 pr-3 border-b border-slate-200"
+                    className="text-[10px] font-bold text-slate-500 pb-2 pr-3 border-b border-slate-200"
                   >
                     {heading}
                   </th>

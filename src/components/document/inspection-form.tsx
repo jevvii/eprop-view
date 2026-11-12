@@ -131,17 +131,17 @@ export function InspectionForm() {
     <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-6 flex flex-col h-full min-w-0">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4 px-1">
         <div>
-          <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-0.5">Field Inspection Registry</h3>
+          <h3 className="text-xs font-bold text-slate-700 mb-0.5">Field Inspection Registry</h3>
           <p className="text-xs text-slate-500 font-medium">Select Building, Floor, and Structural Element.</p>
         </div>
         {createInspection.isPending && (
-          <span className="text-xs font-bold text-primary animate-pulse uppercase tracking-wider">Syncing...</span>
+          <span className="text-xs font-bold text-primary animate-pulse">Syncing...</span>
         )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 flex-1">
         <div>
-          <label htmlFor="inspection-project" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Project</label>
+          <label htmlFor="inspection-project" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Project</label>
           <select id="inspection-project"
             value={projectId}
             onChange={(event) => {
@@ -161,7 +161,7 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label htmlFor="inspection-building" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Building</label>
+          <label htmlFor="inspection-building" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Building</label>
           {buildings && buildings.length > 0 ? (
             <select id="inspection-building"
               value={selectedBuildingId}
@@ -186,7 +186,7 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label htmlFor="inspection-floor" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Floor Level</label>
+          <label htmlFor="inspection-floor" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Floor Level</label>
           {floors && floors.length > 0 ? (
             <select id="inspection-floor"
               value={selectedFloorId}
@@ -217,7 +217,7 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label htmlFor="inspection-element" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Structural Element</label>
+          <label htmlFor="inspection-element" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Structural Element</label>
           {elements && elements.length > 0 ? (
             <select id="inspection-element"
               value={selectedElementId}
@@ -249,7 +249,7 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label htmlFor="inspection-date" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Operation Date</label>
+          <label htmlFor="inspection-date" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Operation Date</label>
           <input id="inspection-date"
             type="date"
             value={inspectionDate}
@@ -260,7 +260,7 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label htmlFor="inspection-location" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Precise Zone / Pin</label>
+          <label htmlFor="inspection-location" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Precise Zone / Pin</label>
           <input id="inspection-location"
             value={location}
             onChange={(event) => setLocation(event.target.value)}
@@ -271,7 +271,7 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label htmlFor="inspection-risk" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Initial Risk Score (0-10)</label>
+          <label htmlFor="inspection-risk" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Initial Risk Score (0-10)</label>
           <input id="inspection-risk"
             type="number"
             min="0"
@@ -285,7 +285,7 @@ export function InspectionForm() {
         </div>
 
         <div>
-          <label htmlFor="inspection-status" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Status Protocol</label>
+          <label htmlFor="inspection-status" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Status Protocol</label>
           <select id="inspection-status"
             value={status}
             onChange={(event) => setStatus(event.target.value as any)}
@@ -301,7 +301,7 @@ export function InspectionForm() {
       </div>
 
       <div>
-        <label htmlFor="inspection-notes" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Technical Notes</label>
+        <label htmlFor="inspection-notes" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Technical Notes</label>
         <textarea id="inspection-notes"
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
@@ -314,7 +314,7 @@ export function InspectionForm() {
       {success && <p className="text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">{success}</p>}
 
       <div className="flex justify-end pt-3 border-t border-slate-100">
-        <Button type="submit" disabled={createInspection.isPending} className="font-bold uppercase tracking-wider text-xs px-8 min-h-[44px] shadow-md shadow-primary/20">
+        <Button type="submit" disabled={createInspection.isPending} className="font-bold text-xs px-8 min-h-[44px] shadow-md shadow-primary/20">
           {createInspection.isPending ? 'Syncing...' : 'Register Inspection'}
         </Button>
       </div>

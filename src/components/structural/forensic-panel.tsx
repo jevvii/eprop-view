@@ -144,7 +144,7 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
                 id="forensic-narrative"
                 value={narrative}
                 onChange={(event) => setNarrative(event.target.value)}
-                className={`${inputClass} min-h-[110px] resize-y`}
+ className={`${inputClass} min-h-[110px] resize-y`}
               />
             </Field>
           </div>
@@ -155,7 +155,7 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
                 id="forensic-conclusion"
                 value={conclusion}
                 onChange={(event) => setConclusion(event.target.value)}
-                className={`${inputClass} min-h-[84px] resize-y`}
+ className={`${inputClass} min-h-[84px] resize-y`}
               />
             </Field>
           </div>
@@ -167,7 +167,7 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
             <button
               type="submit"
               disabled={pending}
-              className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+              className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
             >
               {pending ? 'Saving…' : 'Create assessment'}
             </button>
@@ -176,7 +176,7 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
       )}
 
       <div className="border-t border-slate-100 pt-4">
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Assessments</h4>
+        <h4 className="text-[11px] font-bold text-slate-500 mb-2">Assessments</h4>
         {loading && <p className="text-xs text-slate-500 font-medium">Loading…</p>}
         {!loading && assessments.length === 0 && (
           <EmptyState
@@ -189,7 +189,7 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
             <article key={assessment.id} className="py-3 border-b border-slate-100 last:border-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Chip tone="info">{assessment.failure_hypothesis}</Chip>
-                <span className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
+                <span className="text-[11px] text-slate-500 font-medium">
                   {formatDate(assessment.created_at)}
                 </span>
               </div>
@@ -200,13 +200,13 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
               )}
               {assessment.conclusion && (
                 <p className="text-xs text-slate-600 font-medium">
-                  <span className="font-bold uppercase tracking-wide text-[10px] text-slate-500">Conclusion · </span>
+                  <span className="font-bold text-[10px] text-slate-500">Conclusion · </span>
                   {assessment.conclusion}
                 </p>
               )}
               {assessment.recommended_next_step && (
                 <p className="text-xs text-slate-600 font-medium">
-                  <span className="font-bold uppercase tracking-wide text-[10px] text-slate-500">Next step · </span>
+                  <span className="font-bold text-[10px] text-slate-500">Next step · </span>
                   {assessment.recommended_next_step}
                 </p>
               )}
@@ -231,7 +231,7 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
                       setLatestId(assessment.id)
                       setEvidenceImage(event.target.value)
                     }}
-                    className={`${inputClass} max-w-[220px]`}
+ className={`${inputClass} max-w-[220px]`}
                   >
                     <option value="">Attach image…</option>
                     {(images ?? []).map((image) => (
@@ -247,14 +247,14 @@ export function ForensicPanel({ inspection }: { inspection: Inspection }) {
                       setLatestId(assessment.id)
                       setEvidenceNote(event.target.value)
                     }}
-                    className={`${inputClass} max-w-[240px]`}
+ className={`${inputClass} max-w-[240px]`}
                     placeholder="What this shows"
                   />
                   <button
                     type="button"
                     onClick={() => handleAttach(assessment.id)}
                     disabled={pending || !evidenceImage || latestId !== assessment.id}
-                    className="inline-flex items-center justify-center bg-slate-900 text-white text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-40 min-h-[44px]"
+                    className="inline-flex items-center justify-center bg-slate-900 text-white text-[11px] font-bold px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-40 min-h-[44px]"
                   >
                     Attach
                   </button>

@@ -56,17 +56,17 @@ export default function DocumentPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8"><WorkspaceFilterBar fields={INSPECTION_FILTER_FIELDS} />
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-1 sm:px-2">
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Asset Vault & Registry</h2>
-          <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
+          <h2 className="font-koulen text-xl text-primary uppercase tracking-wide sm:text-2xl">Asset Vault & Registry</h2>
+          <p className="mt-1 max-w-prose text-sm text-slate-600">
             {selectedInspectionLabel ? `Inspecting ${selectedInspectionLabel}` : 'Manage site imagery and collaborative technical threads.'}
           </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-lg border border-slate-100 shadow-xs w-full sm:w-auto">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Filter Entry</label>
+            <label className="text-xs font-bold text-slate-700 pl-2">Filter Entry</label>
             <select
               value={inspectionId}
               onChange={(event) => setInspectionId(event.target.value)}
@@ -84,7 +84,7 @@ export default function DocumentPage() {
           {canUseAR && inspectionId && (
             <Link
               href={`/ar?inspectionId=${encodeURIComponent(inspectionId)}`}
-              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-sm transition-colors min-h-[44px]"
+              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-colors min-h-[44px]"
             >
               <ScanLine className="h-4 w-4" aria-hidden="true" />
               <span>Launch AR inspection</span>
@@ -114,8 +114,8 @@ export default function DocumentPage() {
               <div className="flex items-center gap-3">
                 <Microscope className="h-6 w-6 text-slate-500" aria-hidden="true" />
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Engineering Review Mode</h3>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Inspection Vault Read-Only</p>
+                  <h3 className="text-sm font-bold text-slate-800">Engineering Review Mode</h3>
+                  <p className="text-xs font-semibold text-slate-500">Inspection Vault Read-Only</p>
                 </div>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">

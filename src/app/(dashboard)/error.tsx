@@ -41,14 +41,14 @@ export default function DashboardErrorBoundary({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full pt-2">
           <Button
             onClick={() => reset()}
-            className="w-full text-xs font-bold uppercase tracking-wider min-h-[44px]"
+            className="w-full text-xs font-bold min-h-[44px]"
           >
             Reload Component
           </Button>
           <Button
             variant="outline"
             onClick={handleReturnToLogin}
-            className="w-full text-xs font-bold uppercase tracking-wider min-h-[44px]"
+            className="w-full text-xs font-bold min-h-[44px]"
           >
             Re-Authenticate
           </Button>

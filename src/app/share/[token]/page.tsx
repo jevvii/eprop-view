@@ -73,7 +73,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
     <main className="min-h-screen bg-slate-50 py-10 px-4">
       <article className="mx-auto max-w-3xl rounded-lg bg-white p-6 sm:p-10 shadow-sm border border-slate-200 space-y-8">
         <header className="border-b border-slate-200 pb-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Shared inspection report</p>
+          <p className="text-[11px] font-bold text-slate-500">Shared inspection report</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">{typedReport.title}</h1>
           <p className="text-sm text-slate-600 font-medium mt-2">
             {typedReport.report_id} · {new Date(typedReport.date).toLocaleDateString()} · {typedReport.location}
@@ -84,14 +84,14 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
         </header>
 
         <section>
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-2">Key findings</h2>
+          <h2 className="text-sm font-bold text-slate-700 mb-2">Key findings</h2>
           <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
             {typedReport.key_findings?.trim() || 'No findings recorded.'}
           </p>
         </section>
 
         <section>
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-2">Recommendations</h2>
+          <h2 className="text-sm font-bold text-slate-700 mb-2">Recommendations</h2>
           {signed.length === 0 ? (
             <p className="text-sm text-slate-600">No signed recommendation appears on this report.</p>
           ) : (
@@ -99,7 +99,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
               {signed.map((item) => (
                 <li key={item.id} className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
                   {item.final_text}
-                  <span className="block text-[11px] uppercase tracking-wide text-slate-500 font-medium mt-1">
+                  <span className="block text-[11px] text-slate-500 font-medium mt-1">
                     Signed {item.signed_at ? new Date(item.signed_at).toLocaleDateString() : ''}
                   </span>
                 </li>
@@ -109,7 +109,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
         </section>
 
         <section>
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-2">Assessment limitations</h2>
+          <h2 className="text-sm font-bold text-slate-700 mb-2">Assessment limitations</h2>
           {limitation ? (
             <>
               <ul className="list-disc pl-5 space-y-1">

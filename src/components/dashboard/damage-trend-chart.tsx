@@ -52,7 +52,7 @@ export function DamageTrendChart({ isFloating = false, className = '' }: DamageT
   const shell = `${bgStyle} p-4 sm:p-6 rounded-lg shadow-sm border border-slate-200/70 flex flex-col min-h-0 overflow-hidden ${className}`
 
   if (isLoading) {
-    return <div className={`${shell} animate-pulse`} aria-busy="true" aria-label="Loading damage trend" />
+ return <div className={`${shell} animate-pulse`} aria-busy="true" aria-label="Loading damage trend" />
   }
 
   if (isError) {

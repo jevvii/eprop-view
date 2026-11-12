@@ -51,9 +51,9 @@ export function ErosionPanel({ inspection }: { inspection: Inspection }) {
       description="Observed on this visit. The project-level erosion score on the environmental assessment stays the summary figure."
     >
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Current</span>
+        <span className="text-[11px] font-bold text-slate-500">Current</span>
         <Chip tone={CONDITION_TONE[condition]}>{condition}</Chip>
-        <span className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">{type}</span>
+        <span className="text-[11px] text-slate-500 font-medium">{type}</span>
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -93,7 +93,7 @@ export function ErosionPanel({ inspection }: { inspection: Inspection }) {
               id="erosion-notes"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              className={`${inputClass} min-h-[84px] resize-y`}
+ className={`${inputClass} min-h-[84px] resize-y`}
               placeholder="Where the erosion was seen, how much material is exposed, whether water is flowing"
             />
           </Field>
@@ -106,7 +106,7 @@ export function ErosionPanel({ inspection }: { inspection: Inspection }) {
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
           >
             {pending ? 'Saving…' : 'Save observation'}
           </button>

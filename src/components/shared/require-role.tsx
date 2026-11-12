@@ -67,15 +67,15 @@ export function AccessDenied({
         </p>
         {profile && (
           <div className="mt-4 inline-flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-4 py-1.5">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Role:</span>
-            <span className="text-xs font-bold text-primary uppercase tracking-wider">{profile.role}</span>
+            <span className="text-xs font-bold text-slate-500">Active Role:</span>
+            <span className="text-xs font-bold text-primary">{profile.role}</span>
           </div>
         )}
       </div>
       <div>
         <Link
           href={targetHref}
-          className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-6 py-3 rounded-xl hover:bg-primary/90 transition-all shadow-md shadow-primary/20 min-h-[44px]"
+          className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-primary/90 transition-all shadow-md shadow-primary/20 min-h-[44px]"
         >
           {returnLabel}
         </Link>

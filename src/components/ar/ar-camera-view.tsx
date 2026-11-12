@@ -44,7 +44,7 @@ export function ARCameraView({ onTapToAnchor, onAimChange, aim, frame, viewport,
   }
 
   return (
-    <div className={`relative h-full w-full overflow-hidden bg-slate-950 select-none ${isActive ? 'touch-none' : ''}`}
+ <div className={`relative h-full w-full overflow-hidden bg-slate-950 select-none ${isActive ? 'touch-none' : ''}`}
       onPointerDown={aimAt} onPointerMove={(event) => { if (event.buttons === 1) aimAt(event) }}>
       <video ref={videoRef} playsInline muted autoPlay onPlaying={() => setVideoLive(true)}
         onPause={() => setVideoLive(false)}
@@ -65,12 +65,12 @@ export function ARCameraView({ onTapToAnchor, onAimChange, aim, frame, viewport,
         <div className="absolute inset-0 z-30 flex flex-col justify-between p-3 sm:p-5 pointer-events-none">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <span className="rounded-full border border-white/20 bg-black/75 px-3 py-2 text-xs font-semibold text-white">Printed reference AR</span>
-            <span role="status" className={`rounded-full bg-black/75 px-3 py-2 text-xs font-semibold ${frame ? 'text-emerald-300' : 'text-amber-300'}`}>{status}</span>
+ <span role="status" className={`rounded-full bg-black/75 px-3 py-2 text-xs font-semibold ${frame ? 'text-emerald-300' : 'text-amber-300'}`}>{status}</span>
             {frame && <span className="max-w-full truncate rounded-lg bg-black/75 px-3 py-1.5 text-xs text-white">{frame.target.label}</span>}
           </div>
-          <div className={`absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${placementPose ? 'border-emerald-300' : 'border-amber-300'}`}
+ <div className={`absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${placementPose ? 'border-emerald-300' : 'border-amber-300'}`}
             style={{ left: `${aim.x * 100}%`, top: `${aim.y * 100}%` }} aria-hidden="true">
-            <span className={`absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ${placementPose ? 'bg-emerald-300' : 'bg-amber-300'}`} />
+ <span className={`absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ${placementPose ? 'bg-emerald-300' : 'bg-amber-300'}`} />
           </div>
           <div className="space-y-2">
             <p className="rounded-lg bg-black/75 px-3 py-2 text-xs leading-relaxed text-white" role={trackingMessage ? 'status' : undefined}>

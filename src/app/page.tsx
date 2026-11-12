@@ -22,13 +22,13 @@ export default function LoginPage() {
             <div className="absolute inset-0 bg-primary/5 rounded-lg -z-10 scale-125" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-koulen tracking-wider text-black mb-2 uppercase">EPROP VIEW</h1>
-          <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Authorized Personnel Only</p>
+          <p className="text-xs font-bold text-slate-600">Authorized Personnel Only</p>
         </div>
         
         <LoginForm />
 
         <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-slate-100 text-center space-y-1">
-          <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+          <div className="text-xs font-bold text-slate-600">
             Secure Node Deployment
           </div>
           <div className="text-xs font-medium text-slate-500">

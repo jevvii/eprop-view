@@ -93,7 +93,7 @@ export function ReboundPanel({ inspection }: { inspection: Inspection }) {
               id="rebound-readings"
               value={readings}
               onChange={(event) => setReadings(event.target.value)}
-              className={`${inputClass} min-h-[84px] resize-y`}
+ className={`${inputClass} min-h-[84px] resize-y`}
               placeholder="40 41 40 42 41 39 40 41 40 42"
             />
           </Field>
@@ -157,7 +157,7 @@ export function ReboundPanel({ inspection }: { inspection: Inspection }) {
         {preview && !invalid && (
           <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Preview</span>
+              <span className="text-[11px] font-bold text-slate-500">Preview</span>
               <Chip tone="info">{preview.readingsCount} readings</Chip>
               {preview.outlierCount > 0 && <Chip tone="warn">{preview.outlierCount} rejected</Chip>}
               <Chip tone="neutral">Mean R {preview.meanRebound}</Chip>
@@ -179,7 +179,7 @@ export function ReboundPanel({ inspection }: { inspection: Inspection }) {
           <button
             type="submit"
             disabled={pending || parsed.length === 0 || invalid}
-            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
           >
             {pending ? 'Saving…' : 'Record test'}
           </button>
@@ -187,7 +187,7 @@ export function ReboundPanel({ inspection }: { inspection: Inspection }) {
       </form>
 
       <div className="border-t border-slate-100 pt-4">
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Recorded tests</h4>
+        <h4 className="text-[11px] font-bold text-slate-500 mb-2">Recorded tests</h4>
         {loading && <p className="text-xs text-slate-500 font-medium">Loading…</p>}
         {!loading && tests.length === 0 && (
           <EmptyState
@@ -204,7 +204,7 @@ export function ReboundPanel({ inspection }: { inspection: Inspection }) {
                   <Chip tone="neutral">Mean R {test.mean_rebound ?? '—'}</Chip>
                   <Chip tone="info">≈ {test.estimated_strength_mpa ?? '—'} MPa</Chip>
                   {test.outlier_count > 0 && <Chip tone="warn">{test.outlier_count} rejected</Chip>}
-                  <span className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
+                  <span className="text-[11px] text-slate-500 font-medium">
                     {test.impact_direction}
                   </span>
                 </div>

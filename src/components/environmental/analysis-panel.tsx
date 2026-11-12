@@ -104,19 +104,19 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">Suitability Analysis</h3>
+            <h3 className="text-xs font-bold text-slate-700">Suitability Analysis</h3>
             {canAssess && (
               <button
                 type="button"
                 onClick={handleAutoCalculate}
                 disabled={isAutoCalculating}
-                className="text-xs font-semibold uppercase tracking-wider bg-primary/10 text-primary hover:bg-primary hover:text-white px-3 py-1.5 rounded-lg transition-colors border border-primary/20 min-h-[36px]"
+                className="text-xs font-semibold bg-primary/10 text-primary hover:bg-primary hover:text-white px-3 py-1.5 rounded-lg transition-colors border border-primary/20 min-h-[36px]"
               >
                 {isAutoCalculating ? 'Analyzing GIS…' : 'Auto-calculate from GIS'}
               </button>
             )}
           </div>
-          <p className="text-xs text-slate-500 font-medium tracking-wide mt-1">
+          <p className="text-xs text-slate-500 font-medium mt-1">
             Last Telemetry: {risk?.assessed_date ? new Date(risk.assessed_date).toLocaleDateString() : 'INITIAL_SCAN'}
           </p>
         </div>
@@ -126,7 +126,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 flex-1">
         <div className="space-y-4">
           <div>
-            <label htmlFor="env-fault" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Fault Proximity</label>
+            <label htmlFor="env-fault" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Fault Proximity</label>
             <select id="env-fault"
               value={faultLine}
               disabled={!canAssess}
@@ -141,7 +141,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             </select>
           </div>
           <div>
-            <label htmlFor="env-liquefaction" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Liquefaction Risk</label>
+            <label htmlFor="env-liquefaction" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Liquefaction Risk</label>
             <select id="env-liquefaction"
               value={liquefaction}
               disabled={!canAssess}
@@ -156,7 +156,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             </select>
           </div>
           <div>
-            <label htmlFor="env-erosion" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Erosion Potential</label>
+            <label htmlFor="env-erosion" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Erosion Potential</label>
             <select id="env-erosion"
               value={erosion}
               disabled={!canAssess}
@@ -171,7 +171,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
             </select>
           </div>
           <div>
-            <label htmlFor="env-score" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Suitability Score</label>
+            <label htmlFor="env-score" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Suitability Score</label>
             <input id="env-score"
               type="number"
               min="0"
@@ -186,7 +186,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
         </div>
 
         <div className="h-full flex flex-col">
-          <label htmlFor="env-analysis" className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 ml-1">Detailed Analysis</label>
+          <label htmlFor="env-analysis" className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Detailed Analysis</label>
           <textarea id="env-analysis"
             value={analysis}
             disabled={!canAssess}
@@ -202,11 +202,11 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
 
       <div className="flex justify-end pt-4 border-t border-slate-100">
         {canAssess ? (
-          <Button type="submit" disabled={upsertRisk.isPending} className="font-bold uppercase tracking-wider text-xs px-8 min-h-[44px]">
+          <Button type="submit" disabled={upsertRisk.isPending} className="font-bold text-xs px-8 min-h-[44px]">
             {upsertRisk.isPending ? 'Syncing...' : 'Sync Assessment'}
           </Button>
         ) : (
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide py-2">
+          <span className="text-xs font-semibold text-slate-500 py-2">
             Read-Only Geohazard Telemetry (Engineering Required to Edit)
           </span>
         )}

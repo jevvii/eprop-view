@@ -82,7 +82,7 @@ export function MaintenanceTable() {
 
   if (isError) {
     return (
-      <div className="bg-white p-8 rounded-lg shadow-sm border border-red-100 text-red-600 font-bold uppercase tracking-widest text-center">
+      <div className="bg-white p-8 rounded-lg shadow-sm border border-red-100 text-red-600 font-bold text-center">
         Maintenance Log Link Offline
       </div>
     )
@@ -92,7 +92,7 @@ export function MaintenanceTable() {
     <div className="flex flex-col h-full space-y-4">
       <div className="flex items-center justify-between px-1">
         <div>
-          <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">
+          <h3 className="text-xs font-bold text-slate-700">
             Maintenance Prioritization
           </h3>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
@@ -106,7 +106,7 @@ export function MaintenanceTable() {
                 if (projects && projects.length > 0) setNewProjectId(projects[0].id)
                 setIsCreateOpen(true)
               }}
-              className="text-xs font-bold text-primary uppercase tracking-wider bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors min-h-[36px]"
+              className="text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors min-h-[36px]"
             >
               + Assign Task
             </button>
@@ -132,16 +132,16 @@ export function MaintenanceTable() {
                 openEditModal(item)
               }
             }}
-            className={`p-4 rounded-lg bg-white border border-slate-100 shadow-xs transition-colors group ${
+ className={`p-4 rounded-lg bg-white border border-slate-100 shadow-xs transition-colors group ${
               canManage ? 'cursor-pointer hover:shadow-md hover:border-primary/30' : ''
             }`}
           >
             <div className="flex justify-between items-start gap-2 mb-2">
-              <div className="font-bold text-slate-900 uppercase tracking-tight text-xs leading-snug group-hover:text-primary transition-colors">
+              <div className="font-bold text-slate-900 text-xs leading-snug group-hover:text-primary transition-colors">
                 {item.title}
               </div>
               <span
-                className={`shrink-0 px-2 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider border ${
+ className={`shrink-0 px-2 py-0.5 rounded-md text-xs font-semibold border ${
                   item.status === 'completed'
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     : item.status === 'in_progress'
@@ -158,7 +158,7 @@ export function MaintenanceTable() {
             <div className="flex items-center justify-between text-xs font-medium text-slate-500 mt-2">
               <div className="truncate max-w-[180px]">{item.location}</div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-xs font-medium text-slate-500 uppercase">Score</span>
+                <span className="text-xs font-medium text-slate-500">Score</span>
                 <span className="text-xs font-bold text-slate-900 tabular-nums">{item.risk_score}</span>
               </div>
             </div>
@@ -186,7 +186,7 @@ export function MaintenanceTable() {
           <div className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 shadow-lg space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                <h3 className="text-sm font-bold text-slate-900">
                   Manage Maintenance Task
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
@@ -198,13 +198,13 @@ export function MaintenanceTable() {
                 className="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                 aria-label="Close modal"
               >
-                ✕
+                ×
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Task Status
                 </label>
                 <select
@@ -220,7 +220,7 @@ export function MaintenanceTable() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Assign Maintenance Personnel
                 </label>
                 <select
@@ -238,7 +238,7 @@ export function MaintenanceTable() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Target Completion Due Date
                 </label>
                 <input
@@ -250,7 +250,7 @@ export function MaintenanceTable() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Engineering Notes & Instructions
                 </label>
                 <textarea
@@ -267,7 +267,7 @@ export function MaintenanceTable() {
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedTask(null)}
-                className="text-xs font-bold uppercase min-h-[40px] px-4"
+                className="text-xs font-bold min-h-[40px] px-4"
               >
                 Cancel
               </Button>
@@ -275,7 +275,7 @@ export function MaintenanceTable() {
                 size="sm"
                 disabled={updateTask.isPending}
                 onClick={handleSaveEdit}
-                className="text-xs font-bold uppercase bg-primary text-white min-h-[40px] px-4"
+                className="text-xs font-bold bg-primary text-white min-h-[40px] px-4"
               >
                 {updateTask.isPending ? 'Saving...' : 'Update Task'}
               </Button>
@@ -293,7 +293,7 @@ export function MaintenanceTable() {
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                <h3 className="text-sm font-bold text-slate-900">
                   Assign Maintenance Task
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
@@ -306,13 +306,13 @@ export function MaintenanceTable() {
                 className="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                 aria-label="Close modal"
               >
-                ✕
+                ×
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Target Building / Project
                 </label>
                 <select
@@ -328,7 +328,7 @@ export function MaintenanceTable() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Task Title
                 </label>
                 <input
@@ -343,7 +343,7 @@ export function MaintenanceTable() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Location
                   </label>
                   <input
@@ -357,7 +357,7 @@ export function MaintenanceTable() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Risk Score (1-10)
                   </label>
                   <input
@@ -375,7 +375,7 @@ export function MaintenanceTable() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Assignee
                   </label>
                   <select
@@ -393,7 +393,7 @@ export function MaintenanceTable() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Due Date
                   </label>
                   <input
@@ -406,7 +406,7 @@ export function MaintenanceTable() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Directives & Notes
                 </label>
                 <textarea
@@ -424,7 +424,7 @@ export function MaintenanceTable() {
                 variant="outline"
                 size="sm"
                 onClick={() => setIsCreateOpen(false)}
-                className="text-xs font-bold uppercase min-h-[40px] px-4"
+                className="text-xs font-bold min-h-[40px] px-4"
               >
                 Cancel
               </Button>
@@ -432,7 +432,7 @@ export function MaintenanceTable() {
                 type="submit"
                 size="sm"
                 disabled={createTask.isPending}
-                className="text-xs font-bold uppercase bg-primary text-white min-h-[40px] px-4"
+                className="text-xs font-bold bg-primary text-white min-h-[40px] px-4"
               >
                 {createTask.isPending ? 'Assigning...' : 'Confirm Assignment'}
               </Button>

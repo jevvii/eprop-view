@@ -61,7 +61,7 @@ export function InspectionEditPanel({ inspection }: { inspection: Inspection }) 
         </fieldset>
         {error && <InlineMessage tone="error">{error}</InlineMessage>}
         {success && <InlineMessage tone="success">{success}</InlineMessage>}
-        <button type="submit" disabled={locked || pending} className="rounded-xl bg-primary px-5 py-3 text-xs font-bold uppercase tracking-wide text-white disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">{pending ? 'Saving…' : 'Save inspection'}</button>
+        <button type="submit" disabled={locked || pending} className="rounded-xl bg-primary px-5 py-3 text-xs font-bold text-white disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">{pending ? 'Saving…' : 'Save inspection'}</button>
       </form>
     </Panel>
   )

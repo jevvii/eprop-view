@@ -24,10 +24,10 @@ function ConnectionStatus({
 
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Data status</span>
+      <span className="text-xs font-semibold text-slate-500">Data status</span>
       <span className="flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${state.dot}`} aria-hidden="true" />
-        <span className={`text-xs font-semibold ${state.text}`} role="status">
+ <span className={`h-2 w-2 rounded-full ${state.dot}`} aria-hidden="true" />
+ <span className={`text-xs font-semibold ${state.text}`} role="status">
           {state.label}
         </span>
       </span>

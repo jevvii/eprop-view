@@ -87,7 +87,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
     <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 space-y-5">
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
-          <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">Asset Injection</h3>
+          <h3 className="text-xs font-bold text-slate-700">Asset Injection</h3>
         </div>
         <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
       </div>
@@ -107,7 +107,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
             onChange={(e) => handleFileChange(e.target.files)}
           />
           <FolderOpen className="mb-1 h-6 w-6 text-slate-600" aria-hidden="true" />
-          <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Browse</span>
+          <span className="text-xs font-bold text-slate-700">Browse</span>
         </button>
 
         <button
@@ -124,30 +124,30 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
             onChange={(e) => handleFileChange(e.target.files)}
           />
           <Camera className="mb-1 h-6 w-6 text-primary" aria-hidden="true" />
-          <span className="text-xs font-bold text-primary uppercase tracking-wide">Capture</span>
+          <span className="text-xs font-bold text-primary">Capture</span>
         </button>
       </div>
 
       {files.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10">
-            <span className="text-xs font-bold text-primary uppercase tracking-wider truncate flex-1 tabular-nums">
+            <span className="text-xs font-bold text-primary truncate flex-1 tabular-nums">
               {files.length} Assets Staged
             </span>
-            <button onClick={() => setFiles([])} className="text-xs font-bold text-slate-500 hover:text-red-600 transition-colors uppercase px-2 py-1">Clear</button>
+            <button onClick={() => setFiles([])} className="text-xs font-bold text-slate-500 hover:text-red-600 transition-colors px-2 py-1">Clear</button>
           </div>
           <Button 
             onClick={handleUpload} 
             disabled={uploading} 
-            className="w-full min-h-[44px] py-3 text-xs font-bold uppercase tracking-wider shadow-md shadow-primary/10"
+            className="w-full min-h-[44px] py-3 text-xs font-bold shadow-md shadow-primary/10"
           >
             {uploading ? 'Injecting...' : 'Confirm Upload'}
           </Button>
         </div>
       )}
 
-      {error && <p className="text-xs font-semibold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100 uppercase tracking-wide">{error}</p>}
-      {success && <p className="text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100 uppercase tracking-wide">{success}</p>}
+      {error && <p className="text-xs font-semibold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>}
+      {success && <p className="text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">{success}</p>}
     </div>
   )
 }

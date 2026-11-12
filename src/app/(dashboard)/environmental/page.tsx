@@ -86,11 +86,11 @@ export default function EnvironmentalPage() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-1 sm:px-2">
         <div>
           <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Environmental Risk Assessment</h2>
-          <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">Analyze hazard zones and update site suitability scores.</p>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Analyze hazard zones and update site suitability scores.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 rounded-lg border border-slate-100 shadow-xs w-full sm:w-auto">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Current Project</label>
+            <label className="text-xs font-bold text-slate-700 pl-2">Current Project</label>
             <select
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}
@@ -106,7 +106,7 @@ export default function EnvironmentalPage() {
             variant="outline"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="font-bold uppercase tracking-wider text-xs px-5 h-11 border-slate-200"
+            className="font-bold text-xs px-5 h-11 border-slate-200"
           >
             {isRefreshing ? (
               <span className="flex items-center gap-2">
@@ -138,20 +138,20 @@ export default function EnvironmentalPage() {
       )}
 
       <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-lg border border-slate-100">
-        <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-6 ml-1">Sector Risk Hotspots</h3>
+        <h3 className="text-xs font-bold text-slate-700 mb-6 ml-1">Sector Risk Hotspots</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {hotspots && hotspots.length > 0 ? (
             hotspots.slice(0, 6).map((hotspot) => (
               <div key={hotspot.id} className="flex flex-col gap-3 rounded-lg border border-slate-100 p-5 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group">
                 <div className="flex justify-between items-start gap-2">
-                  <div className="text-xs font-bold text-slate-900 uppercase tracking-tight group-hover:text-primary transition-colors">{hotspot.title}</div>
+                  <div className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors">{hotspot.title}</div>
                   <StatusBadge status={hotspot.severity} />
                 </div>
                 <div className="text-xs text-slate-600 font-medium leading-relaxed line-clamp-2">{hotspot.description || 'No detailed analysis provided for this sector.'}</div>
               </div>
             ))
           ) : (
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider italic ml-1">No active hotspots recorded for this project.</p>
+            <p className="text-xs font-medium text-slate-500 italic ml-1">No active hotspots recorded for this project.</p>
           )}
         </div>
       </div>

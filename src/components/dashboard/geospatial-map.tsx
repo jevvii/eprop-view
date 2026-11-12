@@ -325,7 +325,7 @@ export function GeospatialMap() {
 
     if (!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
         return (
-            <div className="flex h-full w-full items-center justify-center bg-slate-50 text-xs font-black text-slate-500 uppercase tracking-widest border border-dashed border-slate-200 rounded-lg">
+            <div className="flex h-full w-full items-center justify-center bg-slate-50 text-xs font-black text-slate-500 border border-dashed border-slate-200 rounded-lg">
                 Mapbox Access Token Required
             </div>
         );
@@ -342,7 +342,7 @@ export function GeospatialMap() {
                 type="button"
                 onClick={() => setShowHeatmap((current) => !current)}
                 aria-pressed={showHeatmap}
-                className={`absolute right-3 top-3 z-10 rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wider shadow-sm transition-colors min-h-[40px] ${
+ className={`absolute right-3 top-3 z-10 rounded-lg border px-3 py-2 text-[11px] font-bold shadow-sm transition-colors min-h-[40px] ${
                     showHeatmap
                         ? "bg-primary text-white border-primary"
                         : "bg-white/95 text-slate-700 border-slate-200 hover:bg-white"

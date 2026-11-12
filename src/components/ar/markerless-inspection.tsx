@@ -213,7 +213,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
           className="min-h-12 w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 text-sm font-semibold">Use camera/photo inspection</button>
       </div>}
     </div>
-    <div ref={overlayRef} data-markerless-overlay data-xr-active={state.active} className={`relative h-[420px] overflow-hidden rounded-lg border border-slate-200 ${state.active ? 'bg-transparent' : 'bg-slate-950'}`}>
+ <div ref={overlayRef} data-markerless-overlay data-xr-active={state.active} className={`relative h-[420px] overflow-hidden rounded-lg border border-slate-200 ${state.active ? 'bg-transparent' : 'bg-slate-950'}`}>
       <video ref={videoRef} autoPlay muted playsInline onPlaying={() => setCameraPlaying(true)} onPause={() => setCameraPlaying(false)}
         className="absolute inset-0 h-full w-full object-cover" style={{ display: state.active ? 'none' : 'block' }} />
       {!active && <p className="absolute inset-0 flex items-center justify-center p-6 text-center text-white">Start markerless AR on a supported device, or open camera/photo inspection.</p>}
@@ -226,7 +226,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
           <button type="button" disabled={busy || saving} onClick={() => void stop().catch(() => setError('Could not close the session record. Reload before starting again.'))}
             className="min-h-[44px] rounded-lg bg-white px-3 text-sm font-semibold">End inspection</button>
         </div>
-        <div className={`absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${state.active && !state.hit ? 'border-amber-300' : 'border-emerald-300'}`} />
+ <div className={`absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${state.active && !state.hit ? 'border-amber-300' : 'border-emerald-300'}`} />
         <div className="space-y-2 pointer-events-auto">
           {cameraActive && !cameraPlaying && <button type="button" onClick={() => {
             void videoRef.current?.play().catch(() => setError('Camera playback could not resume. End inspection and start the camera again.'))

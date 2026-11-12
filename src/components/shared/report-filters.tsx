@@ -344,7 +344,7 @@ export function ReportFilters({
             type="search"
             aria-label="Search records"
             placeholder="Search records…"
-            className={`${control} w-full pl-9`}
+ className={`${control} w-full pl-9`}
             value={filters.q}
             onChange={(event) => onChange({ q: event.target.value })}
           />
@@ -354,7 +354,7 @@ export function ReportFilters({
           type="button"
           aria-expanded={open}
           onClick={() => setOpen((value) => !value)}
-          className={`${control} inline-flex w-auto items-center gap-1.5 font-semibold ${
+ className={`${control} inline-flex w-auto items-center gap-1.5 font-semibold ${
             activeCount > 0 ? 'border-primary/40 text-primary' : 'text-slate-700'
           }`}
         >
@@ -428,7 +428,7 @@ export function ReportFilters({
                         setOptionQuery('')
                       }}
                       aria-current={isActive ? 'true' : undefined}
-                      className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-sm ${
+ className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-sm ${
                         isActive
                           ? 'bg-[#E1F3FE] font-semibold text-[#1F6C9F]'
                           : 'text-slate-700 hover:bg-slate-50'
@@ -456,7 +456,7 @@ export function ReportFilters({
                       placeholder={`Search ${active.label.toLowerCase()}`}
                       value={optionQuery}
                       onChange={(event) => setOptionQuery(event.target.value)}
-                      className={`${control} w-full pl-8 text-sm`}
+ className={`${control} w-full pl-8 text-sm`}
                     />
                   </div>
 
@@ -476,7 +476,7 @@ export function ReportFilters({
                           >
                             <span
                               aria-hidden="true"
-                              className={`flex h-4 w-4 items-center justify-center rounded border ${
+ className={`flex h-4 w-4 items-center justify-center rounded border ${
                                 checked
                                   ? 'border-primary bg-primary text-white'
                                   : 'border-slate-300 bg-white'
@@ -485,7 +485,7 @@ export function ReportFilters({
                               {checked && <Check className="h-3 w-3" />}
                             </span>
                             {option.tone ? (
-                              <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${option.tone}`}>
+ <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${option.tone}`}>
                                 {option.label}
                               </span>
                             ) : (
@@ -505,7 +505,7 @@ export function ReportFilters({
                   <span className="text-slate-700">{active?.label}</span>
                   <input
                     type="date"
-                    className={`${control} mt-2 w-full`}
+ className={`${control} mt-2 w-full`}
                     value={active ? filters[active.key] : ''}
                     onChange={(event) =>
                       active &&

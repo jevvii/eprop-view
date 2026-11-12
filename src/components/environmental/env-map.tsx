@@ -245,7 +245,7 @@ export function EnvMap({ projectId, center }: EnvMapProps) {
     <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 flex flex-col h-[400px] sm:h-[500px] lg:h-full lg:min-h-[550px]">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-0.5">Geospatial Hazards</h3>
+          <h3 className="text-xs font-bold text-slate-700 mb-0.5">Geospatial Hazards</h3>
           <p className="text-xs text-slate-500 font-medium">Multi-layer risk visualization.</p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">

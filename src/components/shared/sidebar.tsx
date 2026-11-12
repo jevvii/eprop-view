@@ -78,7 +78,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`
+ className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white overscroll-contain
         flex flex-col p-6 border-r border-slate-100 transition-transform duration-300 ease-in-out
         overflow-y-auto
@@ -130,7 +130,7 @@ export function Sidebar() {
                 if (window.innerWidth < 1024) close()
               }}
               aria-current={isActive ? 'page' : undefined}
-              className={`group flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-[0.08em] transition-colors duration-150 min-h-[44px] border-l-4 ${
+ className={`group flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold tracking-[0.08em] transition-colors duration-150 min-h-[44px] border-l-4 ${
                 isActive
                   ? 'bg-primary/10 text-primary border-primary'
                   : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 border-transparent'
@@ -138,7 +138,7 @@ export function Sidebar() {
             >
               <div className="flex items-center gap-3.5">
                 <item.Icon
-                  className={`w-5 h-5 shrink-0 ${isActive ? 'text-primary' : 'text-slate-500'}`}
+ className={`w-5 h-5 shrink-0 ${isActive ? 'text-primary' : 'text-slate-500'}`}
                   strokeWidth={1.75}
                   aria-hidden="true"
                 />
@@ -159,7 +159,7 @@ export function Sidebar() {
           type="button"
           disabled={isLoggingOut}
           onClick={handleLogout}
-          className="w-full min-h-[44px] py-3.5 bg-primary text-white font-bold text-xs uppercase tracking-[0.18em] rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+          className="w-full min-h-[44px] py-3.5 bg-primary text-white font-bold text-xs tracking-[0.18em] rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
         >
           {isLoggingOut ? 'Logging out...' : 'Logout'}
         </button>

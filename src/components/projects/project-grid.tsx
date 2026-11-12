@@ -66,7 +66,7 @@ export function ProjectGrid() {
 
   if (isError) {
     return (
-      <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg border border-red-100 text-red-600 font-bold uppercase tracking-wider text-center text-xs sm:text-sm">
+      <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg border border-red-100 text-red-600 font-bold text-center text-xs sm:text-sm">
         Telemetry Error: Database unreachable.
       </div>
     )
@@ -74,7 +74,7 @@ export function ProjectGrid() {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg border border-slate-100 text-slate-500 font-bold uppercase tracking-wider text-center italic text-xs sm:text-sm">
+      <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg border border-slate-100 text-slate-500 font-bold text-center italic text-xs sm:text-sm">
         System Status: No active projects on file.
       </div>
     )
@@ -83,7 +83,7 @@ export function ProjectGrid() {
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 bg-white p-2 sm:p-2.5 rounded-lg border border-slate-100 shadow-xs w-full sm:w-fit">
-        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Filter State</label>
+        <label className="text-xs font-bold text-slate-700 pl-2">Filter State</label>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -108,7 +108,7 @@ export function ProjectGrid() {
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xl sm:text-2xl font-koulen text-black tracking-wide leading-tight mb-1 group-hover:text-primary transition-colors truncate">{project.name}</h3>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{project.location}</p>
+                  <p className="text-xs font-semibold text-slate-500 truncate">{project.location}</p>
                 </div>
                 <StatusBadge status={project.status} />
               </div>
@@ -119,21 +119,21 @@ export function ProjectGrid() {
 
               <div className="grid grid-cols-3 gap-3 border-t border-slate-100 pt-6">
                 <div className="flex flex-col">
-                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Inspections</div>
+                  <div className="text-xs font-semibold text-slate-500 mb-1">Inspections</div>
                   <div className="text-xl sm:text-2xl font-koulen text-black tabular-nums">{inspectionsCount}</div>
                 </div>
                 <div className="flex flex-col">
-                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Reports</div>
+                  <div className="text-xs font-semibold text-slate-500 mb-1">Reports</div>
                   <div className="text-xl sm:text-2xl font-koulen text-black tabular-nums">{reportsCount}</div>
                 </div>
                 <div className="flex flex-col">
-                  <div className="text-xs font-semibold text-rose-500 uppercase tracking-wider mb-1">Critical</div>
+                  <div className="text-xs font-semibold text-rose-500 mb-1">Critical</div>
                   <div className="text-xl sm:text-2xl font-koulen text-rose-600 tabular-nums">{criticalCount}</div>
                 </div>
               </div>
 
               <div className="mt-5 pt-5 border-t border-slate-100 flex flex-col gap-2">
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div className="text-xs font-semibold text-slate-500">
                   Assigned Project Team & Engineers
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -141,7 +141,7 @@ export function ProjectGrid() {
                     staff.map((member) => (
                       <span
                         key={member.id}
-                        className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold uppercase tracking-wider border ${
+ className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold border ${
                           member.role === 'engineer'
                             ? 'bg-blue-50 text-blue-700 border-blue-200'
                             : member.role === 'admin'

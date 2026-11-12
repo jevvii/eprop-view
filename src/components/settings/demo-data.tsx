@@ -57,7 +57,7 @@ export function DemoDataPanel() {
           type="button"
           onClick={handleSeed}
           disabled={pending}
-          className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+          className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
         >
           {pending ? 'Writing demo data…' : 'Seed demo data'}
         </button>
@@ -67,7 +67,7 @@ export function DemoDataPanel() {
 
       {result && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-          <p className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+          <p className="text-xs font-bold text-slate-800">
             {result.seeded ? 'Seeded' : 'Nothing written'}
           </p>
           {result.reason && <p className="text-xs text-slate-700 font-medium">{result.reason}</p>}

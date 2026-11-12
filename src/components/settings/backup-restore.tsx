@@ -88,7 +88,7 @@ export function BackupRestore() {
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label htmlFor="export-project" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+          <label htmlFor="export-project" className="block text-[11px] font-bold text-slate-500">
             Export a project
           </label>
           <select
@@ -106,7 +106,7 @@ export function BackupRestore() {
             type="button"
             onClick={handleExport}
             disabled={!projectId || exportAction.pending}
-            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
           >
             {exportAction.pending ? 'Exporting…' : 'Download JSON'}
           </button>
@@ -116,7 +116,7 @@ export function BackupRestore() {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="import-file" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+          <label htmlFor="import-file" className="block text-[11px] font-bold text-slate-500">
             Import a previous export
           </label>
           <input
@@ -125,7 +125,7 @@ export function BackupRestore() {
             type="file"
             accept="application/json,.json"
             onChange={handleFile}
-            className="block w-full text-xs font-medium text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-wider file:text-slate-700"
+            className="block w-full text-xs font-medium text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-bold file: file: file:text-slate-700"
           />
           <p className="text-[11px] text-slate-500 font-medium">
             The file is validated and previewed first. Nothing is written until you confirm.
@@ -137,7 +137,7 @@ export function BackupRestore() {
 
       {preview && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-          <p className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+          <p className="text-xs font-bold text-slate-800">
             {preview.imported ? 'Import complete' : 'Preview — nothing written yet'}
           </p>
           <p className="text-xs text-slate-700 font-medium">
@@ -155,7 +155,7 @@ export function BackupRestore() {
               type="button"
               onClick={handleApply}
               disabled={importAction.pending}
-              className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+              className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
             >
               {importAction.pending ? 'Importing…' : 'Confirm import'}
             </button>

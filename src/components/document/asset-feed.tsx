@@ -43,7 +43,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
       <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-lg sm:rounded-lg h-[450px] sm:h-[600px] flex items-center justify-center text-center p-6 sm:p-10">
         <div className="max-w-xs">
           <FolderOpen className="mx-auto mb-4 h-10 w-10 text-slate-500" aria-hidden="true" />
-          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Registry Initialized</h3>
+          <h3 className="text-sm font-bold text-slate-700 mb-2">Registry Initialized</h3>
           <p className="text-xs text-slate-500 font-medium leading-relaxed">
             Select a technical inspection entry from the dropdown above to view the associated asset vault and discussion threads.
           </p>
@@ -81,7 +81,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
     return (
       <div className="bg-red-50 border border-red-100 rounded-lg sm:rounded-lg p-8 sm:p-12 text-center">
         <WifiOff className="mx-auto mb-4 h-10 w-10 text-slate-500" aria-hidden="true" />
-        <h3 className="text-sm font-bold text-red-700 uppercase tracking-wider mb-2">Telemetry Failure</h3>
+        <h3 className="text-sm font-bold text-red-700 mb-2">Telemetry Failure</h3>
         <p className="text-xs text-red-600 font-medium">
           System was unable to synchronize with the asset vault. Ensure technical database migrations have been deployed.
         </p>
@@ -92,10 +92,10 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="flex items-center justify-between px-2">
-        <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">
+        <h3 className="text-xs font-bold text-slate-700">
           Vault Registry {label ? `· ${label}` : ''}
         </h3>
-        <div className="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-600 uppercase tracking-wider tabular-nums">
+        <div className="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-600 tabular-nums">
           {images?.length ?? 0} Assets
         </div>
       </div>
@@ -126,13 +126,13 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
                         </div>
                       </div>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50 italic">
+                      <div className="h-full flex items-center justify-center text-xs font-bold text-slate-500 bg-slate-50 italic">
                         Preview_Unavailable
                       </div>
                     )}
 
                     <div className="absolute top-3 left-3">
-                      <div className="bg-black/80 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border border-white/10 shadow-sm">
+                      <div className="bg-black/80 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 shadow-sm">
                         {image.caption || 'TECHNICAL_ASSET'}
                       </div>
                     </div>
@@ -155,11 +155,11 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
                   <div className="lg:w-1/2 p-5 sm:p-6 lg:p-8 flex flex-col gap-5 sm:gap-6 h-auto">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
-                        <span className="text-xs font-bold text-primary uppercase tracking-wider">Lead Node</span>
+                        <span className="text-xs font-bold text-primary">Lead Node</span>
                         <span className="text-xs sm:text-sm font-bold text-slate-900">{image.uploader_name}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Timestamp</span>
+                        <span className="text-xs font-semibold text-slate-500 block">Timestamp</span>
                         <span className="text-xs text-slate-500 font-medium">{new Date(image.uploaded_at).toLocaleString()}</span>
                       </div>
                     </div>
@@ -177,7 +177,7 @@ export function AssetFeed({ inspectionId, label }: AssetFeedProps) {
         ) : (
           <div className="bg-white p-10 sm:p-16 rounded-lg sm:rounded-lg shadow-sm border border-slate-100 text-center">
             <ImageOff className="mx-auto mb-4 h-10 w-10 text-slate-500" aria-hidden="true" />
-            <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider">No assets found in vault.</p>
+            <p className="text-xs sm:text-sm font-bold text-slate-500">No assets found in vault.</p>
           </div>
         )}
       </div>
