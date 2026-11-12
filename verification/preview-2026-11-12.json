@@ -1,0 +1,115 @@
+{
+  "deploymentUrl": "https://eprop-view-it7w9oikz-jevviis-projects.vercel.app",
+  "readyState": "READY",
+  "appliedMigrations": [
+    "018_report_integrity.sql",
+    "019_storage_records.sql",
+    "020_geospatial_domain.sql",
+    "021_ai_auth_integration.sql",
+    "022_workspace_filters.sql"
+  ],
+  "baseline": "017; verified against structural tables, role constraint and heuristic registry before recording the legacy baseline.",
+  "activeRoles": [
+    "admin",
+    "engineer",
+    "inspector",
+    "viewer"
+  ],
+  "databaseChecks": [
+    "report role boundaries",
+    "divergent cost confirmation",
+    "signing and completion",
+    "lock/reopen and revisions",
+    "share snapshot and revocation",
+    "Gemini provenance and atomic replacement rollback",
+    "automated risk reset",
+    "service-only rate budget and analysis privileges",
+    "filtered statistics/chart and geospatial/movement RPCs"
+  ],
+  "fixturePolicy": "SQL verification fixtures rolled back. Browser fixtures were committed for real upload/review tests, then the temporary project and binary were removed. Original project/report/inspection/image counts restored; audit history retained.",
+  "browserCheck": {
+    "providedAdminSignIn": "passed",
+    "healthAndLayoutChecks": [
+      {
+        "test": "preview login and server rate budget",
+        "path": "/dashboard"
+      },
+      {
+        "test": "preview schema and service health",
+        "preview": true,
+        "missingSchema": false,
+        "failedCounts": false
+      },
+      {
+        "test": "server workspace filters",
+        "risk": "critical",
+        "error": 0
+      },
+      {
+        "test": "responsive preview",
+        "width": 390,
+        "scrollWidth": 390
+      },
+      {
+        "test": "responsive preview",
+        "width": 320,
+        "scrollWidth": 320
+      },
+      {
+        "test": "preview modal Escape",
+        "open": 0
+      }
+    ],
+    "authenticatedWorkflowChecks": [
+      "authenticated Preview admin session",
+      "upload synthetic PNG through signed-upload workflow",
+      "saved-photo Gemini provenance and engineer review confirmed",
+      "report creation through authenticated form",
+      "narrative request, availability handling and provenance persist",
+      "repair-cost suggestion and persisted estimate",
+      "limitations, AI recommendation and engineer signature",
+      "completion requires and retains reviewed content",
+      "public immutable share snapshot"
+    ],
+    "liveGeminiMethods": {
+      "vision": "gemini",
+      "narrative": "gemini",
+      "repairCost": "gemini",
+      "recommendation": "gemini"
+    },
+    "finalRegressionChecks": [
+      "latest Preview authenticates the provided admin",
+      "publication waits for decoded evidence; PDF embeds header and photo",
+      "failed evidence loading blocks publication and shows a visible error",
+      "share links persist after refresh; reopening preserves the public snapshot",
+      "report-screen revocation immediately hides the public snapshot",
+      "verified archival switches the pointer and keeps the photo readable",
+      "delete archived test asset through the vault"
+    ],
+    "pdfEmbeddedImages": 1,
+    "unexpectedPageErrors": [],
+    "cleanup": {
+      "temporaryRecordsRemoved": true,
+      "temporaryBinariesRemoved": true,
+      "originalRecordCountsRestored": true,
+      "counts": {
+        "projects": 1,
+        "reports": 2,
+        "inspections": 3,
+        "images": 3
+      },
+      "auditHistoryRetained": true
+    }
+  },
+  "validation": {
+    "applicationTestsPassed": 202,
+    "applicationTestsFailed": 0,
+    "typecheck": "passed",
+    "lint": {
+      "errors": 0,
+      "warnings": 55
+    },
+    "localProductionBuild": "passed",
+    "vercelPreviewBuild": "READY"
+  }
+}
