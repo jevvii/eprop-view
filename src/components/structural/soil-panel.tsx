@@ -195,15 +195,15 @@ export function SoilPanel({ inspection }: { inspection: Inspection }) {
           <button
             type="submit"
             disabled={pending || !borehole.trim()}
-            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
           >
             {pending ? 'Saving…' : 'Record borehole'}
           </button>
         </div>
       </form>
 
-      <div className="border-t border-slate-100 pt-4">
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+      <div className="border-t border-slate-200 pt-4">
+        <h4 className="text-[11px] font-bold text-slate-500 mb-2">
           Recorded boreholes
         </h4>
         {loading && <p className="text-xs text-slate-500 font-medium">Loading…</p>}
@@ -224,7 +224,7 @@ export function SoilPanel({ inspection }: { inspection: Inspection }) {
                 <Chip tone={LIQUEFACTION_TONE[record.liquefaction_susceptibility]}>
                   {record.liquefaction_susceptibility}
                 </Chip>
-                <span className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
+                <span className="text-[11px] text-slate-500 font-medium">
                   {formatDate(record.investigation_date)}
                 </span>
               </li>

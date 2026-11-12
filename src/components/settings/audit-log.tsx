@@ -52,14 +52,14 @@ export function AuditLog() {
             aria-label="Filter by entity type"
             value={entityType}
             onChange={(event) => setEntityType(event.target.value)}
-            className={`${inputClass} max-w-[180px]`}
+ className={`${inputClass} max-w-[180px]`}
             placeholder="entity type"
           />
           <input
             aria-label="Filter by action"
             value={action}
             onChange={(event) => setAction(event.target.value)}
-            className={`${inputClass} max-w-[180px]`}
+ className={`${inputClass} max-w-[180px]`}
             placeholder="action"
           />
         </div>
@@ -84,7 +84,7 @@ export function AuditLog() {
                   <th
                     key={heading}
                     scope="col"
-                    className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pb-2 pr-3 border-b border-slate-200"
+                    className="text-[10px] font-bold text-slate-500 pb-2 pr-3 border-b border-slate-200"
                   >
                     {heading}
                   </th>
@@ -93,7 +93,7 @@ export function AuditLog() {
             </thead>
             <tbody>
               {events.map((event) => (
-                <tr key={event.id} className="border-b border-slate-100 last:border-0">
+                <tr key={event.id} className="border-b border-slate-200 last:border-0">
                   <td className="py-2 pr-3 text-xs text-slate-600 font-medium whitespace-nowrap">
                     {formatDate(event.created_at)}
                   </td>

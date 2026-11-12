@@ -96,10 +96,10 @@ export function BuildingsManager() {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
+          <h3 className="text-xs font-bold text-slate-600 mb-1">
             Building Master Registry
           </h3>
           <p className="text-xs text-slate-500 font-medium">
@@ -123,7 +123,7 @@ export function BuildingsManager() {
           <Button
             onClick={openAddModal}
             disabled={!activeProjectId}
-            className="text-xs font-bold uppercase tracking-wider px-4 py-2 min-h-[38px]"
+            className="text-xs font-bold px-4 py-2 min-h-[38px]"
           >
             + Add Building
           </Button>
@@ -131,13 +131,13 @@ export function BuildingsManager() {
       </div>
 
       {isLoading ? (
-        <div className="h-32 bg-slate-50 animate-pulse rounded-2xl" />
+        <div className="h-32 bg-slate-50 animate-pulse rounded-lg" />
       ) : !buildings || buildings.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-slate-200 rounded-2xl">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="text-center py-10 border border-dashed border-slate-200 rounded-lg">
+          <p className="text-xs font-bold text-slate-500">
             No buildings defined for this project yet.
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Click &quot;+ Add Building&quot; to establish master structural entities.
           </p>
         </div>
@@ -146,17 +146,17 @@ export function BuildingsManager() {
           <table className="responsive-table w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left">
-                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Name & Code</th>
-                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Description</th>
-                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Coordinates</th>
-                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider text-right pr-2">Actions</th>
+                <th className="py-3 font-bold text-xs text-slate-600 pl-2">Name & Code</th>
+                <th className="py-3 font-bold text-xs text-slate-600">Description</th>
+                <th className="py-3 font-bold text-xs text-slate-600">Coordinates</th>
+                <th className="py-3 font-bold text-xs text-slate-600 text-right pr-2">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {buildings.map((b) => (
                 <tr key={b.id} className="hover:bg-slate-50/70 transition-all">
                   <td className="py-4 pl-2">
-                    <div className="font-bold text-slate-900 tracking-tight">{b.name}</div>
+                    <div className="font-bold text-slate-900">{b.name}</div>
                     {b.code && (
                       <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded mt-0.5 inline-block">
                         {b.code}
@@ -172,13 +172,13 @@ export function BuildingsManager() {
                   <td className="py-4 text-right pr-2 space-x-2 whitespace-nowrap">
                     <button
                       onClick={() => openEditModal(b)}
-                      className="text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
+                      className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(b.id)}
-                      className="text-xs font-bold uppercase tracking-wider text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
+                      className="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
                     >
                       Delete
                     </button>
@@ -195,24 +195,24 @@ export function BuildingsManager() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-7 shadow-2xl space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 shadow-lg space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h4 className="text-base font-bold uppercase tracking-wider text-slate-800">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h4 className="text-base font-bold text-slate-800">
                 {editingBuilding ? 'Edit Building Record' : 'Register New Building'}
               </h4>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 aria-label="Close modal"
-                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
+                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
               >
-                ✕
+                ×
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 Building Name *
               </label>
               <input
@@ -226,7 +226,7 @@ export function BuildingsManager() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Structure Code
                 </label>
                 <input
@@ -238,7 +238,7 @@ export function BuildingsManager() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Latitude / Longitude
                 </label>
                 <div className="flex gap-1.5">
@@ -259,7 +259,7 @@ export function BuildingsManager() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 Description & Structural Notes
               </label>
               <textarea
@@ -277,19 +277,19 @@ export function BuildingsManager() {
               </p>
             )}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-200">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsModalOpen(false)}
-                className="text-xs font-bold uppercase min-h-[40px]"
+                className="text-xs font-bold min-h-[40px]"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={createBuilding.isPending || updateBuilding.isPending}
-                className="text-xs font-bold uppercase bg-primary text-white min-h-[40px]"
+                className="text-xs font-bold bg-primary text-white min-h-[40px]"
               >
                 {createBuilding.isPending || updateBuilding.isPending ? 'Saving…' : 'Save Building'}
               </Button>

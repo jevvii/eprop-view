@@ -26,8 +26,8 @@ export function StatCard({ label, value, variant = 'default', className = '', is
   }[variant]
 
   return (
-    <div className={`px-4 py-3.5 sm:px-5 sm:py-4 rounded-2xl shadow-sm border border-slate-200/70 flex flex-col justify-between min-w-0 ${bgColor} ${className}`}>
-      <div className="text-xs font-semibold text-slate-600 mb-1 tracking-wide uppercase truncate" title={label}>{label}</div>
+ <div className={`px-4 py-3.5 sm:px-5 sm:py-4 rounded-lg shadow-sm border border-slate-200/70 flex flex-col justify-between min-w-0 ${bgColor} ${className}`}>
+      <div className="text-xs font-semibold text-slate-600 mb-1 truncate" title={label}>{label}</div>
       <div className={`text-2xl sm:text-3xl font-koulen tracking-wider leading-none tabular-nums ${textColor}`}>
         {value}
       </div>
@@ -42,7 +42,7 @@ export function StatsCards() {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8 px-4 sm:px-6 lg:px-8">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white p-5 sm:p-6 rounded-2xl shadow-xs animate-pulse h-24 sm:h-28" />
+          <div key={i} className="bg-white p-5 sm:p-6 rounded-lg shadow-xs animate-pulse h-24 sm:h-28" />
         ))}
       </div>
     )
@@ -50,7 +50,7 @@ export function StatsCards() {
 
   if (isError) {
     return (
-      <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-xs border border-red-100 text-red-600 mb-6 sm:mb-8 font-bold mx-4 sm:mx-6 lg:mx-8 text-xs sm:text-sm">
+      <div className="bg-white p-5 sm:p-6 rounded-lg shadow-xs border border-red-100 text-red-600 mb-6 sm:mb-8 font-bold mx-4 sm:mx-6 lg:mx-8 text-xs sm:text-sm">
         Error loading telemetry metrics
       </div>
     )

@@ -23,10 +23,10 @@ export function Panel({
   children: ReactNode
 }) {
   return (
-    <section className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-100 min-w-0">
+    <section className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">{title}</h3>
+          <h3 className="text-sm font-bold text-slate-900">{title}</h3>
           {description && (
             <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1 max-w-prose">{description}</p>
           )}
@@ -53,7 +53,7 @@ export function Field({
     <div className="min-w-0">
       <label
         htmlFor={htmlFor}
-        className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5"
+        className="block text-[11px] font-bold text-slate-500 mb-1.5"
       >
         {label}
       </label>
@@ -78,7 +78,7 @@ export function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-center">
+    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-5 text-center">
       <p className="text-sm font-bold text-slate-700">{title}</p>
       <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1 max-w-prose mx-auto">{message}</p>
       {action && <div className="mt-3">{action}</div>}
@@ -99,7 +99,7 @@ export function Chip({ tone = 'neutral', children }: { tone?: Tone; children: Re
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tones[tone]}`}
+ className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${tones[tone]}`}
     >
       {children}
     </span>
@@ -114,7 +114,7 @@ export function InlineMessage({ tone, children }: { tone: 'error' | 'success' | 
   }
 
   return (
-    <div role={tone === 'error' ? 'alert' : 'status'} className={`rounded-xl border px-3.5 py-2.5 text-xs sm:text-sm font-medium ${tones[tone]}`}>
+ <div role={tone === 'error' ? 'alert' : 'status'} className={`rounded-xl border px-3.5 py-2.5 text-xs sm:text-sm font-medium ${tones[tone]}`}>
       {children}
     </div>
   )

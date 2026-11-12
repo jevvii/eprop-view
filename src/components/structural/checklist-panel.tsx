@@ -161,11 +161,11 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
         const answered = items.filter((item) => item.answer !== null && !item.prefilled).length
 
         return (
-          <section key={template.id} className="rounded-2xl border border-slate-200 p-4 space-y-3">
+          <section key={template.id} className="rounded-lg border border-slate-200 p-4 space-y-3">
             <header className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h4 className="text-sm font-bold text-slate-900">{template.title}</h4>
-                <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">
+                <p className="text-[11px] text-slate-500 font-medium">
                   Version {template.version} · {answered}/{items.length} answered
                 </p>
               </div>
@@ -186,7 +186,7 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
                         return (
                           <label
                             key={answer}
-                            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all min-h-[40px] focus-within:ring-2 focus-within:ring-primary ${
+ className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-all min-h-[40px] focus-within:ring-2 focus-within:ring-primary ${
                               selected
                                 ? 'bg-primary text-white border-primary'
                                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -210,7 +210,7 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
               type="button"
               onClick={() => handleSave(template)}
               disabled={savingCode === template.code}
-              className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+              className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
             >
               {savingCode === template.code ? 'Saving…' : 'Save checklist'}
             </button>

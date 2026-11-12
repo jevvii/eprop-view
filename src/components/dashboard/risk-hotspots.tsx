@@ -84,13 +84,13 @@ export function RiskHotspots() {
 
   if (isLoading) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-sm animate-pulse h-64 border border-slate-100" aria-busy="true" />
+      <div className="bg-white p-6 rounded-lg shadow-sm animate-pulse h-64 border border-slate-200" aria-busy="true" />
     )
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200" role="alert">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200" role="alert">
         <h3 className="text-sm font-bold text-slate-900">Sector hotspots</h3>
         <p className="mt-1 text-sm text-red-700">Unable to load hotspot data.</p>
         <button
@@ -122,7 +122,7 @@ export function RiskHotspots() {
               type="button"
               onClick={() => setActiveTab(tab.key)}
               aria-pressed={activeTab === tab.key}
-              className={`min-h-[36px] rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums transition-colors ${
+ className={`min-h-[36px] rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums transition-colors ${
                 activeTab === tab.key
                   ? 'bg-slate-900 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -134,7 +134,7 @@ export function RiskHotspots() {
         </div>
       </div>
 
-      <div className="relative h-56 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden">
+      <div className="relative h-56 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden">
         <div
           className="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.12)_1px,transparent_1px)] bg-[size:24px_24px]"
           aria-hidden="true"
@@ -162,7 +162,7 @@ export function RiskHotspots() {
                 style={{ top: `${item.position.y}%`, left: `${item.position.x}%` }}
               >
                 <span
-                  className={`block h-3 w-3 rounded-full ring-2 ring-white ${
+ className={`block h-3 w-3 rounded-full ring-2 ring-white ${
                     severityDot[item.severity] ?? 'bg-slate-500'
                   } ${isSelected ? 'scale-150' : ''}`}
                   aria-hidden="true"
@@ -176,7 +176,7 @@ export function RiskHotspots() {
       {selected && (
         <div className="rounded-xl border border-slate-200 bg-white p-3" role="status">
           <p className="text-sm font-semibold text-slate-900">{selected.title}</p>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{selected.subtitle}</p>
+          <p className="text-xs font-medium text-slate-500">{selected.subtitle}</p>
           <p className="mt-1 text-sm text-slate-600">{selected.description}</p>
         </div>
       )}
@@ -196,14 +196,14 @@ export function RiskHotspots() {
                 className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-slate-50 min-h-[44px]"
               >
                 <span
-                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${severityDot[item.severity] ?? 'bg-slate-500'}`}
+ className={`h-2.5 w-2.5 shrink-0 rounded-full ${severityDot[item.severity] ?? 'bg-slate-500'}`}
                   aria-hidden="true"
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-slate-800">{item.title}</span>
                   <span className="block truncate text-xs text-slate-500">{item.subtitle}</span>
                 </span>
-                <span className="shrink-0 text-xs uppercase tracking-wide text-slate-400">{item.type}</span>
+                <span className="shrink-0 text-xs text-slate-500">{item.type}</span>
               </button>
             </li>
           ))}

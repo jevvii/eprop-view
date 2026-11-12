@@ -29,7 +29,7 @@ export function DamageOverlay({ imageId }: DamageOverlayProps) {
         return (
           <div
             key={detection.id}
-            className={`absolute ring-2 ${severityRing[detection.severity]} bg-white/10 backdrop-blur-[1px] rounded-sm`}
+ className={`absolute ring-2 ${severityRing[detection.severity]} bg-white/10 backdrop-blur-[1px] rounded-sm`}
             style={{
               left: `${x * 100}%`,
               top: `${y * 100}%`,
@@ -39,7 +39,7 @@ export function DamageOverlay({ imageId }: DamageOverlayProps) {
           >
             <div className="absolute -top-6 left-0 flex items-center gap-1.5 whitespace-nowrap shadow-sm">
               <SeverityBadge severity={detection.severity} />
-              <span className="text-xs font-bold text-white bg-slate-900/90 px-2 py-0.5 rounded-md uppercase tracking-wide border border-white/15 tabular-nums">
+              <span className="text-xs font-bold text-white bg-slate-900/90 px-2 py-0.5 rounded-md border border-white/15 tabular-nums">
                 {detection.damage_type} {(detection.confidence * 100).toFixed(0)}%
               </span>
             </div>

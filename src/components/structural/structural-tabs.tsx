@@ -72,7 +72,7 @@ export function StructuralTabs({ inspection }: { inspection: Inspection | null }
             }}
             aria-selected={active === tab.key}
             onClick={() => setActive(tab.key)}
-            className={`text-xs font-bold uppercase tracking-wider px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+ className={`text-xs font-bold px-4 py-2.5 min-h-[44px] rounded-xl whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               active === tab.key
                 ? 'bg-primary text-white shadow-md'
                 : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'

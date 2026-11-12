@@ -142,13 +142,13 @@ export function CostPanel({ report }: { report: Report }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Deterministic table</p>
+          <p className="text-[11px] font-bold text-slate-500">Deterministic table</p>
           <p className="text-xl font-bold text-slate-900 tabular-nums mt-1">{formatPhp(tableValue)}</p>
           <p className="text-[11px] text-slate-500 font-medium mt-1">Damage type × severity × element multiplier.</p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">AI-assisted estimate</p>
+          <p className="text-[11px] font-bold text-slate-500">AI-assisted estimate</p>
           {suggestion?.aiLikelyPhp != null ? (
             <>
               <p className="text-xl font-bold text-slate-900 tabular-nums mt-1">{formatPhp(suggestion.aiLikelyPhp)}</p>
@@ -166,7 +166,7 @@ export function CostPanel({ report }: { report: Report }) {
 
       {suggestion?.divergenceFlag && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-3.5">
-          <p className="text-xs font-bold text-amber-900 uppercase tracking-wider">Divergence flagged</p>
+          <p className="text-xs font-bold text-amber-900">Divergence flagged</p>
           <p className="text-xs text-amber-900 font-medium mt-1">{suggestion.divergenceReason}</p>
           <p className="text-[11px] text-amber-900/80 font-medium mt-1">
             An engineer must confirm the figure and state why before it is treated as agreed.
@@ -182,7 +182,7 @@ export function CostPanel({ report }: { report: Report }) {
           type="button"
           onClick={handleSuggest}
           disabled={pending}
-          className="inline-flex items-center justify-center bg-slate-900 text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-50 min-h-[44px]"
+          className="inline-flex items-center justify-center bg-slate-900 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-50 min-h-[44px]"
         >
           {pending ? 'Working…' : 'Ask AI for a range'}
         </button>
@@ -190,14 +190,14 @@ export function CostPanel({ report }: { report: Report }) {
           type="button"
           onClick={handleSave}
           disabled={pending || damageType === 'none'}
-          className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+          className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
         >
           Save estimate
         </button>
       </div>
 
-      <div className="border-t border-slate-100 pt-4">
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Estimates on this inspection</h4>
+      <div className="border-t border-slate-200 pt-4">
+        <h4 className="text-[11px] font-bold text-slate-500 mb-2">Estimates on this inspection</h4>
         {estimates.length === 0 ? (
           <EmptyState title="No cost estimate yet" message="A saved estimate shows the table value, the AI range and its confirmation state." />
         ) : (
@@ -213,7 +213,7 @@ export function CostPanel({ report }: { report: Report }) {
                   <Chip tone={estimate.confirmed_at ? 'good' : 'neutral'}>
                     {estimate.confirmed_at ? 'Confirmed' : 'Unconfirmed'}
                   </Chip>
-                  <span className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
+                  <span className="text-[11px] text-slate-500 font-medium">
                     {estimate.provenance} · {formatDate(estimate.created_at)}
                   </span>
                 </div>
@@ -224,14 +224,14 @@ export function CostPanel({ report }: { report: Report }) {
                       aria-label="Reason for confirming this estimate"
                       value={selectedId === estimate.id ? reason : ''}
                       onChange={(event) => { setSelectedId(estimate.id); setReason(event.target.value) }}
-                      className={`${inputClass} max-w-[320px]`}
+ className={`${inputClass} max-w-[320px]`}
                       placeholder="Why the AI figure is credible despite the divergence"
                     />
                     <button
                       type="button"
                       onClick={() => handleConfirm(estimate.id)}
                       disabled={pending || selectedId !== estimate.id || reason.trim().length < 10}
-                      className="inline-flex items-center justify-center bg-amber-600 text-white text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl hover:bg-amber-700 transition-all disabled:opacity-40 min-h-[44px]"
+                      className="inline-flex items-center justify-center bg-amber-600 text-white text-[11px] font-bold px-4 py-2.5 rounded-xl hover:bg-amber-700 transition-all disabled:opacity-40 min-h-[44px]"
                     >
                       Confirm with reason
                     </button>
@@ -313,7 +313,7 @@ export function RecommendationPanel({ report }: { report: Report }) {
           id="recommendation-text"
           value={text}
           onChange={(event) => { setText(event.target.value); setProvenance('engineer') }}
-          className={`${textareaClass} min-h-[140px]`}
+ className={`${textareaClass} min-h-[140px]`}
           placeholder="Draft with the AI, then edit until it says what you would sign."
         />
       </Field>
@@ -322,19 +322,19 @@ export function RecommendationPanel({ report }: { report: Report }) {
       {success && <InlineMessage tone="success">{success}</InlineMessage>}
 
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={handleDraft} disabled={pending} className="inline-flex items-center justify-center bg-slate-900 text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-50 min-h-[44px]">
+        <button type="button" onClick={handleDraft} disabled={pending} className="inline-flex items-center justify-center bg-slate-900 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-50 min-h-[44px]">
           Draft with AI
         </button>
-        <button type="button" onClick={handleSaveDraft} disabled={pending || !text.trim()} className="inline-flex items-center justify-center bg-white border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50 min-h-[44px]">
+        <button type="button" onClick={handleSaveDraft} disabled={pending || !text.trim()} className="inline-flex items-center justify-center bg-white border border-slate-200 text-slate-700 text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50 min-h-[44px]">
           Save draft
         </button>
-        <button type="button" onClick={handleSign} disabled={pending || !currentId || !text.trim()} className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]">
+        <button type="button" onClick={handleSign} disabled={pending || !currentId || !text.trim()} className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]">
           Sign recommendation
         </button>
       </div>
 
-      <div className="border-t border-slate-100 pt-4">
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">On this report</h4>
+      <div className="border-t border-slate-200 pt-4">
+        <h4 className="text-[11px] font-bold text-slate-500 mb-2">On this report</h4>
         {items.length === 0 ? (
           <EmptyState title="No recommendation yet" message="Drafts and signed recommendations appear here with their state and provenance." />
         ) : (
@@ -344,7 +344,7 @@ export function RecommendationPanel({ report }: { report: Report }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip tone={item.status === 'signed' ? 'good' : 'neutral'}>{item.status}</Chip>
                   <Chip tone="info">{item.provenance}</Chip>
-                  <span className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
+                  <span className="text-[11px] text-slate-500 font-medium">
                     {formatDate(item.signed_at ?? item.created_at)}
                   </span>
                 </div>
@@ -435,7 +435,7 @@ export function DetectionTaxonomyPanel({ inspectionId }: { inspectionId: string 
                   {detection.severity}
                 </Chip>
                 <Chip tone="info">{detection.provenance ?? 'heuristic'}</Chip>
-                <span className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
+                <span className="text-[11px] text-slate-500 font-medium">
                   {Math.round(detection.confidence * 100)}% confidence
                 </span>
                 {detection.crack_width_band && <Chip tone="neutral">{detection.crack_width_band}</Chip>}
@@ -448,7 +448,7 @@ export function DetectionTaxonomyPanel({ inspectionId }: { inspectionId: string 
                     setPattern((detection.crack_pattern as CrackPattern) ?? 'single')
                     setCause((detection.crack_cause as CrackCause) ?? 'unknown')
                   }}
-                  className="ml-auto text-[11px] font-bold uppercase tracking-wider text-primary hover:underline"
+                  className="ml-auto text-[11px] font-bold text-primary hover:underline"
                 >
                   {openId === detection.id ? 'Close' : 'Classify'}
                 </button>
@@ -493,7 +493,7 @@ export function DetectionTaxonomyPanel({ inspectionId }: { inspectionId: string 
                       type="button"
                       onClick={() => handleSave(detection.id)}
                       disabled={pending}
-                      className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+                      className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
                     >
                       {pending ? 'Saving…' : 'Save classification'}
                     </button>

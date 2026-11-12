@@ -7,7 +7,7 @@ export const EnvMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-full w-full animate-pulse rounded-2xl bg-slate-100" aria-hidden="true" />
+      <div className="h-full w-full animate-pulse rounded-lg bg-slate-100" aria-hidden="true" />
     ),
   }
 )

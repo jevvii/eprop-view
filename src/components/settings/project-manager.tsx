@@ -108,7 +108,7 @@ export function ProjectManager() {
           <button
             type="submit"
             disabled={pending || !name.trim()}
-            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
           >
             {pending ? 'Saving…' : editing ? 'Save changes' : 'Create project'}
           </button>
@@ -116,7 +116,7 @@ export function ProjectManager() {
             <button
               type="button"
               onClick={resetForm}
-              className="inline-flex items-center justify-center bg-white border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-all min-h-[44px]"
+              className="inline-flex items-center justify-center bg-white border border-slate-200 text-slate-700 text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-all min-h-[44px]"
             >
               Cancel edit
             </button>
@@ -124,8 +124,8 @@ export function ProjectManager() {
         </div>
       </form>
 
-      <div className="border-t border-slate-100 pt-4">
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">All projects</h4>
+      <div className="border-t border-slate-200 pt-4">
+        <h4 className="text-[11px] font-bold text-slate-500 mb-2">All projects</h4>
         {isLoading && <p className="text-xs text-slate-500 font-medium">Loading…</p>}
         {!isLoading && (projects ?? []).length === 0 && (
           <EmptyState title="No projects yet" message="Create the first project to start recording inspections against it." />
@@ -141,13 +141,13 @@ export function ProjectManager() {
                   </Chip>
                   <span className="text-[11px] text-slate-500 font-medium">{project.location}</span>
                   <div className="ml-auto flex gap-3">
-                    <button type="button" onClick={() => setEditing(project)} className="text-[11px] font-bold uppercase tracking-wider text-primary hover:underline">
+                    <button type="button" onClick={() => setEditing(project)} className="text-[11px] font-bold text-primary hover:underline">
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => (archiveId === project.id ? handleArchive(project) : setArchiveId(project.id))}
-                      className="text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:underline"
+                      className="text-[11px] font-bold text-slate-600 hover:underline"
                     >
                       {archiveId === project.id
                         ? project.archived_at ? 'Confirm restore' : 'Confirm archive'

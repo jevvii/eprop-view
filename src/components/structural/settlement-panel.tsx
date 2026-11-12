@@ -168,7 +168,7 @@ export function SettlementPanel({ inspection }: { inspection: Inspection }) {
         {hasInput && (
           <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Preview</span>
+              <span className="text-[11px] font-bold text-slate-500">Preview</span>
               <Chip tone={TONE[preview.classification]}>{SETTLEMENT_LABELS[preview.classification]}</Chip>
             </div>
             <ul className="space-y-1">
@@ -188,15 +188,15 @@ export function SettlementPanel({ inspection }: { inspection: Inspection }) {
           <button
             type="submit"
             disabled={pending || !hasInput}
-            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
           >
             {pending ? 'Saving…' : 'Record reading'}
           </button>
         </div>
       </form>
 
-      <div className="border-t border-slate-100 pt-4">
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Recorded readings</h4>
+      <div className="border-t border-slate-200 pt-4">
+        <h4 className="text-[11px] font-bold text-slate-500 mb-2">Recorded readings</h4>
         {loading && <p className="text-xs text-slate-500 font-medium">Loading…</p>}
         {!loading && !loadError && observations.length === 0 && (
           <EmptyState
@@ -213,7 +213,7 @@ export function SettlementPanel({ inspection }: { inspection: Inspection }) {
                   Tilt {observation.tilt_mm_per_m ?? '—'} mm/m · Settlement {observation.differential_settlement_mm ?? '—'} mm
                 </span>
                 <Chip tone={TONE[observation.classification]}>{SETTLEMENT_LABELS[observation.classification]}</Chip>
-                <span className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">
+                <span className="text-[11px] text-slate-500 font-medium">
                   {observation.measurement_method}
                 </span>
               </li>

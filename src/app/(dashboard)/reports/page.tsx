@@ -91,7 +91,7 @@ export default function ReportsPage() {
   }
 
   if (isLoading || profileLoading) {
-    return <div className="bg-white p-6 rounded-2xl shadow-lg h-40 animate-pulse" />
+    return <div className="bg-white p-6 rounded-lg shadow-lg h-40 animate-pulse" />
   }
 
   if (profile && !canViewReports) {
@@ -107,7 +107,7 @@ export default function ReportsPage() {
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-red-600">
+      <div className="bg-white p-6 rounded-lg shadow-lg text-red-600">
         Failed to load reports
       </div>
     )
@@ -115,7 +115,7 @@ export default function ReportsPage() {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg text-slate-500">
+      <div className="bg-white p-6 rounded-lg shadow-lg text-slate-500">
         Add a project to start creating reports.
       </div>
     )
@@ -125,18 +125,18 @@ export default function ReportsPage() {
     <>
       {/* ── Screen UI ── */}
       <div className="space-y-6 sm:space-y-8 no-print">
-        <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between px-1 sm:px-2">
+        <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
           <div>
-            <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Inspection Reports</h2>
-            <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
+            <h2 className="font-koulen text-xl text-primary uppercase tracking-wide sm:text-2xl">Inspection Reports</h2>
+            <p className="mt-1 max-w-prose text-sm text-slate-600">
               {selectedProjectName ? `Reports Archive · ${selectedProjectName}` : 'Generate and review technical inspection logs.'}
             </p>
           </div>
           
           {/* Actions Container */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-xs">
-              <label htmlFor="report-project" className="text-xs font-bold text-slate-700 uppercase tracking-wide pl-2">Site</label>              <select
+            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-xs">
+              <label htmlFor="report-project" className="text-xs font-bold text-slate-700 pl-2">Site</label>              <select
                 id="report-project"
                 value={projectId}
                 onChange={(event) => setProjectId(event.target.value)}
@@ -153,7 +153,7 @@ export default function ReportsPage() {
                 variant="outline"
                 disabled={!hasReports}
                 onClick={handlePrintAll}
-                className="font-bold uppercase tracking-wider text-xs px-4 h-11 border-slate-200"
+                className="font-bold text-xs px-4 h-11 border-slate-200"
               >
                 Print All
               </Button>
@@ -164,7 +164,7 @@ export default function ReportsPage() {
                 variant="outline"
                 disabled={!hasReports || exporting}
                 onClick={handleExportCsv}
-                className="font-bold uppercase tracking-wider text-xs px-4 h-11 border-slate-200"
+                className="font-bold text-xs px-4 h-11 border-slate-200"
               >
                 {exporting ? 'Exporting…' : 'Export CSV'}
               </Button>
@@ -173,7 +173,7 @@ export default function ReportsPage() {
             {canCreateReport && (
               <Button 
                 onClick={() => setIsCreateModalOpen(true)} 
-                className="font-bold uppercase tracking-wider text-xs px-5 h-11 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-white"
+                className="font-bold text-xs px-5 h-11 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-white"
               >
                 + Add New Log
               </Button>
@@ -191,20 +191,20 @@ export default function ReportsPage() {
         />
 
         <div className="grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-4">
-          <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-md border border-slate-100 group hover:shadow-lg transition-all min-w-0">
-            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Total Active Logs</div>
+          <div className="rounded-lg sm:rounded-lg bg-white p-4 sm:p-6 shadow-md border border-slate-200 group hover:shadow-lg transition-all min-w-0">
+            <div className="text-xs font-bold text-slate-500 mb-1 truncate">Total Active Logs</div>
             <div className="text-3xl sm:text-4xl font-koulen text-black tabular-nums">{reportStats.open}</div>
           </div>
-          <div className="rounded-2xl sm:rounded-3xl bg-indigo-50/60 p-4 sm:p-6 shadow-md border border-indigo-100 group hover:shadow-lg transition-all min-w-0">
-            <div className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1 truncate">Pending Review</div>
+          <div className="rounded-lg sm:rounded-lg bg-indigo-50/60 p-4 sm:p-6 shadow-md border border-indigo-100 group hover:shadow-lg transition-all min-w-0">
+            <div className="text-xs font-bold text-indigo-600 mb-1 truncate">Pending Review</div>
             <div className="text-3xl sm:text-4xl font-koulen text-indigo-700 tabular-nums">{reportStats.in_review}</div>
           </div>
-          <div className="rounded-2xl sm:rounded-3xl bg-rose-50/60 p-4 sm:p-6 shadow-md border border-rose-100 group hover:shadow-lg transition-all min-w-0">
-            <div className="text-xs font-bold text-rose-600 uppercase tracking-wider mb-1 truncate">Critical Priority</div>
+          <div className="rounded-lg sm:rounded-lg bg-rose-50/60 p-4 sm:p-6 shadow-md border border-rose-100 group hover:shadow-lg transition-all min-w-0">
+            <div className="text-xs font-bold text-rose-600 mb-1 truncate">Critical Priority</div>
             <div className="text-3xl sm:text-4xl font-koulen text-rose-600 tabular-nums">{reportStats.critical}</div>
           </div>
-          <div className="rounded-2xl sm:rounded-3xl bg-emerald-50/60 p-4 sm:p-6 shadow-md border border-emerald-100 group hover:shadow-lg transition-all min-w-0">
-            <div className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1 truncate">Verified Complete</div>
+          <div className="rounded-lg sm:rounded-lg bg-emerald-50/60 p-4 sm:p-6 shadow-md border border-emerald-100 group hover:shadow-lg transition-all min-w-0">
+            <div className="text-xs font-bold text-emerald-600 mb-1 truncate">Verified Complete</div>
             <div className="text-3xl sm:text-4xl font-koulen text-emerald-600 tabular-nums">{reportStats.completed}</div>
           </div>
         </div>

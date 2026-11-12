@@ -7,11 +7,11 @@ export function ARUnsupportedNotice() {
   if (dismissed) return null
 
   return (
-    <div className="bg-sky-50/90 border border-sky-200/80 p-4 rounded-2xl flex items-start justify-between gap-3 shadow-sm">
+    <div className="bg-sky-50/90 border border-sky-200/80 p-4 rounded-lg flex items-start justify-between gap-3 shadow-sm">
       <div className="flex items-start gap-3">
         
         <div>
-          <h4 className="text-xs font-black text-sky-950 uppercase tracking-wider">
+          <h4 className="text-xs font-black text-sky-950">
             Universal Optical AR Active
           </h4>
           <p className="text-xs text-sky-800 font-medium mt-0.5 leading-relaxed">
@@ -26,7 +26,7 @@ export function ARUnsupportedNotice() {
         className="text-xs font-bold text-sky-600 hover:text-sky-800 p-1 rounded-lg"
         aria-label="Dismiss notice"
       >
-        ✕
+        ×
       </button>
     </div>
   )

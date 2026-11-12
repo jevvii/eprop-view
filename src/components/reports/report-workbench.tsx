@@ -187,7 +187,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/reports" className="text-[11px] font-bold uppercase tracking-wider text-primary hover:underline">
+          <Link href="/reports" className="text-[11px] font-bold text-primary hover:underline">
             ← Back to reports
           </Link>
           <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase mt-1">{report.report_id}</h2>
@@ -209,7 +209,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
         title="Report Content"
         description="Every field is editable. Saving snapshots the current version into the revision history first."
         action={currentStatus === 'completed' ? (
-          <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+          <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
             <input type="checkbox" checked={reopen} onChange={(event) => setReopen(event.target.checked)} />
             Reopen to edit
           </label>
@@ -279,7 +279,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
             <button
               type="submit"
               disabled={save.pending || isLocked}
-              className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+              className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
             >
               {save.pending ? 'Saving…' : 'Save revision'}
             </button>
@@ -298,7 +298,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
       >
         <form onSubmit={handleSaveLimitations} className="space-y-3">
           <fieldset className="space-y-2">
-            <legend className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            <legend className="text-[11px] font-bold text-slate-500 mb-1.5">
               Standard exclusions
             </legend>
             {DEFAULT_EXCLUSIONS.map((text) => (
@@ -330,7 +330,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
           <button
             type="submit"
             disabled={limits.pending || currentStatus === 'completed'}
-            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
           >
             {limits.pending ? 'Saving…' : 'Save limitation statement'}
           </button>
@@ -359,7 +359,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
                 <li key={revision.id} className="py-3 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Chip tone="neutral">Revision {revision.revision_number}</Chip>
-                    <span className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">
+                    <span className="text-[11px] text-slate-500 font-medium">
                       {formatDate(revision.changed_at)}
                     </span>
                   </div>
@@ -391,7 +391,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
             type="button"
             onClick={handleShare}
             disabled={share.pending || currentStatus !== 'completed'}
-            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
           >
             {share.pending ? 'Creating…' : 'Create share link'}
           </button>
@@ -399,7 +399,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
             <button
               type="button"
               onClick={() => navigator.clipboard?.writeText(shareUrl).catch(() => undefined)}
-              className="inline-flex items-center justify-center bg-white border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all min-h-[44px]"
+              className="inline-flex items-center justify-center bg-white border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all min-h-[44px]"
             >
               Copy link
             </button>
@@ -412,7 +412,7 @@ export function ReportWorkbench({ report }: { report: Report }) {
           </p>
         )}
         {shareTokens.length > 0 && (
-          <div className="border-t border-slate-100 pt-4">
+          <div className="border-t border-slate-200 pt-4">
             <h4 className="text-xs font-bold text-slate-600">Recent share links (up to 100)</h4>
             <ul className="mt-2 divide-y divide-slate-100">
               {shareTokens.map((token) => {

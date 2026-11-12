@@ -42,7 +42,7 @@ export function ReferenceTargetControls({ inspectionId, anchors }: Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 shadow-sm" aria-label="Printed reference targets">
+    <section className="rounded-lg border border-slate-200 bg-white p-5 space-y-3 shadow-sm" aria-label="Printed reference targets">
       <div className="flex items-center gap-2">
         <Printer className="h-5 w-5 text-primary" aria-hidden="true" />
         <h3 className="text-sm font-semibold text-slate-900">Printed reference targets</h3>
@@ -85,7 +85,7 @@ export function ReferenceTargetControls({ inspectionId, anchors }: Props) {
       </p>
       {targets.length > 0 && (
         <ul className="space-y-2" aria-label="Reusable references">
-          {targets.map((target) => <li key={target.id} className="space-y-3 border-t border-slate-100 pt-3">
+          {targets.map((target) => <li key={target.id} className="space-y-3 border-t border-slate-200 pt-3">
             <div className="min-w-0 text-xs text-slate-700">
               <p className="break-words font-semibold">{target.label}</p>
               <p>{target.sizeMm} mm · {target.id.slice(0, 8)}</p>

@@ -1,7 +1,5 @@
 'use client'
 
-import { WorkspaceFilterBar } from '@/components/shared/report-filters'
-
 import { useDashboardStats, useProfile, useSettlementOverview } from '@/app/lib/queries'
 import { hasCapability } from '@/app/lib/role-utils'
 import { AccessDenied } from '@/components/shared/require-role'
@@ -26,10 +24,10 @@ function ConnectionStatus({
 
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Data status</span>
+      <span className="text-xs font-semibold text-slate-500">Data status</span>
       <span className="flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${state.dot}`} aria-hidden="true" />
-        <span className={`text-xs font-semibold ${state.text}`} role="status">
+ <span className={`h-2 w-2 rounded-full ${state.dot}`} aria-hidden="true" />
+ <span className={`text-xs font-semibold ${state.text}`} role="status">
           {state.label}
         </span>
       </span>
@@ -47,7 +45,7 @@ export default function DashboardPage() {
   if (profileLoading) {
     return (
       <div
-        className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm h-80 animate-pulse border border-slate-100 mx-2"
+        className="bg-white p-6 sm:p-10 rounded-lg shadow-sm h-80 animate-pulse border border-slate-200 mx-2"
         aria-busy="true"
         aria-label="Loading dashboard"
       />
@@ -70,7 +68,7 @@ export default function DashboardPage() {
   ) => (statsLoading ? '—' : (stats?.[key] ?? 0))
 
   return (
-    <div className="flex flex-col min-h-0 lg:h-full"><WorkspaceFilterBar /><div className="flex flex-1 flex-col lg:flex-row w-full min-w-0 min-h-0 bg-background">
+    <div className="flex flex-col min-h-0 lg:h-full"><div className="flex flex-1 flex-col lg:flex-row w-full min-w-0 min-h-0 bg-background">
       {/* One map instance for both layouts. Previously the mobile and desktop
           branches mounted two Mapbox WebGL contexts per page load. */}
       <section className="relative flex flex-1 flex-col min-w-0 min-h-0">
@@ -102,7 +100,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="mx-4 mt-4 lg:m-0 h-[340px] sm:h-[420px] lg:h-auto lg:flex-1 overflow-hidden rounded-2xl lg:rounded-none border border-slate-200/70 lg:border-0">
+        <div className="mx-4 mt-4 lg:m-0 h-[340px] sm:h-[420px] lg:h-auto lg:flex-1 overflow-hidden rounded-lg lg:rounded-none border border-slate-200/70 lg:border-0">
           <GeospatialMap />
         </div>
 
@@ -125,7 +123,7 @@ export default function DashboardPage() {
           <MaintenanceTable />
         </div>
 
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-slate-200">
           <ConnectionStatus isLoading={statsLoading} isError={statsError} />
         </div>
       </aside>

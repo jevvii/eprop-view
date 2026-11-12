@@ -19,7 +19,7 @@ export function LoginForm() {
   return (
     <form action={action} className="space-y-4">
       <div>
-        <label htmlFor="email" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Email</label>
+        <label htmlFor="email" className="block text-xs font-bold text-slate-700 mb-1.5">Email</label>
         <input
           id="email"
           name="email"
@@ -33,7 +33,7 @@ export function LoginForm() {
         />
       </div>
       <div>
-        <label htmlFor="password" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Password</label>
+        <label htmlFor="password" className="block text-xs font-bold text-slate-700 mb-1.5">Password</label>
         <div className="relative">
           <input
             id="password"
@@ -49,7 +49,7 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary min-w-11 min-h-11 flex items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary min-w-11 min-h-11 flex items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
@@ -71,7 +71,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full min-h-[48px] py-3.5 bg-primary text-white font-black text-xs rounded-xl hover:translate-y-[-1px] transition-all active:scale-[0.99] disabled:opacity-50 uppercase tracking-widest shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        className="w-full min-h-[48px] py-3.5 bg-primary text-white font-black text-xs rounded-xl hover:translate-y-[-1px] transition-all active:scale-[0.99] disabled:opacity-50 shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         {pending ? 'Authorizing...' : 'Enter System'}
       </button>

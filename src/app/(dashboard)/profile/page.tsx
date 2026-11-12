@@ -45,14 +45,14 @@ export default function ProfilePage() {
   }
 
   if (isLoading) {
-    return <div className="h-64 rounded-3xl bg-white border border-slate-100 animate-pulse" />
+    return <div className="h-64 rounded-lg bg-white border border-slate-200 animate-pulse" />
   }
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
         <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">My Profile</h2>
-        <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
+        <p className="text-xs text-slate-500 font-medium mt-0.5">
           Your contact details as they appear on inspections and reports.
         </p>
       </div>
@@ -98,7 +98,7 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={updateProfile.isPending}
-            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 min-h-[44px]"
           >
             {updateProfile.isPending ? 'Saving…' : 'Save changes'}
           </button>

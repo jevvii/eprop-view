@@ -56,14 +56,14 @@ export function Header() {
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Role badge is redundant on the narrowest screens; the avatar remains. */}
         <span
-          className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-xs ${roleBadgeClass}`}
+ className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border shadow-xs ${roleBadgeClass}`}
         >
           {roleLabel}
         </span>
 
         <div className="hidden sm:block text-right">
-          <div className="text-xs font-black text-slate-900 leading-tight uppercase tracking-tight">{profile?.full_name || 'Authorized User'}</div>
-          <div className="text-xs text-slate-500 font-medium tracking-wide truncate max-w-[180px]">{email}</div>
+          <div className="text-xs font-black text-slate-900 leading-tight">{profile?.full_name || 'Authorized User'}</div>
+          <div className="text-xs text-slate-500 font-medium truncate max-w-[180px]">{email}</div>
         </div>
         <div 
           className="w-9 h-9 lg:w-10 lg:h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-xs lg:text-sm shadow-md"

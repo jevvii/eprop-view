@@ -23,7 +23,7 @@ function ReviewContent({ content }: { content: Publication }) {
   return (
     <div className="space-y-5">
       <section>
-        <h4 className="text-sm font-bold uppercase">Signed recommendations</h4>
+        <h4 className="text-sm font-bold">Signed recommendations</h4>
         {content.recommendations.length === 0 ? <p className="text-xs mt-2">No current signed recommendation. This report is not ready for final publication.</p> : (
           <ul className="space-y-3 mt-2">
             {content.recommendations.map((recommendation) => (
@@ -36,7 +36,7 @@ function ReviewContent({ content }: { content: Publication }) {
         )}
       </section>
       <section>
-        <h4 className="text-sm font-bold uppercase">Assessment limitations</h4>
+        <h4 className="text-sm font-bold">Assessment limitations</h4>
         {content.limitation ? (
           <>
             <ul className="list-disc pl-5 text-xs space-y-1 mt-2">
@@ -48,7 +48,7 @@ function ReviewContent({ content }: { content: Publication }) {
         ) : <p className="text-xs mt-2">No limitation statement recorded. Do not interpret this document as a complete structural assessment.</p>}
       </section>
       <section>
-        <h4 className="text-sm font-bold uppercase">Planning repair costs (PHP)</h4>
+        <h4 className="text-sm font-bold">Planning repair costs (PHP)</h4>
         {content.costs.length === 0 ? <p className="text-xs mt-2">No cost estimate recorded.</p> : (
           <ul className="text-xs space-y-2 mt-2">
             {content.costs.map((cost) => <li key={cost.id}>
@@ -60,7 +60,7 @@ function ReviewContent({ content }: { content: Publication }) {
         )}
       </section>
       {content.detections.length > 0 && <section>
-        <h4 className="text-sm font-bold uppercase">Image findings and method</h4>
+        <h4 className="text-sm font-bold">Image findings and method</h4>
         <p className="text-[11px] mt-1">Automated suggestions require engineering review. Heuristic scores are not calibrated diagnostic accuracy.</p>
         <ul className="space-y-2 mt-2 text-xs">
           {content.detections.map((detection) => <li key={detection.id} className="rounded-lg border border-slate-200 p-3">
@@ -74,9 +74,9 @@ function ReviewContent({ content }: { content: Publication }) {
           </li>)}
         </ul>
       </section>}
-      {content.images.length > 0 && <section><h4 className="text-sm font-bold uppercase">Photographic evidence</h4><div className="grid grid-cols-2 gap-3 mt-2">{content.images.map((image) => <figure key={image.id} className="border border-slate-200 p-2">{image.signed_url && <img src={image.signed_url} alt={image.caption} width={640} height={480} className="w-full h-auto" />}<figcaption className="text-xs mt-1">{image.caption}</figcaption></figure>)}</div></section>}
+      {content.images.length > 0 && <section><h4 className="text-sm font-bold">Photographic evidence</h4><div className="grid grid-cols-2 gap-3 mt-2">{content.images.map((image) => <figure key={image.id} className="border border-slate-200 p-2">{image.signed_url && <img src={image.signed_url} alt={image.caption} width={640} height={480} className="w-full h-auto" />}<figcaption className="text-xs mt-1">{image.caption}</figcaption></figure>)}</div></section>}
       {content.anchors.length > 0 && <section>
-        <h4 className="text-sm font-bold uppercase">Captured inspection evidence</h4>
+        <h4 className="text-sm font-bold">Captured inspection evidence</h4>
         <div className="grid grid-cols-2 gap-3 mt-2">
           {content.anchors.map((anchor) => <figure key={anchor.id} className="border border-slate-200 rounded-lg p-3">
             {anchor.image_url ? <img src={anchor.image_url} alt={`Captured evidence: ${anchor.label}`} width={640} height={480} className="w-full h-auto" /> : <p className="text-xs">No captured photograph for this point.</p>}
@@ -134,7 +134,7 @@ export function PrintReport({ reports, projectName, generatedBy, stats, selected
           <h3 className="text-xl font-bold">{report.report_id} · {report.title}</h3>
           <p className="text-xs mt-2">Date: {new Date(report.date).toLocaleDateString()} · Location: {report.location} · Risk: {report.risk_score}/10 · Status: {report.status.replace('_', ' ')}</p>
           <p className="text-xs mt-1">{report.status === 'completed' && report.reviewed_by && report.reviewed_at ? `Reviewed by ${report.reviewed_by_name ?? report.reviewed_by} on ${new Date(report.reviewed_at).toLocaleString()}.` : 'DRAFT / review incomplete. No final engineering certification is implied.'}</p>
-          <section className="my-5"><h4 className="text-sm font-bold uppercase">Technical findings</h4><p className="text-xs leading-relaxed whitespace-pre-line mt-2">{report.key_findings || 'No findings recorded.'}</p><p className="text-[11px] mt-1">Narrative source: {(report as Report & { findings_provenance?: string }).findings_provenance ?? 'engineer'}.</p></section>
+          <section className="my-5"><h4 className="text-sm font-bold">Technical findings</h4><p className="text-xs leading-relaxed whitespace-pre-line mt-2">{report.key_findings || 'No findings recorded.'}</p><p className="text-[11px] mt-1">Narrative source: {(report as Report & { findings_provenance?: string }).findings_provenance ?? 'engineer'}.</p></section>
           {results[index].data && <ReviewContent content={results[index].data} />}
         </article>)}
       </div>

@@ -147,10 +147,10 @@ export function StructuralElementManager() {
   })
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-1">
+          <h3 className="text-xs font-bold text-slate-600 mb-1">
             Structural Element Catalog
           </h3>
           <p className="text-xs text-slate-500 font-medium">
@@ -163,7 +163,7 @@ export function StructuralElementManager() {
             onClick={() => setIsCsvModalOpen(true)}
             disabled={!activeFloorId}
             variant="outline"
-            className="text-xs font-bold uppercase tracking-wider px-3.5 py-2 min-h-[38px]"
+            className="text-xs font-bold px-3.5 py-2 min-h-[38px]"
           >
             Import CSV
           </Button>
@@ -171,7 +171,7 @@ export function StructuralElementManager() {
           <Button
             onClick={openAddModal}
             disabled={!activeFloorId}
-            className="text-xs font-bold uppercase tracking-wider px-4 py-2 min-h-[38px]"
+            className="text-xs font-bold px-4 py-2 min-h-[38px]"
           >
             + Add Element
           </Button>
@@ -181,7 +181,7 @@ export function StructuralElementManager() {
       {/* Selectors Hierarchy */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Project</label>
+          <label className="block text-xs font-bold text-slate-600 mb-1.5">Project</label>
           <select
             value={activeProjectId}
             onChange={(e) => {
@@ -198,7 +198,7 @@ export function StructuralElementManager() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Building</label>
+          <label className="block text-xs font-bold text-slate-600 mb-1.5">Building</label>
           <select
             value={activeBuildingId}
             onChange={(e) => {
@@ -219,7 +219,7 @@ export function StructuralElementManager() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Floor Level</label>
+          <label className="block text-xs font-bold text-slate-600 mb-1.5">Floor Level</label>
           <select
             value={activeFloorId}
             onChange={(e) => setSelectedFloorId(e.target.value)}
@@ -242,7 +242,7 @@ export function StructuralElementManager() {
         <div className="flex flex-wrap gap-2 pt-2">
           <button
             onClick={() => setFilterType('all')}
-            className={`text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 min-h-[36px] rounded-xl transition-all ${
+ className={`text-xs font-bold px-3.5 py-1.5 min-h-[36px] rounded-xl transition-all ${
               filterType === 'all' ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
@@ -255,7 +255,7 @@ export function StructuralElementManager() {
               <button
                 key={t.value}
                 onClick={() => setFilterType(t.value)}
-                className={`text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 min-h-[36px] rounded-xl transition-all ${
+ className={`text-xs font-bold px-3.5 py-1.5 min-h-[36px] rounded-xl transition-all ${
                   filterType === t.value ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -268,19 +268,19 @@ export function StructuralElementManager() {
 
       {/* Elements Table */}
       {isLoading ? (
-        <div className="h-32 bg-slate-50 animate-pulse rounded-2xl" />
+        <div className="h-32 bg-slate-50 animate-pulse rounded-lg" />
       ) : !activeFloorId ? (
-        <div className="text-center py-8 border border-dashed border-slate-200 rounded-2xl">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="text-center py-8 border border-dashed border-slate-200 rounded-lg">
+          <p className="text-xs font-bold text-slate-500">
             Select a project, building, and floor level to inspect elements.
           </p>
         </div>
       ) : !elements || elements.length === 0 ? (
-        <div className="text-center py-8 border border-dashed border-slate-200 rounded-2xl">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="text-center py-8 border border-dashed border-slate-200 rounded-lg">
+          <p className="text-xs font-bold text-slate-500">
             No structural elements cataloged on this floor.
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Add members individually or click &quot;Import CSV&quot; to bulk upload architectural schedules.
           </p>
         </div>
@@ -289,20 +289,20 @@ export function StructuralElementManager() {
           <table className="responsive-table w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left">
-                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider pl-2">Identifier</th>
-                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Member Type</th>
-                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Description</th>
-                <th className="py-3 font-bold text-xs text-slate-600 uppercase tracking-wider text-right pr-2">Actions</th>
+                <th className="py-3 font-bold text-xs text-slate-600 pl-2">Identifier</th>
+                <th className="py-3 font-bold text-xs text-slate-600">Member Type</th>
+                <th className="py-3 font-bold text-xs text-slate-600">Description</th>
+                <th className="py-3 font-bold text-xs text-slate-600 text-right pr-2">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredElements?.map((elem) => (
                 <tr key={elem.id} className="hover:bg-slate-50/70 transition-all">
-                  <td className="py-3 pl-2 font-bold text-slate-900 tracking-tight">
+                  <td className="py-3 pl-2 font-bold text-slate-900">
                     {elem.identifier}
                   </td>
                   <td className="py-3">
-                    <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase bg-blue-50 text-blue-700 border border-blue-100">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
                       {elem.element_type}
                     </span>
                   </td>
@@ -312,13 +312,13 @@ export function StructuralElementManager() {
                   <td className="py-3 text-right pr-2 space-x-2 whitespace-nowrap">
                     <button
                       onClick={() => openEditModal(elem)}
-                      className="text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
+                      className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(elem.id)}
-                      className="text-xs font-bold uppercase tracking-wider text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
+                      className="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 min-h-[32px] rounded-lg transition-colors"
                     >
                       Delete
                     </button>
@@ -335,24 +335,24 @@ export function StructuralElementManager() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-sm rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-7 shadow-2xl space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-sm rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 shadow-lg space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h4 className="text-base font-bold uppercase tracking-wider text-slate-800">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h4 className="text-base font-bold text-slate-800">
                 {editingElement ? 'Edit Member Record' : 'Add Structural Member'}
               </h4>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 aria-label="Close modal"
-                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
+                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
               >
-                ✕
+                ×
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 Identifier *
               </label>
               <input
@@ -365,7 +365,7 @@ export function StructuralElementManager() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 Element Classification
               </label>
               <select
@@ -380,7 +380,7 @@ export function StructuralElementManager() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 Description / Notes
               </label>
               <textarea
@@ -398,19 +398,19 @@ export function StructuralElementManager() {
               </p>
             )}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-200">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsModalOpen(false)}
-                className="text-xs font-bold uppercase min-h-[40px]"
+                className="text-xs font-bold min-h-[40px]"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={createElement.isPending || updateElement.isPending}
-                className="text-xs font-bold uppercase bg-primary text-white min-h-[40px]"
+                className="text-xs font-bold bg-primary text-white min-h-[40px]"
               >
                 {createElement.isPending || updateElement.isPending ? 'Saving…' : 'Save Member'}
               </Button>
@@ -424,11 +424,11 @@ export function StructuralElementManager() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleCsvImport}
-            className="w-full max-w-lg rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-7 shadow-2xl space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-lg rounded-lg sm:rounded-lg bg-white p-5 sm:p-7 shadow-lg space-y-4 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h4 className="text-base font-bold uppercase tracking-wider text-slate-800">
+                <h4 className="text-base font-bold text-slate-800">
                   Bulk Import Structural Members
                 </h4>
                 <p className="text-xs text-slate-500 font-medium">
@@ -439,9 +439,9 @@ export function StructuralElementManager() {
                 type="button"
                 onClick={() => setIsCsvModalOpen(false)}
                 aria-label="Close modal"
-                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
+                className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 font-bold transition-colors"
               >
-                ✕
+                ×
               </button>
             </div>
 
@@ -456,7 +456,7 @@ export function StructuralElementManager() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 Paste CSV Data
               </label>
               <textarea
@@ -470,7 +470,7 @@ export function StructuralElementManager() {
             </div>
 
             {importResult && (
-              <div className={`p-3.5 rounded-xl text-xs font-bold ${
+ <div className={`p-3.5 rounded-xl text-xs font-bold ${
                 importResult.errors.length > 0 ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
               }`}>
                 <p>Import Complete: <span className="tabular-nums">{importResult.created}</span> structural elements created.</p>
@@ -484,19 +484,19 @@ export function StructuralElementManager() {
               </div>
             )}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-200">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsCsvModalOpen(false)}
-                className="text-xs font-bold uppercase min-h-[40px]"
+                className="text-xs font-bold min-h-[40px]"
               >
                 Close
               </Button>
               <Button
                 type="submit"
                 disabled={importCSV.isPending || !csvContent.trim()}
-                className="text-xs font-bold uppercase bg-primary text-white min-h-[40px]"
+                className="text-xs font-bold bg-primary text-white min-h-[40px]"
               >
                 {importCSV.isPending ? 'Importing…' : 'Start Import'}
               </Button>

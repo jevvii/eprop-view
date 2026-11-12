@@ -23,7 +23,7 @@ export default function ReportDetailPage() {
   const { data: report, isLoading, isError } = useReport(reportId)
 
   if (isLoading) {
-    return <div className="h-96 rounded-3xl bg-white border border-slate-100 animate-pulse" />
+    return <div className="h-96 rounded-lg bg-white border border-slate-200 animate-pulse" />
   }
 
   if (isError || !report) {

@@ -192,7 +192,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
       </div>
       <button type="button" aria-label="Dismiss AR error" onClick={() => setArStartError(null)} className="min-h-[44px] min-w-[44px] rounded-lg px-2 font-semibold">Close</button>
     </div>}
-    <div hidden={state.active} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+    <div hidden={state.active} className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
       <h2 className="text-xl text-primary">Markerless inspection</h2>
       <p className="text-sm text-slate-600">Mark detected surfaces during one AR session. Records are saved, but physical locations are not restored after you end or reload.</p>
       <label className="block text-sm font-semibold">Inspection
@@ -213,7 +213,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
           className="min-h-12 w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 text-sm font-semibold">Use camera/photo inspection</button>
       </div>}
     </div>
-    <div ref={overlayRef} data-markerless-overlay data-xr-active={state.active} className={`relative h-[420px] overflow-hidden rounded-2xl border border-slate-200 ${state.active ? 'bg-transparent' : 'bg-slate-950'}`}>
+ <div ref={overlayRef} data-markerless-overlay data-xr-active={state.active} className={`relative h-[420px] overflow-hidden rounded-lg border border-slate-200 ${state.active ? 'bg-transparent' : 'bg-slate-950'}`}>
       <video ref={videoRef} autoPlay muted playsInline onPlaying={() => setCameraPlaying(true)} onPause={() => setCameraPlaying(false)}
         className="absolute inset-0 h-full w-full object-cover" style={{ display: state.active ? 'none' : 'block' }} />
       {!active && <p className="absolute inset-0 flex items-center justify-center p-6 text-center text-white">Start markerless AR on a supported device, or open camera/photo inspection.</p>}
@@ -226,7 +226,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
           <button type="button" disabled={busy || saving} onClick={() => void stop().catch(() => setError('Could not close the session record. Reload before starting again.'))}
             className="min-h-[44px] rounded-lg bg-white px-3 text-sm font-semibold">End inspection</button>
         </div>
-        <div className={`absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${state.active && !state.hit ? 'border-amber-300' : 'border-emerald-300'}`} />
+ <div className={`absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${state.active && !state.hit ? 'border-amber-300' : 'border-emerald-300'}`} />
         <div className="space-y-2 pointer-events-auto">
           {cameraActive && !cameraPlaying && <button type="button" onClick={() => {
             void videoRef.current?.play().catch(() => setError('Camera playback could not resume. End inspection and start the camera again.'))
@@ -249,10 +249,10 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
     </div>
     {!active && error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {!active && notice && <p role="status" className="rounded-lg bg-sky-50 p-3 text-sm text-sky-900">{notice}</p>}
-    <section hidden={state.active} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3" aria-label="Saved inspection records">
+    <section hidden={state.active} className="rounded-lg border border-slate-200 bg-white p-4 space-y-3" aria-label="Saved inspection records">
       <h3 className="text-base font-semibold">Saved inspection records</h3>
       {!markers.length && <p className="text-sm text-slate-600">No saved inspection points yet.</p>}
-      {markers.map((marker) => <div key={marker.id} className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+      {markers.map((marker) => <div key={marker.id} className="flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
         <div className="min-w-0">
           <p className="font-semibold">{marker.label}</p>
           <p className="text-xs text-slate-600">{marker.pose.sessionTracking?.kind === 'webxr-session-v1' ? 'WebXR session-only record · not a restored checkpoint' : marker.pose.sessionTracking?.kind === 'camera-frame-v1' ? 'Photo annotation · no spatial tracking' : marker.pose.reference ? 'Printed-reference record' : 'Legacy record'}</p>

@@ -29,7 +29,7 @@ export function ConfigurationPanel() {
             <thead>
               <tr>
                 {['Band', 'Width range'].map((heading) => (
-                  <th key={heading} scope="col" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pb-2 pr-3 border-b border-slate-200">
+                  <th key={heading} scope="col" className="text-[10px] font-bold text-slate-500 pb-2 pr-3 border-b border-slate-200">
                     {heading}
                   </th>
                 ))}
@@ -37,7 +37,7 @@ export function ConfigurationPanel() {
             </thead>
             <tbody>
               {CRACK_WIDTH_BANDS.map((band) => (
-                <tr key={band.band} className="border-b border-slate-100 last:border-0">
+                <tr key={band.band} className="border-b border-slate-200 last:border-0">
                   <td className="py-2 pr-3 text-xs font-semibold text-slate-800 capitalize">{band.band}</td>
                   <td className="py-2 pr-3 text-xs text-slate-600 font-medium">{band.label}</td>
                 </tr>
@@ -47,7 +47,7 @@ export function ConfigurationPanel() {
         </div>
 
         <div>
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tolerable width by exposure</p>
+          <p className="text-[11px] font-bold text-slate-500 mb-1.5">Tolerable width by exposure</p>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {Object.entries(ACI_224R_EXPOSURE_LIMITS_MM).map(([exposure, limit]) => (
               <li key={exposure} className="text-xs text-slate-700 font-medium">
@@ -78,7 +78,7 @@ export function ConfigurationPanel() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {Object.entries(ELEMENT_MULTIPLIERS).map(([element, multiplier]) => (
             <div key={element} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{element}</p>
+              <p className="text-[10px] font-bold text-slate-500">{element}</p>
               <p className="text-sm font-semibold text-slate-900 tabular-nums">{multiplier}×</p>
             </div>
           ))}

@@ -33,7 +33,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
       <form ref={formRef} action={action} className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label htmlFor="fullName" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+            <label htmlFor="fullName" className="block text-xs font-bold text-slate-700 mb-1.5">
               Full Name
             </label>
             <input
@@ -47,7 +47,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
           </div>
 
           <div>
-            <label htmlFor="role" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+            <label htmlFor="role" className="block text-xs font-bold text-slate-700 mb-1.5">
               System Role
             </label>
             <select
@@ -64,7 +64,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+            <label htmlFor="email" className="block text-xs font-bold text-slate-700 mb-1.5">
               Email Address
             </label>
             <input
@@ -78,7 +78,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+            <label htmlFor="password" className="block text-xs font-bold text-slate-700 mb-1.5">
               Initial Password
             </label>
             <input
@@ -92,7 +92,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
           </div>
 
           <div className="md:col-span-2">
-            <label htmlFor="department" className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+            <label htmlFor="department" className="block text-xs font-bold text-slate-700 mb-1.5">
               Department / Unit
             </label>
             <input
@@ -117,16 +117,16 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
           </div>
         )}
 
-        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200">
           {onClose && (
-            <Button type="button" variant="outline" onClick={onClose} className="min-h-[44px] text-xs font-bold uppercase">
+            <Button type="button" variant="outline" onClick={onClose} className="min-h-[44px] text-xs font-bold">
               Cancel
             </Button>
           )}
           <button
             type="submit"
             disabled={pending}
-            className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 text-xs uppercase tracking-wider min-h-[44px]"
+            className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 text-xs min-h-[44px]"
           >
             {pending ? 'Provisioning...' : 'Create Account'}
           </button>

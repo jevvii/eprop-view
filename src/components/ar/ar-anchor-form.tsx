@@ -126,12 +126,12 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 space-y-4"
+      className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-4"
     >
-      <div className="flex flex-col items-start border-b border-slate-100 pb-3 gap-3">
+      <div className="flex flex-col items-start border-b border-slate-200 pb-3 gap-3">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <h4 className="text-xs sm:text-xs font-black text-slate-800 tracking-[0.2em] uppercase">
+          <h4 className="text-xs sm:text-xs font-black text-slate-800 tracking-[0.2em]">
             Inspection marker details
           </h4>
         </div>
@@ -139,7 +139,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
           type="button"
           onClick={handleAICameraScan}
               disabled={isScanningAI || evidenceUnavailable || createAnchor.isPending || !hitPose?.reference}
-          className="w-full text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl uppercase tracking-wider transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full text-xs font-black text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isScanningAI ? 'Analyzing…' : 'Analyze Frame (heuristic)'}
         </button>
@@ -152,8 +152,8 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
       )}
 
       {/* Surface Coordinate Telemetry */}
-      <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs">
-        <div className="flex justify-between text-slate-400 font-bold uppercase tracking-wider mb-1">
+      <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs">
+        <div className="flex justify-between text-slate-500 font-bold mb-1">
           <span>Printed reference</span>
           <span className={hitPose ? 'text-emerald-600 font-black' : 'text-amber-600 font-black'}>
             {hitPose ? 'Tracked' : 'Find target'}
@@ -169,7 +169,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
         <div>
           <label
             htmlFor="ar-anchor-label"
-            className="block text-xs font-black text-primary uppercase tracking-widest mb-1 ml-1"
+            className="block text-xs font-black text-primary mb-1 ml-1"
           >
             Anchor Label
           </label>
@@ -186,7 +186,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
           <div>
             <label
               htmlFor="ar-anchor-damage-type"
-              className="block text-xs font-black text-primary uppercase tracking-widest mb-1 ml-1"
+              className="block text-xs font-black text-primary mb-1 ml-1"
             >
               Damage Type
             </label>
@@ -207,7 +207,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
           <div>
             <label
               htmlFor="ar-anchor-severity"
-              className="block text-xs font-black text-primary uppercase tracking-widest mb-1 ml-1"
+              className="block text-xs font-black text-primary mb-1 ml-1"
             >
               Severity
             </label>
@@ -229,7 +229,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
         <div>
           <label
             htmlFor="ar-anchor-notes"
-            className="block text-xs font-black text-primary uppercase tracking-widest mb-1 ml-1"
+            className="block text-xs font-black text-primary mb-1 ml-1"
           >
             Field Notes / Context
           </label>
@@ -245,14 +245,14 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
         {/* Camera Snapshot Attachment Section */}
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
           <div className="flex flex-col items-start gap-3">
-            <span className="text-xs font-black text-slate-600 uppercase tracking-wider">
+            <span className="text-xs font-black text-slate-600">
               {snapshot ? 'Camera snapshot attached' : 'Visual frame evidence'}
             </span>
             <button
               type="button"
               onClick={handleCaptureSnapshot}
               disabled={evidenceUnavailable}
-              className="w-full text-xs font-black text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-3 py-2 rounded-lg uppercase tracking-wider transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-xs font-black text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-3 py-2 rounded-lg transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {snapshot ? 'Retake frame' : 'Capture frame'}
             </button>
@@ -290,7 +290,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
       <Button
         type="submit"
         disabled={createAnchor.isPending || !hitPose?.reference || isScanningAI}
-        className="w-full text-xs font-black uppercase tracking-[0.15em] py-3.5 h-auto shadow-lg shadow-primary/20 min-h-[44px] rounded-xl"
+        className="w-full text-xs font-black tracking-[0.15em] py-3.5 h-auto shadow-lg shadow-primary/20 min-h-[44px] rounded-xl"
       >
         {createAnchor.isPending ? 'Saving marker…' : 'Save marker + evidence'}
       </Button>

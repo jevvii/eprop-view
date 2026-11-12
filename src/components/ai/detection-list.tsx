@@ -56,7 +56,7 @@ export function DetectionList({ detections }: DetectionListProps) {
 
   if (detections.length === 0) {
     return (
-      <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+      <p className="text-xs text-slate-500 font-medium">
         No AI detections recorded.
       </p>
     )
@@ -76,24 +76,24 @@ export function DetectionList({ detections }: DetectionListProps) {
           return (
             <div
               key={detection.id}
-              className="border border-primary/30 rounded-2xl p-4 sm:p-5 bg-primary/5 space-y-4 animate-in fade-in"
+              className="border border-primary/30 rounded-lg p-4 sm:p-5 bg-primary/5 space-y-4 animate-in fade-in"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                <span className="text-xs font-bold text-primary">
                   Validate & Adjust Detection
                 </span>
                 <button
                   onClick={cancelEdit}
-                  className="min-w-9 min-h-9 flex items-center justify-center text-xs font-bold text-slate-400 hover:text-slate-700 rounded-lg hover:bg-white"
+                  className="min-w-9 min-h-9 flex items-center justify-center text-xs font-bold text-slate-500 hover:text-slate-700 rounded-lg hover:bg-white"
                   aria-label="Cancel editing"
                 >
-                  ✕
+                  ×
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Damage Type
                   </label>
                   <select
@@ -108,7 +108,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Severity
                   </label>
                   <select
@@ -130,7 +130,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Score (0-100)
                   </label>
                   <input
@@ -145,7 +145,7 @@ export function DetectionList({ detections }: DetectionListProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Validator / Engineering Notes
                 </label>
                 <input
@@ -162,7 +162,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                   variant="outline"
                   size="sm"
                   onClick={cancelEdit}
-                  className="text-xs font-bold uppercase tracking-wider py-2 px-4 min-h-[38px]"
+                  className="text-xs font-bold py-2 px-4 min-h-[38px]"
                 >
                   Cancel
                 </Button>
@@ -170,7 +170,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                   size="sm"
                   disabled={updateDetection.isPending}
                   onClick={() => saveEdit(detection.id)}
-                  className="text-xs font-bold uppercase tracking-wider py-2 px-4 bg-primary text-white min-h-[38px]"
+                  className="text-xs font-bold py-2 px-4 bg-primary text-white min-h-[38px]"
                 >
                   {updateDetection.isPending ? 'Saving...' : 'Apply Adjustments'}
                 </Button>
@@ -182,32 +182,32 @@ export function DetectionList({ detections }: DetectionListProps) {
         return (
           <div
             key={detection.id}
-            className={`border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+ className={`border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
               isVerified
                 ? 'bg-emerald-50/40 border-emerald-200/80'
                 : isRejected
                 ? 'bg-slate-100/70 border-slate-200 opacity-75'
-                : 'bg-slate-50 border-slate-100'
+                : 'bg-slate-50 border-slate-200'
             }`}
           >
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                <span className="text-xs font-bold text-slate-900">
                   {detection.damage_type}
                 </span>
                 <SeverityBadge severity={detection.severity} />
                 {isVerified && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider border border-emerald-200">
-                    ✓ Verified
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
+                    Verified
                   </span>
                 )}
                 {isRejected && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider border border-slate-300">
-                    ✗ False Positive
+                  <span className="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300">
+                    False positive
                   </span>
                 )}
               </div>
-              <div className="text-xs text-slate-500 font-medium uppercase tracking-wide flex items-center gap-2 flex-wrap">
+              <div className="text-xs text-slate-500 font-medium flex items-center gap-2 flex-wrap">
                 <span>Method: {detection.provenance ?? 'unrecorded'}</span>
                 <span className="tabular-nums" title="This value is not a calibrated measure of accuracy.">{detection.provenance === 'gemini' ? 'Model confidence' : 'Response strength'} {(detection.confidence * 100).toFixed(1)}% (uncalibrated)</span>
                 <span>·</span>
@@ -227,7 +227,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => startEdit(detection)}
-                  className="text-xs font-bold uppercase tracking-wider min-h-[36px] py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 transition-colors"
+                  className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 transition-colors"
                 >
                   Adjust
                 </Button>
@@ -244,7 +244,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                         notes: 'Verified by structural engineer.',
                       })
                     }
-                    className="text-xs font-bold uppercase tracking-wider min-h-[36px] py-1.5 px-3 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors"
+                    className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors"
                   >
                     {isRejected ? 'Re-Verify' : 'Verify'}
                   </Button>
@@ -262,7 +262,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                         notes: 'Rejected: Marked as false positive.',
                       })
                     }
-                    className="text-xs font-bold uppercase tracking-wider min-h-[36px] py-1.5 px-3 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
+                    className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
                   >
                     Reject
                   </Button>
@@ -280,7 +280,7 @@ export function DetectionList({ detections }: DetectionListProps) {
                         notes: 'Rejected: Marked as false positive.',
                       })
                     }
-                    className="text-xs font-bold uppercase tracking-wider min-h-[36px] py-1.5 px-3 bg-white hover:bg-slate-200 text-slate-600 transition-colors"
+                    className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-slate-200 text-slate-600 transition-colors"
                   >
                     Reject
                   </Button>

@@ -223,7 +223,7 @@ export function SystemHealth() {
               key={row.key}
               className="rounded-xl border border-slate-200 bg-slate-50 p-3"
             >
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <p className="text-[10px] font-bold text-slate-500">
                 {row.label}
               </p>
               <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">
