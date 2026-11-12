@@ -412,7 +412,7 @@ export function ReportFilters({
         <div
           role="dialog"
           aria-label="Filter records"
-          className="absolute left-0 top-full z-30 mt-2 w-full max-w-2xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg"
+          className="absolute left-0 top-full z-30 mt-2 w-full max-w-2xl overflow-hidden rounded-lg border border-slate-200 bg-white"
         >
           <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr]">
             <ul className="border-b border-slate-200 p-2 sm:border-b-0 sm:border-r">

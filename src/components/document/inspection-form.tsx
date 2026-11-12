@@ -128,7 +128,7 @@ export function InspectionForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6 flex flex-col h-full min-w-0">
+    <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-6 flex flex-col h-full min-w-0">
       <div className="flex items-center justify-between border-b border-slate-200 pb-4 px-1">
         <div>
           <h3 className="text-xs font-bold text-slate-700 mb-0.5">Field Inspection Registry</h3>
@@ -314,7 +314,7 @@ export function InspectionForm() {
       {success && <p className="text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">{success}</p>}
 
       <div className="flex justify-end pt-3 border-t border-slate-200">
-        <Button type="submit" disabled={createInspection.isPending} className="font-bold text-xs px-8 min-h-[44px] shadow-md shadow-primary/20">
+        <Button type="submit" disabled={createInspection.isPending} className="font-bold text-xs px-8 min-h-[44px]">
           {createInspection.isPending ? 'Syncing...' : 'Register Inspection'}
         </Button>
       </div>

@@ -91,7 +91,7 @@ export default function ReportsPage() {
   }
 
   if (isLoading || profileLoading) {
-    return <div className="bg-white p-6 rounded-lg shadow-lg h-40 animate-pulse" />
+    return <div className="bg-white p-6 rounded-lg h-40 animate-pulse" />
   }
 
   if (profile && !canViewReports) {
@@ -107,7 +107,7 @@ export default function ReportsPage() {
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-lg text-red-600">
+      <div className="bg-white p-6 rounded-lg text-red-600">
         Failed to load reports
       </div>
     )
@@ -115,7 +115,7 @@ export default function ReportsPage() {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-lg text-slate-500">
+      <div className="bg-white p-6 rounded-lg text-slate-500">
         Add a project to start creating reports.
       </div>
     )

@@ -51,7 +51,7 @@ export default function DocumentPage() {
   }, [inspectionId, inspections])
 
   if (isLoading) {
-    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-200 mx-2" />
+    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg h-80 animate-pulse border border-slate-200 mx-2" />
   }
 
   return (
@@ -84,7 +84,7 @@ export default function DocumentPage() {
           {canUseAR && inspectionId && (
             <Link
               href={`/ar?inspectionId=${encodeURIComponent(inspectionId)}`}
-              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-colors min-h-[44px]"
+              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition-colors min-h-[44px]"
             >
               <ScanLine className="h-4 w-4" aria-hidden="true" />
               <span>Launch AR inspection</span>
@@ -110,7 +110,7 @@ export default function DocumentPage() {
             </div>
           )}
           {!canUpload && !canCreateInspection && (
-            <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-4">
+            <div className="bg-white p-6 sm:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-4">
               <div className="flex items-center gap-3">
                 <Microscope className="h-6 w-6 text-slate-500" aria-hidden="true" />
                 <div>

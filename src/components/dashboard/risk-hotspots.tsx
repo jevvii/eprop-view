@@ -84,13 +84,13 @@ export function RiskHotspots() {
 
   if (isLoading) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm animate-pulse h-64 border border-slate-200" aria-busy="true" />
+      <div className="bg-white p-6 rounded-lg animate-pulse h-64 border border-slate-200" aria-busy="true" />
     )
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200" role="alert">
+      <div className="bg-white p-6 rounded-lg border border-slate-200" role="alert">
         <h3 className="text-sm font-bold text-slate-900">Sector hotspots</h3>
         <p className="mt-1 text-sm text-red-700">Unable to load hotspot data.</p>
         <button

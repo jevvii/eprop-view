@@ -77,12 +77,12 @@ export function MaintenanceTable() {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-8 rounded-lg shadow-sm animate-pulse h-80" />
+    return <div className="bg-white p-8 rounded-lg animate-pulse h-80" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-8 rounded-lg shadow-sm border border-red-100 text-red-600 font-bold text-center">
+      <div className="bg-white p-8 rounded-lg border border-red-100 text-red-600 font-bold text-center">
         Maintenance Log Link Offline
       </div>
     )
@@ -132,8 +132,8 @@ export function MaintenanceTable() {
                 openEditModal(item)
               }
             }}
- className={`p-4 rounded-lg bg-white border border-slate-200 shadow-xs transition-colors group ${
-              canManage ? 'cursor-pointer hover:shadow-md hover:border-primary/30' : ''
+ className={`p-4 rounded-lg bg-white border border-slate-200 transition-colors group ${
+ canManage ? 'cursor-pointer hover:border-primary/30' : ''
             }`}
           >
             <div className="flex justify-between items-start gap-2 mb-2">
@@ -183,7 +183,7 @@ export function MaintenanceTable() {
       {/* Edit / Assign Modal */}
       {selectedTask && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 shadow-lg space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain">
+          <div className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
@@ -289,7 +289,7 @@ export function MaintenanceTable() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleCreate}
-            className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 shadow-lg space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-md rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>

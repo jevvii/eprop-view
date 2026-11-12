@@ -262,7 +262,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
               <button
                 type="button"
                 onClick={handleApplyAISuggestions}
-                className="text-xs font-bold text-blue-700 hover:text-blue-800 bg-blue-100 hover:bg-blue-200/80 px-3.5 py-2 min-h-[38px] rounded-xl transition-colors self-start sm:self-auto shadow-sm"
+                className="text-xs font-bold text-blue-700 hover:text-blue-800 bg-blue-100 hover:bg-blue-200/80 px-3.5 py-2 min-h-[38px] rounded-xl transition-colors self-start sm:self-auto"
               >
                 Auto-populate findings and score
               </button>

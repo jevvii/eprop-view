@@ -45,7 +45,7 @@ export default function DashboardPage() {
   if (profileLoading) {
     return (
       <div
-        className="bg-white p-6 sm:p-10 rounded-lg shadow-sm h-80 animate-pulse border border-slate-200 mx-2"
+        className="bg-white p-6 sm:p-10 rounded-lg h-80 animate-pulse border border-slate-200 mx-2"
         aria-busy="true"
         aria-label="Loading dashboard"
       />
@@ -77,25 +77,25 @@ export default function DashboardPage() {
             <StatCard
               label="Active projects"
               value={value('active_projects')}
-              className="lg:w-44 xl:w-52 lg:shadow-sm"
+              className="lg:w-44 xl:w-52"
             />
             <StatCard
               label="Critical risk"
               value={value('critical_risk_reports')}
               variant="critical"
-              className="lg:w-44 xl:w-52 lg:shadow-sm"
+              className="lg:w-44 xl:w-52"
             />
             <StatCard
               label="In review"
               value={value('reports_in_review')}
               variant="info"
-              className="lg:w-44 xl:w-52 lg:shadow-sm"
+              className="lg:w-44 xl:w-52"
             />
             <StatCard
               label="Completed"
               value={value('completed_repairs')}
               variant="success"
-              className="lg:w-44 xl:w-52 lg:shadow-sm"
+              className="lg:w-44 xl:w-52"
             />
           </div>
         </div>

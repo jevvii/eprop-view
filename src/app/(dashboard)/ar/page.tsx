@@ -245,7 +245,7 @@ function ARPageContent() {
 
   if (profileLoading) {
     return (
-      <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-200 mx-2" />
+      <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg h-80 animate-pulse border border-slate-200 mx-2" />
     )
   }
 
@@ -263,7 +263,7 @@ function ARPageContent() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Top Header & Inspection Selector Bar */}
-      <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-lg shadow-md border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-lg border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xl sm:text-2xl font-koulen text-primary tracking-wide uppercase">
@@ -315,7 +315,7 @@ function ARPageContent() {
               onClick={handleEnd}
               disabled={starting}
               variant="outline"
-              className="w-full whitespace-normal text-xs font-black tracking-[0.15em] px-6 py-3 h-auto min-h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shadow-sm"
+              className="w-full whitespace-normal text-xs font-black tracking-[0.15em] px-6 py-3 h-auto min-h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               End AR Session
             </Button>
@@ -323,7 +323,7 @@ function ARPageContent() {
             <Button
               onClick={handleStart}
               disabled={!inspectionId || starting}
-              className="w-full whitespace-normal text-xs font-black tracking-[0.15em] px-6 py-3 h-auto min-h-12 rounded-xl shadow-lg shadow-primary/20"
+              className="w-full whitespace-normal text-xs font-black tracking-[0.15em] px-6 py-3 h-auto min-h-12 rounded-xl"
             >
               {starting ? 'Starting camera…' : 'Start AR Session'}
             </Button>
@@ -334,7 +334,7 @@ function ARPageContent() {
       {/* Capability banner: this is camera AR with screen-space markers, not
           plane-locked spatial tracking, unless WebXR is genuinely available. */}
       {!bannerDismissed && (
-        <div className="bg-sky-50/90 border border-sky-200/80 p-3.5 sm:p-4 rounded-lg flex items-start justify-between gap-3 shadow-sm">
+        <div className="bg-sky-50/90 border border-sky-200/80 p-3.5 sm:p-4 rounded-lg flex items-start justify-between gap-3">
           <div className="flex items-start gap-2.5 sm:gap-3">
             <div>
               <h4 className="text-[11px] sm:text-xs font-black text-sky-950">
@@ -392,7 +392,7 @@ function ARPageContent() {
         <div
           id="ar-viewport"
           ref={viewportRef}
-          className="relative h-[380px] min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-lg sm:rounded-lg overflow-hidden shadow-sm border border-slate-200 bg-slate-950"
+          className="relative h-[380px] min-h-[380px] sm:h-[520px] lg:h-[calc(100dvh-220px)] rounded-lg sm:rounded-lg overflow-hidden border border-slate-200 bg-slate-950"
         >
           <ARCameraView onTapToAnchor={handleTapToAnchor} onAimChange={setAim} aim={aim}
             frame={tracking.frame} viewport={tracking.viewport} placementPose={dbSessionId ? hitPose : null}
@@ -414,7 +414,7 @@ function ARPageContent() {
           )}
 
           {/* Persisted Spatial Anchors Card */}
-          <div className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg shadow-sm border border-slate-200">
+          <div className="bg-white p-5 sm:p-6 rounded-lg sm:rounded-lg border border-slate-200">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-xs sm:text-xs font-black text-slate-500 tracking-[0.2em]">
                 Saved Markers
@@ -454,7 +454,7 @@ function ARPageContent() {
                           <img
                             src={snapshotUrl}
                             alt={anchor.label}
-                            className="w-11 h-11 rounded-xl object-cover border border-slate-200 shrink-0 shadow-sm"
+                            className="w-11 h-11 rounded-xl object-cover border border-slate-200 shrink-0"
                           />
                         ) : (
                           <div className="w-11 h-11 rounded-xl bg-slate-200/60 flex items-center justify-center text-lg shrink-0">
@@ -515,7 +515,7 @@ function ReferenceARPage() {
     <ARSessionManager>
       <Suspense
         fallback={
-          <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-96 animate-pulse border border-slate-200">
+          <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg h-96 animate-pulse border border-slate-200">
             <div className="h-6 bg-slate-100 rounded w-1/3 mb-4" />
           </div>
         }

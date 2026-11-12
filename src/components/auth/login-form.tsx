@@ -71,7 +71,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full min-h-[48px] py-3.5 bg-primary text-white font-black text-xs rounded-xl hover:translate-y-[-1px] transition-all active:scale-[0.99] disabled:opacity-50 shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        className="w-full min-h-[48px] py-3.5 bg-primary text-white font-black text-xs rounded-xl hover:translate-y-[-1px] transition-all active:scale-[0.99] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         {pending ? 'Authorizing...' : 'Enter System'}
       </button>

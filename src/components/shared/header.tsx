@@ -35,7 +35,7 @@ export function Header() {
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1)
 
   return (
-    <header className="flex items-center justify-between gap-2 px-4 lg:px-8 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 lg:py-5 bg-white border-b border-slate-200/50 shadow-sm sticky top-0 z-30">
+    <header className="flex items-center justify-between gap-2 px-4 lg:px-8 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 lg:py-5 bg-white border-b border-slate-200/50 sticky top-0 z-30">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         {/* Mobile Menu Button - 44x44px touch target */}
         <button
@@ -56,7 +56,7 @@ export function Header() {
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Role badge is redundant on the narrowest screens; the avatar remains. */}
         <span
- className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border shadow-xs ${roleBadgeClass}`}
+ className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${roleBadgeClass}`}
         >
           {roleLabel}
         </span>
@@ -66,7 +66,7 @@ export function Header() {
           <div className="text-xs text-slate-500 font-medium truncate max-w-[180px]">{email}</div>
         </div>
         <div 
-          className="w-9 h-9 lg:w-10 lg:h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-xs lg:text-sm shadow-md"
+          className="w-9 h-9 lg:w-10 lg:h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-xs lg:text-sm"
           aria-hidden="true"
         >
           {initial}

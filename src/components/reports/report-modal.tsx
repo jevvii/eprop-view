@@ -37,7 +37,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl rounded-lg bg-white p-5 sm:p-7 shadow-lg max-h-[90dvh] overflow-y-auto overscroll-contain"
+        className="w-full max-w-2xl rounded-lg bg-white p-5 sm:p-7 max-h-[90dvh] overflow-y-auto overscroll-contain"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 mb-4">
@@ -90,7 +90,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {detections.map((d) => (
-                      <div key={d.id} className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold flex items-center gap-2 shadow-sm">
+                      <div key={d.id} className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold flex items-center gap-2">
                         <span className="text-slate-800">{d.damage_type}</span>
  <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
                           d.severity === 'critical' ? 'bg-red-100 text-red-700' :
@@ -113,7 +113,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {anchors.map((a) => (
-                      <div key={a.id} className="bg-white px-3 py-1.5 rounded-lg border border-indigo-100 text-xs font-semibold text-indigo-900 shadow-sm">
+                      <div key={a.id} className="bg-white px-3 py-1.5 rounded-lg border border-indigo-100 text-xs font-semibold text-indigo-900">
                         <MapPin className="inline h-3.5 w-3.5" aria-hidden="true" /> {a.label} <span className="text-slate-500 font-medium text-xs">({a.damage_type ?? 'defect'})</span>
                       </div>
                     ))}

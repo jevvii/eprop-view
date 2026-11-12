@@ -116,7 +116,7 @@ export function ReportsTable({
   }
 
   if (isLoading) {
-    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg shadow-sm h-80 animate-pulse border border-slate-200" />
+    return <div className="bg-white p-6 sm:p-10 rounded-lg sm:rounded-lg h-80 animate-pulse border border-slate-200" />
   }
 
   if (isError) {
@@ -138,7 +138,7 @@ export function ReportsTable({
   return (
     <div className="grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-[1.6fr_1fr] items-start">
       {/* 1. Log List (Compact) */}
- <div className={`bg-white p-4 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 flex flex-col transition-all duration-300 min-w-0 ${
+ <div className={`bg-white p-4 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 flex flex-col transition-all duration-300 min-w-0 ${
         mobileView === 'detail' ? 'hidden lg:flex' : 'flex'
       }`}>
         <div className="flex items-center justify-between mb-6 px-1">
@@ -209,7 +209,7 @@ export function ReportsTable({
       </div>
 
       {/* 2. Detail View (Expanded) */}
- <div className={`bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 flex flex-col h-full min-h-[500px] transition-all duration-300 min-w-0 ${
+ <div className={`bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 flex flex-col h-full min-h-[500px] transition-all duration-300 min-w-0 ${
         mobileView === 'list' ? 'hidden lg:flex' : 'flex'
       }`}>
         {selectedReport ? (
@@ -274,7 +274,7 @@ export function ReportsTable({
                 <div className="text-xs font-bold text-primary">{selectedReport.project_name ?? 'UNIT_UNSPECIFIED'}</div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 sm:gap-6 bg-slate-50 p-4 sm:p-6 rounded-lg border border-slate-200 shadow-inner">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6 bg-slate-50 p-4 sm:p-6 rounded-lg border border-slate-200">
                 <div>
                   <div className="text-xs font-semibold text-slate-500 mb-1">Date</div>
                   <div className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">{new Date(selectedReport.date).toLocaleDateString()}</div>

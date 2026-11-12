@@ -7,7 +7,7 @@ export function ARUnsupportedNotice() {
   if (dismissed) return null
 
   return (
-    <div className="bg-sky-50/90 border border-sky-200/80 p-4 rounded-lg flex items-start justify-between gap-3 shadow-sm">
+    <div className="bg-sky-50/90 border border-sky-200/80 p-4 rounded-lg flex items-start justify-between gap-3">
       <div className="flex items-start gap-3">
         
         <div>

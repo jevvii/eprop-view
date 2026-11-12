@@ -91,12 +91,12 @@ export function SettingsCards() {
   }
 
   if (isLoading) {
-    return <div className="bg-white p-6 rounded-lg shadow-lg h-48 animate-pulse" />
+    return <div className="bg-white p-6 rounded-lg h-48 animate-pulse" />
   }
 
   if (isError) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-lg text-red-600">
+      <div className="bg-white p-6 rounded-lg text-red-600">
         Failed to load settings
       </div>
     )
@@ -105,7 +105,7 @@ export function SettingsCards() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
       {/* 1. Account Profile */}
-      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6 lg:col-span-2">
+      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-6 lg:col-span-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-5">
           <div>
             <h3 className="text-xs font-bold text-slate-600 mb-1">Account Profile</h3>
@@ -156,7 +156,7 @@ export function SettingsCards() {
             type="button" 
             onClick={handleSave} 
             disabled={updateProfile.isPending}
-            className="font-bold text-xs px-6 py-2.5 min-h-[44px] shadow-lg shadow-primary/20"
+            className="font-bold text-xs px-6 py-2.5 min-h-[44px]"
           >
             {updateProfile.isPending ? 'Syncing...' : 'Update Records'}
           </Button>
@@ -167,7 +167,7 @@ export function SettingsCards() {
 
       {/* 3. AI Model Management (Admin Section) */}
       {isAdmin && (
-        <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6 lg:col-span-2 xl:col-span-3">
+        <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-6 lg:col-span-2 xl:col-span-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
             <div>
               <h3 className="text-xs font-bold text-slate-600 mb-1">
@@ -179,7 +179,7 @@ export function SettingsCards() {
             </div>
             <button
               onClick={() => setIsRegisterModelOpen(true)}
-              className="text-xs font-bold bg-primary text-white px-4 py-2.5 min-h-[40px] rounded-xl shadow-md hover:bg-primary/90 transition-all self-start sm:self-auto"
+              className="text-xs font-bold bg-primary text-white px-4 py-2.5 min-h-[40px] rounded-xl hover:bg-primary/90 transition-all self-start sm:self-auto"
             >
               + Register Analysis Method
             </button>
@@ -233,7 +233,7 @@ export function SettingsCards() {
       )}
 
       {/* 4. Storage & system health */}
-      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg shadow-sm border border-slate-200/70 space-y-6 lg:col-span-2 xl:col-span-3">
+      <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg border border-slate-200/70 space-y-6 lg:col-span-2 xl:col-span-3">
         <div className="flex items-center justify-between border-b border-slate-200 pb-5">
           <div>
             <h3 className="text-sm font-bold text-slate-900">Storage and layers</h3>
@@ -265,7 +265,7 @@ export function SettingsCards() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
           <form
             onSubmit={handleRegisterModel}
-            className="w-full max-w-lg rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 shadow-lg space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
+            className="w-full max-w-lg rounded-lg sm:rounded-lg bg-white p-5 sm:p-8 space-y-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div>

@@ -60,7 +60,7 @@ export function GeohazardLayerManager() {
   }
 
   return (
-    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg shadow-sm border border-slate-200 space-y-6">
+    <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h3 className="text-xs font-bold text-slate-600 mb-1">
@@ -86,7 +86,7 @@ export function GeohazardLayerManager() {
           </select>
 
           <label className="cursor-pointer">
-            <span className="text-xs font-bold bg-primary text-white px-4 py-2.5 min-h-[38px] rounded-xl shadow-md hover:bg-primary/90 transition-all inline-flex items-center">
+            <span className="text-xs font-bold bg-primary text-white px-4 py-2.5 min-h-[38px] rounded-xl hover:bg-primary/90 transition-all inline-flex items-center">
               {isUploading ? 'Importing…' : '+ Upload Dataset'}
             </span>
             <input
