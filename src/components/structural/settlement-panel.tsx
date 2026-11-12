@@ -28,6 +28,7 @@ export function SettlementPanel({ inspection }: { inspection: Inspection }) {
   const buildingId = inspection.building_id ?? null
   const [observations, setObservations] = useState<SettlementObservation[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [tilt, setTilt] = useState('')
   const [settlement, setSettlement] = useState('')
   const [method, setMethod] = useState<'manual' | 'level' | 'plumb' | 'instrument'>('manual')
@@ -37,9 +38,11 @@ export function SettlementPanel({ inspection }: { inspection: Inspection }) {
   const refresh = useCallback(async () => {
     if (!buildingId) return
     setLoading(true)
+    setLoadError(null)
     try {
       setObservations(await getSettlementObservations(buildingId))
-    } catch {
+    } catch (caught) {
+      setLoadError(caught instanceof Error ? caught.message : 'Movement readings could not be loaded.')
       setObservations([])
     } finally {
       setLoading(false)
@@ -99,6 +102,8 @@ export function SettlementPanel({ inspection }: { inspection: Inspection }) {
       title="Tilt & Settlement"
       description="Enter the measured tilt and differential settlement. The classification is computed from documented thresholds, not estimated."
     >
+      {loadError && <p role="alert" className="text-sm text-red-700">{loadError}</p>}
+      {observations[0] && <div role="status" className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"><strong>{inspection.building_name || 'Selected building'}</strong> · <Chip tone={TONE[observations[0].classification]}>{SETTLEMENT_LABELS[observations[0].classification]}</Chip><p className="mt-1 text-xs text-slate-600">Latest measured reading {formatDate(observations[0].observed_at)}. Measurements are observations, not a structural safety certificate.</p></div>}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Field
           label="Tilt (mm per metre)"
@@ -193,7 +198,7 @@ export function SettlementPanel({ inspection }: { inspection: Inspection }) {
       <div className="border-t border-slate-100 pt-4">
         <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Recorded readings</h4>
         {loading && <p className="text-xs text-slate-500 font-medium">Loading…</p>}
-        {!loading && observations.length === 0 && (
+        {!loading && !loadError && observations.length === 0 && (
           <EmptyState
             title="No movement readings yet"
             message="The first recorded reading appears here with the classification the thresholds produced."

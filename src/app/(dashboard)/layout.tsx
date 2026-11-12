@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { WorkspaceFiltersProvider } from '@/components/shared/report-filters'
 import { Header } from '@/components/shared/header'
 import { RealtimeSync } from '@/components/dashboard/realtime-sync'
 import { NavWrapper } from '@/components/shared/nav-wrapper'
@@ -15,7 +16,7 @@ export default function DashboardLayout({
   const isDashboard = pathname === '/dashboard'
 
   return (
-    <NavWrapper>
+    <WorkspaceFiltersProvider><NavWrapper>
       <Header />
       {/* The shell's <main> owns scrolling; nested overflow caused iOS
           scroll-chaining and unpredictable sticky behaviour. */}
@@ -25,6 +26,6 @@ export default function DashboardLayout({
           {children}
         </div>
       </div>
-    </NavWrapper>
+    </NavWrapper></WorkspaceFiltersProvider>
   )
 }

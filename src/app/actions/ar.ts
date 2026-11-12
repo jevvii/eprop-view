@@ -1,6 +1,7 @@
 'use server'
 
 import sharp from 'sharp'
+import { resolveEvidenceLocation } from '@/app/lib/storage-location'
 import { z } from 'zod'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
@@ -58,9 +59,10 @@ export async function getARAnchorsForInspection(inspectionId: string): Promise<A
   const signed = await Promise.all(
     anchors.map(async (anchor) => {
       if (!anchor.snapshot_path) return anchor
+      const location = resolveEvidenceLocation(anchor)
       const { data: signedData } = await supabase.storage
-        .from(BUCKET)
-        .createSignedUrl(anchor.snapshot_path, 60 * 60)
+        .from(location.bucket)
+        .createSignedUrl(location.path, 60 * 60)
       return { ...anchor, image_url: signedData?.signedUrl ?? undefined }
     })
   )
@@ -374,9 +376,20 @@ export async function deleteARAnchor(anchorId: string): Promise<Pick<ARAnchor, '
  * Get all anchors (optionally filtered by project).
  * Accessible to inspector, engineer, and admin.
  */
-export async function getAllARAnchors(projectId?: string): Promise<ARAnchor[]> {
+export async function getAllARAnchors(projectId?: string, filters?: import('@/app/lib/workspace-filters').WorkspaceFilters): Promise<ARAnchor[]> {
   await requireRole(['inspector', 'engineer', 'admin'])
   const supabase = await createClient()
+  if(filters){
+    const {getFilteredRecordIds}=await import('./filters')
+    const ids=await getFilteredRecordIds('inspections',filters)
+    if(!ids.length)return []
+    let query=supabase.from('ar_anchors').select('*,inspections!inner(project_id)').in('inspection_id',ids)
+    if(projectId)query=query.eq('inspections.project_id',projectId)
+    const {data,error}=await query.order('created_at',{ascending:false}).limit(500)
+    if(error)throw error
+    return (data??[]) as ARAnchor[]
+  }
+
 
   if (projectId) {
     const { data: inspections } = await supabase

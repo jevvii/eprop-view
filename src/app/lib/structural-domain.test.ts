@@ -38,12 +38,15 @@ describe('Crack taxonomy (ACI 224R-01 / ACI 201.1R)', () => {
   })
 
   test('applies the exposure-specific ACI limit', () => {
-    assert.equal(ACI_224R_EXPOSURE_LIMITS_MM.dry_air, 0.1)
-    assert.equal(ACI_224R_EXPOSURE_LIMITS_MM.water_retaining, 0.3)
+    assert.equal(ACI_224R_EXPOSURE_LIMITS_MM.dry_air, 0.41)
+    assert.equal(ACI_224R_EXPOSURE_LIMITS_MM.water_retaining, 0.10)
+    assert.equal(ACI_224R_EXPOSURE_LIMITS_MM.humid, 0.30)
+    assert.equal(ACI_224R_EXPOSURE_LIMITS_MM.seawater, 0.15)
+    assert.equal(ACI_224R_EXPOSURE_LIMITS_MM.deicing_chemicals, 0.18)
 
-    // 0.2 mm passes in a water-retaining structure but fails in dry air.
-    assert.equal(exceedsAciLimit(0.2, 'dry_air'), true)
-    assert.equal(exceedsAciLimit(0.2, 'water_retaining'), false)
+    // Independent ACI reference cases: 0.2 mm passes in dry air, fails for water retention.
+    assert.equal(exceedsAciLimit(0.2, 'dry_air'), false)
+    assert.equal(exceedsAciLimit(0.2, 'water_retaining'), true)
     assert.equal(exceedsAciLimit(0.1, 'dry_air'), false)
   })
 
@@ -51,7 +54,7 @@ describe('Crack taxonomy (ACI 224R-01 / ACI 201.1R)', () => {
     const assessment = assessCrack(0.5, 'humid')
     assert.equal(assessment.band, 'medium')
     assert.equal(assessment.exceedsAciLimit, true)
-    assert.equal(assessment.aciLimitMm, 0.15)
+    assert.equal(assessment.aciLimitMm, 0.30)
     assert.match(assessment.reference, /ACI 224R-01/)
   })
 })

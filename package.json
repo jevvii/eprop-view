@@ -6,14 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint . && node src/scripts/check-lint-coverage.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/app/lib/*.test.ts",
-    "migrate": "tsx --env-file=.env.local src/scripts/migrate.ts",
-    "db:migrate": "tsx src/scripts/apply-all-migrations.ts",
+    "db:migrate": "tsx src/scripts/verify-preview.ts --migrate",
     "seed:preview": "tsx src/scripts/seed-preview.ts",
     "test:ar-browser": "node src/scripts/check-reference-browser.mjs",
-    "test:markerless-browser": "node src/scripts/check-markerless-browser.mjs"
+    "test:markerless-browser": "node src/scripts/check-markerless-browser.mjs",
+    "verify:preview": "tsx src/scripts/verify-preview.ts",
+    "db:migrate:preview": "tsx src/scripts/verify-preview.ts --migrate"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -38,13 +39,11 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/better-sqlite3": "^9.6.0",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.15.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "better-sqlite3": "^12.11.1",
     "dotenv": "^17.2.3",
     "esbuild": "0.28.2",
     "eslint": "^9",

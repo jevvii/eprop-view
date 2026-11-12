@@ -13,6 +13,7 @@ import { Chip, EmptyState, Panel, formatDate, inputClass } from '@/components/st
  * to somebody else by a client.
  */
 export function AuditLog() {
+  const [loadError,setLoadError]=useState('')
   const [events, setEvents] = useState<AuditEvent[]>([])
   const [loading, setLoading] = useState(false)
   const [entityType, setEntityType] = useState('')
@@ -21,6 +22,7 @@ export function AuditLog() {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
+      setLoadError('')
       setEvents(
         await getAuditEvents({
           entityType: entityType || undefined,
@@ -28,7 +30,8 @@ export function AuditLog() {
           limit: 100,
         })
       )
-    } catch {
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Audit records unavailable. Check database setup.')
       setEvents([])
     } finally {
       setLoading(false)
@@ -64,7 +67,8 @@ export function AuditLog() {
     >
       {loading && <p className="text-xs text-slate-500 font-medium">Loading…</p>}
 
-      {!loading && events.length === 0 && (
+      {loadError && <p role="alert" className="text-sm text-red-700">Audit log unavailable: {loadError}</p>}
+      {!loading && !loadError && events.length === 0 && (
         <EmptyState
           title="No audit events match"
           message="Events appear here as soon as an inspection, report, cost estimate or recommendation is written."

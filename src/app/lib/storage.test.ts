@@ -1,122 +1,17 @@
-import { test, describe } from 'node:test'
+import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import type { StorageAuditEntry, StorageSummary, StorageClass } from '@/app/types'
+import { resolveEvidenceLocation } from './storage-location'
 
-describe('Phase E: Storage Audit & Lifecycle Management Tests', () => {
-  test('aggregates storage summary correctly across buckets and storage classes', () => {
-    const mockAuditEntries: StorageAuditEntry[] = [
-      {
-        id: '1',
-        bucket_id: 'inspection-images',
-        object_path: 'project1/crack_1.jpg',
-        size_bytes: 1048576, // 1 MB
-        storage_class: 'standard',
-        owner_id: 'user1',
-        project_id: 'proj1',
-        inspection_id: 'insp1',
-        uploaded_at: '2026-01-01T00:00:00Z',
-        last_accessed_at: '2026-09-01T00:00:00Z',
-        created_at: '2026-01-01T00:00:00Z',
-        is_orphan: false,
-      },
-      {
-        id: '2',
-        bucket_id: 'inspection-images',
-        object_path: 'project1/old_image.jpg',
-        size_bytes: 2097152, // 2 MB
-        storage_class: 'cold',
-        owner_id: 'user1',
-        project_id: 'proj1',
-        inspection_id: 'insp1',
-        uploaded_at: '2025-01-01T00:00:00Z',
-        last_accessed_at: '2025-06-01T00:00:00Z',
-        created_at: '2025-01-01T00:00:00Z',
-        is_orphan: false,
-      },
-      {
-        id: '3',
-        bucket_id: 'reports-archive',
-        object_path: 'reports/compliance_2025.pdf',
-        size_bytes: 5242880, // 5 MB
-        storage_class: 'archive',
-        owner_id: 'admin1',
-        project_id: 'proj1',
-        inspection_id: null,
-        uploaded_at: '2025-12-01T00:00:00Z',
-        last_accessed_at: '2025-12-01T00:00:00Z',
-        created_at: '2025-12-01T00:00:00Z',
-        is_orphan: false,
-      },
-      {
-        id: '4',
-        bucket_id: 'inspection-images',
-        object_path: 'orphans/temp_99.jpg',
-        size_bytes: 500000,
-        storage_class: 'standard',
-        owner_id: null,
-        project_id: null,
-        inspection_id: null,
-        uploaded_at: '2026-08-01T00:00:00Z',
-        last_accessed_at: '2026-08-01T00:00:00Z',
-        created_at: '2026-08-01T00:00:00Z',
-        is_orphan: true,
-      },
-    ]
-
-    // Compute metrics
-    let totalBytes = 0
-    let orphanedCount = 0
-    const classStats: Record<StorageClass, { sizeBytes: number; objectCount: number }> = {
-      standard: { sizeBytes: 0, objectCount: 0 },
-      cold: { sizeBytes: 0, objectCount: 0 },
-      glacier: { sizeBytes: 0, objectCount: 0 },
-      archive: { sizeBytes: 0, objectCount: 0 },
-    }
-
-    for (const r of mockAuditEntries) {
-      totalBytes += r.size_bytes
-      if (r.is_orphan) orphanedCount++
-      classStats[r.storage_class].sizeBytes += r.size_bytes
-      classStats[r.storage_class].objectCount += 1
-    }
-
-    assert.equal(totalBytes, 1048576 + 2097152 + 5242880 + 500000)
-    assert.equal(orphanedCount, 1)
-    assert.equal(classStats.standard.objectCount, 2)
-    assert.equal(classStats.cold.objectCount, 1)
-    assert.equal(classStats.archive.objectCount, 1)
+describe('Evidence storage locations used by readers', () => {
+  test('legacy image records keep the primary bucket', () => {
+    assert.deepEqual(resolveEvidenceLocation({ storage_path: 'inspection/evidence.jpg' }), { bucket: 'inspection-images', path: 'inspection/evidence.jpg' })
   })
-
-  test('validates storage classes against lifecycle requirements', () => {
-    const validClasses: StorageClass[] = ['standard', 'cold', 'glacier', 'archive']
-    for (const c of validClasses) {
-      assert.ok(['standard', 'cold', 'glacier', 'archive'].includes(c))
-    }
+  test('archived photos and AR evidence retain their actual bucket', () => {
+    assert.deepEqual(resolveEvidenceLocation({ storage_bucket: 'reports-archive', storage_path: 'archive/evidence.jpg' }), { bucket: 'reports-archive', path: 'archive/evidence.jpg' })
+    assert.deepEqual(resolveEvidenceLocation({ snapshot_bucket: 'reports-archive', snapshot_path: 'archive/ar.jpg' }), { bucket: 'reports-archive', path: 'archive/ar.jpg' })
   })
-
-  test('correctly partitions objects for 1-year archival and 30-day orphan purge', () => {
-    const now = new Date('2026-09-02T12:00:00Z').getTime()
-    const oneYearMs = 365 * 24 * 60 * 60 * 1000
-    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
-
-    const mockFiles = [
-      { id: '1', uploaded_at: '2025-01-01T00:00:00Z', storage_class: 'standard', is_orphan: false }, // > 1 year -> archive
-      { id: '2', uploaded_at: '2026-06-01T00:00:00Z', storage_class: 'standard', is_orphan: false }, // recent -> stay
-      { id: '3', uploaded_at: '2026-07-01T00:00:00Z', storage_class: 'standard', is_orphan: true }, // orphan > 30 days -> clean
-      { id: '4', uploaded_at: '2026-08-25T00:00:00Z', storage_class: 'standard', is_orphan: true }, // orphan < 30 days -> retain grace
-    ]
-
-    const toArchive = mockFiles.filter(
-      (f) => f.storage_class === 'standard' && now - new Date(f.uploaded_at).getTime() > oneYearMs
-    )
-    const toClean = mockFiles.filter(
-      (f) => f.is_orphan && now - new Date(f.uploaded_at).getTime() > thirtyDaysMs
-    )
-
-    assert.equal(toArchive.length, 1)
-    assert.equal(toArchive[0].id, '1')
-
-    assert.equal(toClean.length, 1)
-    assert.equal(toClean[0].id, '3')
+  test('rejects unrecognized storage locations instead of signing arbitrary buckets', () => {
+    assert.throws(() => resolveEvidenceLocation({ storage_bucket: 'private-secrets', storage_path: 'key' }), /Unsupported/)
+    assert.throws(() => resolveEvidenceLocation({ storage_path: '../key' }), /Invalid/)
   })
 })

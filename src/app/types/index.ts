@@ -17,7 +17,7 @@ export type ReportStatus = 'open' | 'in_review' | 'critical' | 'completed'
 export type RiskLevel = 'low' | 'moderate' | 'high' | 'critical'
 export type Severity = 'critical' | 'moderate' | 'low'
 export type MaintenanceStatus = 'pending' | 'in_progress' | 'completed' | 'deferred'
-export type ZoneType = 'fault_line' | 'liquefaction' | 'erosion' | 'flood' | 'general'
+export type ZoneType = 'fault_line' | 'liquefaction' | 'erosion' | 'flood' | 'landslide' | 'general'
 export type ZoneRiskLevel = 'zone_a' | 'zone_b' | 'zone_c'
 
 export interface Profile {
@@ -79,6 +79,7 @@ export interface Inspection {
 }
 
 export interface Report {
+  content_updated_at?: string
   id: string
   report_id: string
   title: string
@@ -186,6 +187,7 @@ export interface InspectionImage {
   id: string
   inspection_id: string
   storage_path: string
+  storage_bucket?: string
   caption: string
   uploader_id: string | null
   uploader_name?: string
@@ -333,6 +335,7 @@ export interface ARAnchor {
   world_position: Vector3 | null
   notes: string
   snapshot_path: string | null
+  snapshot_bucket?: string
   /** Short-lived signed URL generated at read time; never persisted. */
   image_url?: string
   created_at: string
@@ -414,7 +417,7 @@ export type CrackWidthBand = 'hairline' | 'fine' | 'medium' | 'wide' | 'severe'
 export type CrackOrientation = 'vertical' | 'horizontal' | 'diagonal' | 'stepped' | 'map_cracking' | 'none'
 export type CrackPattern = 'single' | 'multiple' | 'parallel' | 'random' | 'none'
 export type CrackCause = 'settlement' | 'shrinkage' | 'thermal' | 'overload' | 'corrosion_induced' | 'unknown' | 'none'
-export type ConcreteExposure = 'dry_air' | 'humid' | 'deicing_chemicals' | 'water_retaining'
+export type ConcreteExposure = 'dry_air' | 'humid' | 'deicing_chemicals' | 'seawater' | 'water_retaining'
 
 // A1. Tilt / sinking
 export type SettlementClassification = 'none' | 'monitor' | 'action_required'

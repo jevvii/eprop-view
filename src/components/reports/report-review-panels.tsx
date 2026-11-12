@@ -5,6 +5,7 @@ import {
   confirmCostEstimate,
   createRecommendation,
   getCostEstimates,
+  getRecommendationDraftContext,
   getRecommendations,
   saveCostEstimate,
   signRecommendation,
@@ -255,6 +256,7 @@ export function RecommendationPanel({ report }: { report: Report }) {
   const [items, setItems] = useState<Recommendation[]>([])
   const [text, setText] = useState('')
   const [currentId, setCurrentId] = useState<string | null>(null)
+  const [provenance, setProvenance] = useState<'gemini' | 'heuristic' | 'engineer'>('engineer')
   const { pending, error, success, run } = useAsyncAction()
 
   const refresh = useCallback(async () => {
@@ -271,21 +273,17 @@ export function RecommendationPanel({ report }: { report: Report }) {
 
   const handleDraft = async () => {
     const draft = await run('Draft generated.', () =>
-      draftRecommendation({
-        damageType: 'crack',
-        severity: 'medium',
-        elementType: 'general',
-        context: report.key_findings ?? '',
-      })
+      getRecommendationDraftContext(report.id).then((context) => draftRecommendation(context))
     )
     if (draft) {
+      setProvenance(draft.provenance)
       setText(`${draft.action}\n\n${draft.rationale}\n\n${draft.steps.map((step) => `• ${step}`).join('\n')}`)
     }
   }
 
   const handleSaveDraft = async () => {
     const created = await run('Draft saved.', () =>
-      createRecommendation({ reportId: report.id, draftText: text, provenance: 'gemini' })
+      createRecommendation({ reportId: report.id, draftText: text, provenance })
     )
     if (created) {
       setCurrentId(created.id)
@@ -308,13 +306,13 @@ export function RecommendationPanel({ report }: { report: Report }) {
   return (
     <Panel
       title="Recommendation"
-      description="The AI drafts. You edit and sign. Only a signed recommendation can appear on the report."
+      description="Drafts use verified findings and saved costs. Review and sign the final wording before publication."
     >
       <Field label="Recommendation text" htmlFor="recommendation-text">
         <textarea
           id="recommendation-text"
           value={text}
-          onChange={(event) => setText(event.target.value)}
+          onChange={(event) => { setText(event.target.value); setProvenance('engineer') }}
           className={`${textareaClass} min-h-[140px]`}
           placeholder="Draft with the AI, then edit until it says what you would sign."
         />

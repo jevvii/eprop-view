@@ -27,6 +27,7 @@ function downloadJson(filename: string, payload: unknown): void {
 export function BackupRestore() {
   const { data: projects } = useProjects()
   const [projectId, setProjectId] = useState('')
+  const [exportOmissions, setExportOmissions] = useState<string[]>([])
   const [preview, setPreview] = useState<ImportResult | null>(null)
   const [pendingPayload, setPendingPayload] = useState<unknown>(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -37,6 +38,7 @@ export function BackupRestore() {
     if (!projectId) return
     const payload = await exportAction.run('Export ready.', () => exportProjectRecords(projectId))
     if (payload) {
+      setExportOmissions(payload.omissions)
       const safeName = payload.project.name
         ? String(payload.project.name).replace(/[^a-z0-9]+/gi, '-').toLowerCase()
         : 'project'
@@ -61,7 +63,7 @@ export function BackupRestore() {
       setPendingPayload(null)
       // The action reports schema failures; a parse failure is caught here.
       if (caught instanceof SyntaxError) {
-        importAction.reset()
+        importAction.run('File validated.', async () => { throw new Error('This file is not valid JSON. Choose a previous record export.') })
       }
     } finally {
       if (fileInput.current) fileInput.current.value = ''
@@ -82,7 +84,7 @@ export function BackupRestore() {
   return (
     <Panel
       title="Record Export & Import"
-      description="Carries a project's inspection records as JSON. This is not an infrastructure backup: image files and AI detections are not included."
+      description="Transfers project, building, inspection, hazard and field-review records as JSON. Files and immutable audit history are excluded. Imported reports require a fresh engineering review."
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -110,6 +112,7 @@ export function BackupRestore() {
           </button>
           {exportAction.error && <InlineMessage tone="error">{exportAction.error}</InlineMessage>}
           {exportAction.success && <InlineMessage tone="success">{exportAction.success}</InlineMessage>}
+          {exportOmissions.length > 0 && <ul className="list-disc pl-5 space-y-1 text-xs text-slate-600">{exportOmissions.map(item => <li key={item}>{item}</li>)}</ul>}
         </div>
 
         <div className="space-y-2">

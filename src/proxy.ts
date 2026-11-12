@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
 
   // Role comes from profiles only. Never from user_metadata.
   const role = user ? (profileRole ?? 'viewer') : 'viewer'
-  const homeRoute = role === 'inspector' ? '/document' : '/dashboard'
+  const homeRoute = role === 'inspector' ? '/document' : role === 'viewer' ? '/reports' : '/dashboard'
 
   if (isProtectedRoute && !user) {
     const redirectResponse = NextResponse.redirect(new URL('/', request.url))

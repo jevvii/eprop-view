@@ -1,5 +1,8 @@
 'use server'
 
+import { createHash } from 'node:crypto'
+import { readAllRows } from '@/app/lib/record-export'
+import { resolveEvidenceLocation } from '@/app/lib/storage-location'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
@@ -15,12 +18,9 @@ export async function getStorageSummary(): Promise<StorageSummary> {
   await requireRole(['admin'])
   const supabase = await createClient()
 
-  const { data: auditRows, error } = await supabase.from('storage_audit').select('*')
-  if (error) {
-    console.warn('Storage audit table query failed (table may need initial sync):', error.message)
-  }
-
-  const rows = (auditRows || []) as StorageAuditEntry[]
+  const rows = await readAllRows<StorageAuditEntry>((from, to) =>
+    supabase.from('storage_audit').select('*').order('id').range(from, to)
+  )
 
   let totalBytes = 0
   const bucketMap: Record<string, { sizeBytes: number; objectCount: number }> = {
@@ -112,23 +112,27 @@ export async function deleteStorageObject(
   await requireRole(['admin'])
   const supabase = await createClient()
 
-  // 1. Delete from Supabase Storage bucket first
-  const { error: storageError } = await supabase.storage.from(bucketId).remove([objectPath])
-  if (storageError) {
-    throw new Error(`Failed to remove file from storage bucket "${bucketId}": ${storageError.message}`)
+  if (!TRACKED_BUCKETS.includes(bucketId) || !objectPath || objectPath.startsWith('/') || objectPath.split('/').includes('..')) {
+    throw new Error('Invalid storage object location.')
   }
-
-  // 2. Delete from storage_audit
-  if (auditId) {
-    await supabase.from('storage_audit').delete().eq('id', auditId)
+  if (bucketId === 'inspection-images' || bucketId === 'reports-archive') {
+    const [images, anchors] = await Promise.all([
+      supabase.from('inspection_images').select('id').eq('storage_bucket', bucketId).eq('storage_path', objectPath),
+      supabase.from('ar_anchors').select('id').eq('snapshot_bucket', bucketId).eq('snapshot_path', objectPath),
+    ])
+    if (images.error || anchors.error) throw images.error ?? anchors.error
+    if (images.data?.length || anchors.data?.length) throw new Error('This file is linked to inspection evidence. Remove the owning evidence record before deleting its file.')
   } else {
-    await supabase.from('storage_audit').delete().eq('bucket_id', bucketId).eq('object_path', objectPath)
+    const { data: models, error } = await supabase.from('ai_models').select('id').eq('storage_path', objectPath)
+    if (error) throw error
+    if (models?.length) throw new Error('This file is linked to a model registry entry.')
   }
-
-  // 3. Remove reference if in inspection_images
-  if (bucketId === 'inspection-images') {
-    await supabase.from('inspection_images').delete().eq('storage_path', objectPath)
-  }
+  const { error: storageError } = await supabase.storage.from(bucketId).remove([objectPath])
+  if (storageError) throw new Error(`Storage deletion failed: ${storageError.message}`)
+  let deletion = supabase.from('storage_audit').delete().eq('bucket_id', bucketId).eq('object_path', objectPath)
+  if (auditId) deletion = deletion.eq('id', auditId)
+  const { error: auditError } = await deletion
+  if (auditError) throw auditError
 
   revalidatePath('/settings')
 }
@@ -156,50 +160,53 @@ export async function updateStorageClass(
     throw new Error(`Storage audit record ${auditId} not found`)
   }
 
-  // If archiving an inspection image, copy to reports-archive bucket and remove from hot primary storage
-  if ((newClass === 'archive' || newClass === 'cold') && current.bucket_id === 'inspection-images') {
-    try {
-      const { data: fileData, error: dlErr } = await supabase.storage
-        .from(current.bucket_id)
-        .download(current.object_path)
-
-      if (!dlErr && fileData) {
-        const archivePath = `archive/${current.object_path}`
-        await supabase.storage.from('reports-archive').upload(archivePath, fileData, {
-          upsert: true,
-          contentType: fileData.type,
-        })
-
-        // Remove from primary hot bucket to eliminate storage duplication
-        await supabase.storage.from(current.bucket_id).remove([current.object_path])
-
-        await supabase
-          .from('storage_audit')
-          .update({
-            bucket_id: 'reports-archive',
-            object_path: archivePath,
-            storage_class: newClass,
-          })
-          .eq('id', auditId)
-
-        await supabase
-          .from('inspection_images')
-          .update({ storage_path: archivePath })
-          .eq('storage_path', current.object_path)
-
-        revalidatePath('/settings')
-        return
-      }
-    } catch (moveErr) {
-      console.warn('Archive transfer warning (proceeding with tier update):', moveErr)
-    }
+  if (!['standard', 'cold', 'archive'].includes(newClass)) {
+    throw new Error('Glacier requires an external storage provider and is not available in this capstone.')
   }
 
-  const { error } = await supabase
-    .from('storage_audit')
-    .update({ storage_class: newClass })
-    .eq('id', auditId)
+  if ((newClass === 'archive' || newClass === 'cold') && current.bucket_id === 'inspection-images') {
+    const { data: original, error: downloadError } = await supabase.storage
+      .from(current.bucket_id).download(current.object_path)
+    if (downloadError || !original) throw new Error('Could not download original evidence for archival.')
 
+    const archivePath = `archive/${current.id}/${current.object_path}`
+    const archiveBucket = supabase.storage.from('reports-archive')
+    const { error: uploadError } = await archiveBucket.upload(archivePath, original, {
+      upsert: false,
+      contentType: original.type,
+    })
+    // A previous attempt may have staged this exact copy before a database error.
+    if (uploadError && String(uploadError.statusCode) !== '409') {
+      throw new Error(`Archive upload failed: ${uploadError.message}. Original evidence retained.`)
+    }
+
+    const { data: copy, error: copyError } = await archiveBucket.download(archivePath)
+    const digest = async (file: Blob) => createHash('sha256').update(Buffer.from(await file.arrayBuffer())).digest('hex')
+    if (copyError || !copy || copy.size !== original.size || await digest(copy) !== await digest(original)) {
+      throw new Error('Archive copy verification failed. Original evidence retained.')
+    }
+
+    // The RPC atomically moves every image/AR pointer and the audit location.
+    // A failed transaction leaves the old pointer and original bytes intact.
+    const { error: metadataError } = await supabase.rpc('commit_storage_archive', {
+      p_audit_id: current.id,
+      p_expected_bucket: current.bucket_id,
+      p_expected_path: current.object_path,
+      p_bucket_id: 'reports-archive',
+      p_object_path: archivePath,
+      p_storage_class: newClass,
+      p_size_bytes: copy.size,
+    })
+    if (metadataError) throw new Error(`Archive metadata update failed: ${metadataError.message}. Original evidence retained.`)
+
+    // Only delete after both the bytes and all readers point to the verified copy.
+    const { error: cleanupError } = await supabase.storage.from(current.bucket_id).remove([current.object_path])
+    revalidatePath('/settings')
+    if (cleanupError) throw new Error('Archive saved, but original cleanup failed. Both copies were retained; retry cleanup from Storage.')
+    return
+  }
+
+  const { error } = await supabase.from('storage_audit').update({ storage_class: newClass }).eq('id', auditId)
   if (error) throw error
   revalidatePath('/settings')
 }
@@ -213,159 +220,99 @@ export async function updateStorageClass(
 export async function syncStorageAudit(): Promise<{ synced: number; orphaned: number }> {
   await requireRole(['admin'])
   const supabase = await createClient()
+  const [images, anchors, models, existing] = await Promise.all([
+    readAllRows<{ id: string; storage_bucket?: string; storage_path: string; inspection_id: string }>((from, to) =>
+      supabase.from('inspection_images').select('id, storage_bucket, storage_path, inspection_id').order('id').range(from, to)),
+    readAllRows<{ snapshot_bucket?: string; snapshot_path: string | null; inspection_id: string }>((from, to) =>
+      supabase.from('ar_anchors').select('snapshot_bucket, snapshot_path, inspection_id').order('id').range(from, to)),
+    readAllRows<{ storage_path: string | null }>((from, to) =>
+      supabase.from('ai_models').select('storage_path').order('id').range(from, to)),
+    readAllRows<StorageAuditEntry>((from, to) =>
+      supabase.from('storage_audit').select('*').order('id').range(from, to)),
+  ])
+  const referenced = new Map<string, { inspection_id?: string }>()
+  for (const image of images) {
+    const location = resolveEvidenceLocation(image)
+    referenced.set(`${location.bucket}/${location.path}`, { inspection_id: image.inspection_id })
+  }
+  for (const anchor of anchors) {
+    if (!anchor.snapshot_path) continue
+    const location = resolveEvidenceLocation(anchor)
+    referenced.set(`${location.bucket}/${location.path}`, { inspection_id: anchor.inspection_id })
+  }
+  for (const model of models) {
+    if (model.storage_path) referenced.set(`ai-models/${model.storage_path}`, {})
+  }
 
-  // 1. Fetch referenced paths in DB
-  const { data: dbImages } = await supabase.from('inspection_images').select('id, storage_path, inspection_id')
-  const referencedImagePaths = new Set((dbImages || []).map((img) => img.storage_path))
-
-  const { data: dbModels } = await supabase.from('ai_models').select('id, storage_path')
-  const referencedModelPaths = new Set((dbModels || []).map((m) => m.storage_path).filter(Boolean))
-
-  let syncedCount = 0
-  let orphanedCount = 0
-  const pageSize = 100
-
-  // 2. Iterate through all tracked buckets
-  for (const bucketId of TRACKED_BUCKETS) {
-    let offset = 0
-    let hasMore = true
-
-    while (hasMore) {
-      const { data: files, error: listError } = await supabase.storage.from(bucketId).list('', {
-        limit: pageSize,
-        offset,
-      })
-
-      if (listError || !files || files.length === 0) {
-        hasMore = false
-        break
-      }
-
-      for (const file of files) {
-        if (!file.name || file.name === '.emptyFolderPlaceholder') continue
-
-        const path = file.name
-        let isOrphan = false
-
-        if (bucketId === 'inspection-images') {
-          isOrphan = !referencedImagePaths.has(path)
-        } else if (bucketId === 'ai-models') {
-          isOrphan = !referencedModelPaths.has(path)
+  let synced = 0, orphaned = 0
+  const seen = new Set<string>()
+  const scan = async (bucket: string, prefix = '', depth = 0): Promise<void> => {
+    if (depth > 16) throw new Error('Storage folder depth exceeds the supported scan limit.')
+    for (let offset = 0; ; offset += 100) {
+      const { data: entries, error } = await supabase.storage.from(bucket).list(prefix, { limit: 100, offset, sortBy: { column: 'name', order: 'asc' } })
+      if (error) throw new Error(`Storage scan failed for ${bucket}: ${error.message}`)
+      if (!entries) throw new Error(`Storage scan returned no result for ${bucket}.`)
+      for (const entry of entries) {
+        if (!entry.name || entry.name === '.emptyFolderPlaceholder') continue
+        const objectPath = prefix ? `${prefix}/${entry.name}` : entry.name
+        if (entry.id == null) { await scan(bucket, objectPath, depth + 1); continue }
+        const key = `${bucket}/${objectPath}`, link = referenced.get(key)
+        const isOrphan = !referenced.has(key)
+        let bytes = Number(entry.metadata?.size)
+        if (!Number.isFinite(bytes) || bytes < 0) {
+          const { data: file, error: fileError } = await supabase.storage.from(bucket).download(objectPath)
+          if (fileError || !file) throw new Error(`Could not measure storage object ${objectPath}.`)
+          bytes = file.size
         }
-
-        if (isOrphan) orphanedCount++
-
-        const sizeBytes = file.metadata?.size || 150000
-
-        await supabase.from('storage_audit').upsert(
-          {
-            bucket_id: bucketId,
-            object_path: path,
-            size_bytes: sizeBytes,
-            storage_class: bucketId === 'reports-archive' ? 'archive' : 'standard',
-            is_orphan: isOrphan,
-            uploaded_at: file.created_at || new Date().toISOString(),
-            last_accessed_at: new Date().toISOString(),
-          },
-          { onConflict: 'bucket_id,object_path' }
-        )
-        syncedCount++
+        const previous = existing.find(row => row.bucket_id === bucket && row.object_path === objectPath)
+        const { error: writeError } = await supabase.from('storage_audit').upsert({
+          bucket_id: bucket, object_path: objectPath, size_bytes: bytes,
+          storage_class: previous?.storage_class ?? (bucket === 'reports-archive' ? 'archive' : 'standard'),
+          is_orphan: isOrphan, inspection_id: link?.inspection_id ?? null,
+          uploaded_at: entry.created_at ?? previous?.uploaded_at ?? new Date().toISOString(),
+        }, { onConflict: 'bucket_id,object_path' })
+        if (writeError) throw writeError
+        seen.add(key)
+        synced++
+        if (isOrphan) orphaned++
       }
-
-      if (files.length < pageSize) {
-        hasMore = false
-      } else {
-        offset += pageSize
-      }
+      if (entries.length < 100) break
     }
   }
-
-  // 3. Ensure known DB records are also reflected in storage_audit
-  if (dbImages) {
-    for (const img of dbImages) {
-      if (!img.storage_path) continue
-      await supabase.from('storage_audit').upsert(
-        {
-          bucket_id: 'inspection-images',
-          object_path: img.storage_path,
-          inspection_id: img.inspection_id,
-          size_bytes: 250000,
-          storage_class: 'standard',
-          is_orphan: false,
-          last_accessed_at: new Date().toISOString(),
-        },
-        { onConflict: 'bucket_id,object_path' }
-      )
-      syncedCount++
-    }
+  for (const bucket of TRACKED_BUCKETS) await scan(bucket)
+  // Missing referenced files are a data-integrity error, never fabricated assets.
+  const missing = [...referenced.keys()].filter(key => !seen.has(key))
+  if (missing.length) throw new Error(`${missing.length} referenced storage objects are missing. Repair evidence before running retention cleanup.`)
+  for (const old of existing) {
+    const key = `${old.bucket_id}/${old.object_path}`
+    if (seen.has(key) || referenced.has(key)) continue
+    const { error } = await supabase.from('storage_audit').delete().eq('id', old.id)
+    if (error) throw error
   }
-
   revalidatePath('/settings')
-  return { synced: syncedCount, orphaned: orphanedCount }
+  return { synced, orphaned }
 }
 
-/**
- * Applies automated storage lifecycle policies:
- * - Moves objects older than 365 days to 'cold' storage class.
- * - Cleans orphaned temporary files older than 30 days.
- * - Audits 7-year regulatory retention lifecycle thresholds.
- * Requires Admin role.
- */
-export async function applyStorageLifecyclePolicies(): Promise<{
-  archived: number
-  cleaned: number
-  retentionExpired: number
-}> {
+/** Manual lifecycle run: verified copies, checked deletes, and retention counts. */
+export async function applyStorageLifecyclePolicies(): Promise<{ archived: number; cleaned: number; retentionExpired: number }> {
   await requireRole(['admin'])
   const supabase = await createClient()
-
-  const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const sevenYearsAgo = new Date(Date.now() - 7 * 365 * 24 * 60 * 60 * 1000).toISOString()
-
-  // 1. Transition objects older than 1 year to 'cold'
-  const { data: oldObjects } = await supabase
-    .from('storage_audit')
-    .select('id')
-    .lt('uploaded_at', oneYearAgo)
-    .eq('storage_class', 'standard')
-
-  let archivedCount = 0
-  if (oldObjects && oldObjects.length > 0) {
-    const ids = oldObjects.map((o) => o.id)
-    await supabase.from('storage_audit').update({ storage_class: 'cold' }).in('id', ids)
-    archivedCount = ids.length
-  }
-
-  // 2. Clean orphaned temporary objects older than 30 days
-  const { data: staleOrphans } = await supabase
-    .from('storage_audit')
-    .select('id, bucket_id, object_path')
-    .eq('is_orphan', true)
-    .lt('uploaded_at', thirtyDaysAgo)
-
-  let cleanedCount = 0
-  if (staleOrphans && staleOrphans.length > 0) {
-    for (const orphan of staleOrphans) {
-      try {
-        await supabase.storage.from(orphan.bucket_id).remove([orphan.object_path])
-        await supabase.from('storage_audit').delete().eq('id', orphan.id)
-        cleanedCount++
-      } catch (err) {
-        console.warn(`Orphan cleanup error for ${orphan.object_path}:`, err)
-      }
+  // Refresh references first; a stale audit must not authorize evidence deletion.
+  await syncStorageAudit()
+  const rows = await readAllRows<StorageAuditEntry>((from, to) =>
+    supabase.from('storage_audit').select('*').order('id').range(from, to))
+  const now = Date.now(), year = 365 * 24 * 60 * 60 * 1000, month = 30 * 24 * 60 * 60 * 1000
+  let archived = 0, cleaned = 0
+  for (const row of rows) {
+    const age = now - new Date(row.uploaded_at).getTime()
+    if (!row.is_orphan && row.bucket_id === 'inspection-images' && row.storage_class === 'standard' && age > year) {
+      await updateStorageClass(row.id, 'cold')
+      archived++
+    } else if (row.is_orphan && age > month) {
+      await deleteStorageObject(row.bucket_id, row.object_path, row.id)
+      cleaned++
     }
   }
-
-  // 3. 7-year compliance retention enforcement
-  const { data: expiredRecords } = await supabase
-    .from('storage_audit')
-    .select('id')
-    .lt('uploaded_at', sevenYearsAgo)
-    .eq('storage_class', 'archive')
-
-  const retentionExpired = expiredRecords ? expiredRecords.length : 0
-
-  revalidatePath('/settings')
-  return { archived: archivedCount, cleaned: cleanedCount, retentionExpired }
+  const retentionExpired = rows.filter(row => row.storage_class === 'archive' && now - new Date(row.uploaded_at).getTime() > 7 * year).length
+  return { archived, cleaned, retentionExpired }
 }

@@ -6,8 +6,8 @@ import { recordAuditEvent } from '@/app/lib/audit'
 import { classifySettlement } from '@/app/lib/structural/settlement'
 import { assessCrack } from '@/app/lib/structural/crack-taxonomy'
 import { summarizeReadings } from '@/app/lib/structural/rebound'
-import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { z } from 'zod'
+import { computeProjectEnvironmentalRisk } from '@/app/lib/environmental/scoring'
 import type {
   ChecklistResponse,
   ChecklistResponseItem,
@@ -59,6 +59,12 @@ export async function recordSettlementObservation(
   }
 
   const supabase = await createClient()
+  if (!parsed.inspectionId) throw new Error('Select an inspection before recording movement.')
+  const { data: inspection, error: inspectionError } = await supabase.from('inspections')
+    .select('building_id').eq('id', parsed.inspectionId).single()
+  if (inspectionError || !inspection || inspection.building_id !== parsed.buildingId) {
+    throw new Error('The movement reading must use the building linked to its inspection.')
+  }
   const classification = classifySettlement(parsed.tiltMmPerM, parsed.differentialSettlementMm)
 
   const { data, error } = await supabase
@@ -208,7 +214,7 @@ const crackUpdateSchema = z
     cause: z
       .enum(['settlement', 'shrinkage', 'thermal', 'overload', 'corrosion_induced', 'unknown', 'none'])
       .nullish(),
-    exposure: z.enum(['dry_air', 'humid', 'deicing_chemicals', 'water_retaining']).default('humid'),
+    exposure: z.enum(['dry_air', 'humid', 'deicing_chemicals', 'water_retaining', 'seawater']).default('humid'),
   })
   .strict()
 
@@ -222,7 +228,7 @@ const crackUpdateSchema = z
 export async function updateDetectionCrackTaxonomy(
   input: z.input<typeof crackUpdateSchema>
 ): Promise<Record<string, unknown>> {
-  await requireRole(['inspector', 'engineer', 'admin'])
+  await requireRole(['engineer', 'admin'])
   const parsed = crackUpdateSchema.parse(input)
   const supabase = await createClient()
 
@@ -383,7 +389,7 @@ export async function updateInspectionRecord(
   if (readError || !existing) throw new Error('Inspection not found')
 
   if (role === 'inspector') {
-    if (existing.lead_inspector_id && existing.lead_inspector_id !== userId) {
+    if (existing.lead_inspector_id !== userId) {
       throw new Error('Access denied: inspectors may only edit their own inspections.')
     }
     if (existing.status === 'completed') {
@@ -395,7 +401,30 @@ export async function updateInspectionRecord(
     throw new Error('Completed inspections are locked. Set reopen to edit them.')
   }
 
+  const buildingId = parsed.buildingId === undefined ? existing.building_id : parsed.buildingId
+  const floorId = parsed.floorId === undefined ? existing.floor_id : parsed.floorId
+  const elementId = parsed.structuralElementId === undefined ? existing.structural_element_id : parsed.structuralElementId
+  let floorName: string | undefined
+  let elementType: string | undefined
+  if (floorId && !buildingId) throw new Error('Link a building before selecting a floor.')
+  if (elementId && !floorId) throw new Error('Link a floor before selecting a structural element.')
+  if (buildingId) {
+    const { data: building, error: buildingError } = await supabase.from('buildings').select('project_id').eq('id', buildingId).single()
+    if (buildingError || !building || building.project_id !== existing.project_id) throw new Error('The building must belong to this inspection project.')
+  }
+  if (floorId) {
+    const { data: floor, error: floorError } = await supabase.from('floors').select('building_id, name').eq('id', floorId).single()
+    if (floorError || !floor || floor.building_id !== buildingId) throw new Error('The floor must belong to the selected building.')
+    floorName = floor.name
+  }
+  if (elementId) {
+    const { data: element, error: elementError } = await supabase.from('structural_elements').select('floor_id, element_type').eq('id', elementId).single()
+    if (elementError || !element || element.floor_id !== floorId) throw new Error('The structural element must belong to the selected floor.')
+    elementType = element.element_type
+  }
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (parsed.floorId !== undefined) updates.floor = floorName ?? 'Unspecified'
+  if (parsed.structuralElementId !== undefined) updates.structural_element = elementType ?? 'general'
   if (parsed.inspectionDate !== undefined) updates.inspection_date = parsed.inspectionDate
   if (parsed.status !== undefined) updates.status = parsed.status
   if (parsed.location !== undefined) updates.location = parsed.location
@@ -408,6 +437,7 @@ export async function updateInspectionRecord(
   if (parsed.erosionNotes !== undefined) updates.erosion_notes = parsed.erosionNotes
 
   if (parsed.reopen && existing.status === 'completed') {
+    if (parsed.status == null || parsed.status === 'completed') updates.status = 'in_progress'
     updates.reopened_at = new Date().toISOString()
     updates.reopened_by = userId
   }
@@ -570,7 +600,7 @@ export async function saveChecklistResponse(
 
   const { data: template, error: templateError } = await supabase
     .from('checklist_templates')
-    .select('code, version')
+    .select('code, version, items')
     .eq('code', parsed.templateCode)
     .eq('is_active', true)
     .order('version', { ascending: false })
@@ -579,6 +609,15 @@ export async function saveChecklistResponse(
 
   if (templateError) throw templateError
   if (!template) throw new Error(`No active checklist template for '${parsed.templateCode}'.`)
+
+  const keys = z.array(z.object({ key: z.string() }).passthrough()).parse(template.items).map((item) => item.key)
+  const suppliedKeys = parsed.responses.map((item) => item.key)
+  if (new Set(suppliedKeys).size !== suppliedKeys.length || suppliedKeys.length !== keys.length || keys.some((key) => !suppliedKeys.includes(key))) {
+    throw new Error('Checklist responses must match every item in the active template exactly, without duplicates.')
+  }
+  if (parsed.responses.some((item) => item.answer == null || item.prefilled === true)) {
+    throw new Error('Confirm or override every prefilled answer, and complete each checklist item before saving.')
+  }
 
   const { data, error } = await supabase
     .from('checklist_responses')
@@ -618,4 +657,52 @@ export async function getChecklistResponses(inspectionId: string): Promise<Check
 
   if (error) throw error
   return (data || []) as ChecklistResponse[]
+}
+
+
+/** Spatial suggestions only. Dataset absence stays unknown until field confirmation. */
+export async function getChecklistSuggestions(inspectionId: string): Promise<Record<string, boolean | null>> {
+  const { userId, role } = await requireRole(['inspector', 'engineer', 'admin'])
+  const supabase = await createClient()
+  const { data: inspection, error } = await supabase.from('inspections')
+    .select('project_id, lead_inspector_id').eq('id', uuid.parse(inspectionId)).single()
+  if (error || !inspection) throw new Error('Inspection context is unavailable')
+  if (role === 'inspector' && inspection.lead_inspector_id !== userId) throw new Error('Access denied to inspection')
+  const context = await computeProjectEnvironmentalRisk(inspection.project_id)
+  const value = (type: string) => context.coverage.includes(type) ? context.memberships[type] ?? false : null
+  return {
+    flood_zone_membership: value('flood'),
+    liquefaction_zone_membership: value('liquefaction'),
+    erosion_zone_membership: value('erosion'),
+    landslide_zone_membership: value('landslide'),
+    fault_line_proximity: context.nearestFaultDistanceKm == null ? null : context.nearestFaultDistanceKm < 5,
+  }
+}
+
+export interface SettlementOverview {
+  building_id: string
+  building_name: string
+  project_id: string
+  latitude: number | null
+  longitude: number | null
+  inspection_id: string | null
+  observed_at: string
+  classification: 'none' | 'monitor' | 'action_required'
+  tilt_mm_per_m: number | null
+  differential_settlement_mm: number | null
+}
+
+/** One latest reading per building; missing coordinates stay missing on maps. */
+export async function getSettlementOverview(projectId?: string): Promise<SettlementOverview[]> {
+  await requireRole(['engineer', 'admin'])
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('settlement_overview', { p_project_id: projectId ? uuid.parse(projectId) : null })
+  if (error) throw new Error(`Movement overview unavailable: ${error.message}`)
+  return z.array(z.object({
+    building_id: uuid, building_name: z.string(), project_id: uuid,
+    latitude: z.coerce.number().nullable(), longitude: z.coerce.number().nullable(),
+    inspection_id: uuid.nullable(), observed_at: z.string(),
+    classification: z.enum(['none', 'monitor', 'action_required']),
+    tilt_mm_per_m: z.coerce.number().nullable(), differential_settlement_mm: z.coerce.number().nullable(),
+  })).parse(data ?? [])
 }

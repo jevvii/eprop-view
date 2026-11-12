@@ -1,12 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
+  getChecklistSuggestions,
   getChecklistResponses,
   getChecklistTemplates,
   saveChecklistResponse,
 } from '@/app/actions/structural'
-import { useGeospatialZones } from '@/app/lib/queries'
 import type {
   ChecklistAnswer,
   ChecklistResponse,
@@ -15,15 +15,6 @@ import type {
   Inspection,
 } from '@/app/types'
 import { Chip, EmptyState, Panel, useAsyncAction } from './ui'
-
-/** Which geospatial zone type answers which automatic checklist item. */
-const AUTO_ZONE: Record<string, string> = {
-  flood_zone_membership: 'flood',
-  fault_line_proximity: 'fault_line',
-  liquefaction_zone_membership: 'liquefaction',
-  erosion_zone_membership: 'erosion',
-  landslide_zone_membership: 'landslide',
-}
 
 const ANSWER_LABEL: Record<ChecklistAnswer, string> = {
   yes: 'Yes',
@@ -40,7 +31,8 @@ const ANSWER_LABEL: Record<ChecklistAnswer, string> = {
  * template version is stored with the answer set.
  */
 export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
-  const { data: zones } = useGeospatialZones(inspection.project_id)
+  const [suggestions, setSuggestions] = useState<Record<string, boolean | null>>({})
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([])
   const [responses, setResponses] = useState<ChecklistResponse[]>([])
   const [drafts, setDrafts] = useState<Record<string, ChecklistResponseItem[]>>({})
@@ -48,25 +40,20 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
   const [savingCode, setSavingCode] = useState<string | null>(null)
   const { error, success, run } = useAsyncAction()
 
-  const zoneTypes = useMemo(() => {
-    const types = new Set<string>()
-    for (const zone of zones ?? []) {
-      if (zone.is_active === false) continue
-      types.add(zone.zone_type)
-    }
-    return types
-  }, [zones])
-
   const refresh = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     try {
-      const [loadedTemplates, loadedResponses] = await Promise.all([
+      const [loadedTemplates, loadedResponses, loadedSuggestions] = await Promise.all([
         getChecklistTemplates(),
         getChecklistResponses(inspection.id),
+        getChecklistSuggestions(inspection.id),
       ])
       setTemplates(loadedTemplates)
       setResponses(loadedResponses)
-    } catch {
+      setSuggestions(loadedSuggestions)
+    } catch (caught) {
+      setLoadError(caught instanceof Error ? caught.message : 'The site checklist could not be loaded.')
       setTemplates([])
       setResponses([])
     } finally {
@@ -97,15 +84,14 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
         if (savedItem) return savedItem
 
         if (item.auto) {
-          const zoneType = AUTO_ZONE[item.auto]
-          const matched = zoneType ? zoneTypes.has(zoneType) : false
+          const matched = suggestions[item.auto] ?? null
           return {
             key: item.key,
-            answer: matched ? ('yes' as ChecklistAnswer) : null,
+            answer: matched === true ? ('yes' as ChecklistAnswer) : matched === false ? ('no' as ChecklistAnswer) : null,
             prefilled: true,
-            note: matched
-              ? `Suggested from the project's mapped ${zoneType?.replace('_', ' ')} layer.`
-              : 'No mapped zone matched this item. Confirm independently.',
+            note: matched == null
+              ? 'No applicable spatial coverage is available. Verify independently.'
+              : `Spatial suggestion: ${matched ? 'Yes' : 'No'}, from the actual site geometry. Confirm or override it.`,
           }
         }
 
@@ -114,7 +100,7 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
     }
 
     setDrafts(next)
-  }, [templates, responses, zoneTypes])
+  }, [templates, responses, suggestions])
 
   const setAnswer = (code: string, key: string, answer: ChecklistAnswer) => {
     setDrafts((current) => ({
@@ -146,6 +132,10 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
     )
   }
 
+  if (loadError) {
+    return <Panel title="Site Checklists"><p role="alert" className="text-sm text-red-700">{loadError}</p></Panel>
+  }
+
   if (templates.length === 0) {
     return (
       <Panel title="Site Checklists">
@@ -160,7 +150,7 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
   return (
     <Panel
       title="Site Checklists"
-      description="Flood and geohazard checks, prefilled where the project's mapped hazard layers can answer an item."
+      description="Suggestions use actual site intersections and distance to complete fault traces (near: under 5 km). Confirm every suggestion and answer every item before saving."
     >
       {error && <p className="text-xs font-medium text-red-700">{error}</p>}
       {success && <p className="text-xs font-medium text-emerald-700">{success}</p>}
@@ -168,7 +158,7 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
       {templates.map((template) => {
         const saved = responses.find((response) => response.template_code === template.code)
         const items = drafts[template.code] ?? []
-        const answered = items.filter((item) => item.answer !== null).length
+        const answered = items.filter((item) => item.answer !== null && !item.prefilled).length
 
         return (
           <section key={template.id} className="rounded-2xl border border-slate-200 p-4 space-y-3">
@@ -192,22 +182,19 @@ export function ChecklistPanel({ inspection }: { inspection: Inspection }) {
                     <p className="text-xs sm:text-sm font-medium text-slate-800">{item.label}</p>
                     <div role="radiogroup" aria-label={item.label} className="flex flex-wrap gap-1.5">
                       {(['yes', 'no', 'na'] as ChecklistAnswer[]).map((answer) => {
-                        const selected = draft?.answer === answer
+                        const selected = draft?.answer === answer && !draft?.prefilled
                         return (
-                          <button
+                          <label
                             key={answer}
-                            type="button"
-                            role="radio"
-                            aria-checked={selected}
-                            onClick={() => setAnswer(template.code, item.key, answer)}
-                            className={`rounded-lg border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all min-h-[36px] ${
+                            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all min-h-[40px] focus-within:ring-2 focus-within:ring-primary ${
                               selected
                                 ? 'bg-primary text-white border-primary'
                                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                             }`}
                           >
+                            <input type="radio" name={groupName} value={answer} checked={selected} onChange={() => setAnswer(template.code, item.key, answer)} />
                             {ANSWER_LABEL[answer]}
-                          </button>
+                          </label>
                         )
                       })}
                     </div>

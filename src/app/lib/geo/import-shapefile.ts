@@ -1,3 +1,4 @@
+import { normalizeZoneRisk } from './import-geojson'
 import zlib from 'node:zlib'
 import { parseGeoJSON, type ParsedGeoZone } from './import-geojson'
 
@@ -14,23 +15,33 @@ const MAX_SHAPE_POINTS = 5_000_000
  * Reprojects Web Mercator (EPSG:3857) coordinates to WGS84 (EPSG:4326) degrees.
  */
 function reprojectMercatorToWGS84(x: number, y: number): [number, number] {
+  if (Math.abs(x) > 20037508.342789244 || Math.abs(y) > 20037508.342789244) throw new Error('Coordinates exceed the supported Web Mercator bounds')
   const lon = (x / 20037508.342789244) * 180
   let lat = (y / 20037508.342789244) * 180
   lat = (180 / Math.PI) * (2 * Math.atan(Math.exp((lat * Math.PI) / 180)) - Math.PI / 2)
   return [
-    Math.max(-180, Math.min(180, Number(lon.toFixed(6)))),
-    Math.max(-90, Math.min(90, Number(lat.toFixed(6)))),
+    Number(lon.toFixed(6)),
+    Number(lat.toFixed(6)),
   ]
 }
 
-/**
- * Checks if coordinates appear to be projected meters instead of WGS84 degrees.
+/** Only WGS84 degrees and explicitly declared Web Mercator are supported.
+ * UTM/Transverse Mercator requires its actual zone/datum transformation; never
+ * reinterpret it as EPSG:3857. Unknown projected coordinates are rejected.
  */
-function needsReprojection(x: number, y: number, prjContent?: string): boolean {
-  if (prjContent && (prjContent.includes('Mercator') || prjContent.includes('3857') || prjContent.includes('UTM'))) {
-    return true
+function coordinateSystem(prjContent?: string): 'wgs84' | 'mercator' {
+  if (!prjContent) return 'wgs84'
+  if (/UTM|Transverse[_ ]Mercator/i.test(prjContent)) {
+    throw new Error('Unsupported UTM/Transverse Mercator projection. Reproject the dataset to WGS84 (EPSG:4326) or Web Mercator (EPSG:3857) before importing.')
   }
-  return Math.abs(x) > 180 || Math.abs(y) > 90
+  if (/3857|Pseudo[_ -]Mercator|Web[_ -]Mercator|Mercator_Auxiliary_Sphere/i.test(prjContent)) return 'mercator'
+  if (/PROJCS|PROJCRS/i.test(prjContent)) {
+    throw new Error('Unsupported projected CRS. Reproject the dataset to EPSG:4326 or EPSG:3857 before importing.')
+  }
+  if (!/WGS[_ ]?84|WGS[_ ]?1984|4326/i.test(prjContent)) {
+    throw new Error('Unsupported geographic CRS. Reproject the dataset to WGS84 (EPSG:4326) before importing.')
+  }
+  return 'wgs84'
 }
 
 /**
@@ -155,6 +166,39 @@ export function parseDBF(dbfBuffer: Buffer): Record<string, any>[] {
   return records
 }
 
+/** Organise disjoint shells and interior rings by geometric nesting.
+ * ESRI multipart polygons are not necessarily one shell with all remaining
+ * rings as holes. Even nesting depths are shells; odd depths are holes.
+ */
+function polygonParts(parts: [number, number][][]): [number, number][][][] {
+  const rings = parts.map((ring) => {
+    if (ring.length < 3) throw new Error('Invalid polygon ring: at least three vertices are required')
+    const first = ring[0], last = ring[ring.length - 1]
+    return first[0] === last[0] && first[1] === last[1] ? ring : [...ring, first]
+  })
+  const area = (ring: [number, number][]) => Math.abs(ring.reduce((sum, pt, i) => {
+    const next = ring[(i + 1) % ring.length]
+    return sum + pt[0] * next[1] - next[0] * pt[1]
+  }, 0))
+  const contains = (ring: [number, number][], point: [number, number]) => {
+    let inside = false
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      if ((ring[i][1] > point[1]) !== (ring[j][1] > point[1]) && point[0] < (ring[j][0] - ring[i][0]) * (point[1] - ring[i][1]) / (ring[j][1] - ring[i][1]) + ring[i][0]) inside = !inside
+    }
+    return inside
+  }
+  const parents = rings.map((ring, index) => {
+    let parent = -1, smallest = Infinity
+    rings.forEach((candidate, other) => {
+      const candidateArea = area(candidate)
+      if (other !== index && candidateArea > area(ring) && candidateArea < smallest && contains(candidate, ring[0])) { parent = other; smallest = candidateArea }
+    })
+    return parent
+  })
+  const depth = (index: number): number => parents[index] < 0 ? 0 : 1 + depth(parents[index])
+  return rings.flatMap((ring, index) => depth(index) % 2 ? [] : [[ring, ...rings.filter((_, other) => parents[other] === index)]])
+}
+
 /**
  * Parses ESRI Shapefile binary geometry buffer (.shp).
  */
@@ -171,6 +215,7 @@ export function parseSHP(
     throw new Error('Invalid ESRI Shapefile: Header signature does not match 9994')
   }
 
+  const crs = coordinateSystem(prjContent)
   const zones: ParsedGeoZone[] = []
   let offset = 100
   let recordIndex = 0
@@ -180,7 +225,9 @@ export function parseSHP(
     const recordLengthBytes = contentLengthWords * 2
     const contentOffset = offset + 8
 
-    if (contentOffset + recordLengthBytes > shpBuffer.length) break
+    if (recordLengthBytes < 4 || contentOffset + recordLengthBytes > shpBuffer.length) {
+      throw new Error('Invalid ESRI Shapefile: truncated or invalid record length')
+    }
 
     const shapeType = view.getInt32(contentOffset, true)
     const attrs = dbfRecords[recordIndex] || {}
@@ -188,21 +235,26 @@ export function parseSHP(
 
     // 3: PolyLine (LineString), 5: Polygon
     if (shapeType === 3 || shapeType === 5) {
-      const numParts = view.getInt32(contentOffset + 32, true)
-      const numPoints = view.getInt32(contentOffset + 36, true)
+      if (recordLengthBytes < 44) throw new Error('Invalid ESRI Shapefile: truncated shape header')
+      const numParts = view.getInt32(contentOffset + 36, true)
+      const numPoints = view.getInt32(contentOffset + 40, true)
 
       if (numParts < 0 || numParts > MAX_SHAPE_PARTS || numPoints < 0 || numPoints > MAX_SHAPE_POINTS) {
         throw new Error('Shapefile record exceeds the maximum allowed part or point count')
       }
 
-      if (contentOffset + 40 + numParts * 4 + numPoints * 16 > shpBuffer.length) {
+      if (44 + numParts * 4 + numPoints * 16 > recordLengthBytes) {
         throw new Error('Invalid ESRI Shapefile: record length does not match its header')
       }
 
       const partsOffsets: number[] = []
-      let pPos = contentOffset + 40
+      let pPos = contentOffset + 44
       for (let p = 0; p < numParts; p++) {
-        partsOffsets.push(view.getInt32(pPos, true))
+        const partOffset = view.getInt32(pPos, true)
+        if (partOffset < 0 || partOffset >= numPoints || (p === 0 && partOffset !== 0) || (p > 0 && partOffset <= partsOffsets[p - 1])) {
+          throw new Error('Invalid ESRI Shapefile: part offsets are not ordered within the point count')
+        }
+        partsOffsets.push(partOffset)
         pPos += 4
       }
 
@@ -211,10 +263,13 @@ export function parseSHP(
       for (let i = 0; i < numPoints; i++) {
         let x = view.getFloat64(ptPos, true)
         let y = view.getFloat64(ptPos + 8, true)
-        if (needsReprojection(x, y, prjContent)) {
+        if (crs === 'mercator') {
           const [rx, ry] = reprojectMercatorToWGS84(x, y)
           x = rx
           y = ry
+        }
+        if (!Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x) > 180 || Math.abs(y) > 90) {
+          throw new Error('Coordinates exceed WGS84 bounds. A declared, supported CRS is required for projected coordinates.')
         }
         points.push([x, y])
         ptPos += 16
@@ -229,6 +284,7 @@ export function parseSHP(
       }
 
       const isLine = shapeType === 3
+      const polygons = isLine ? [] : polygonParts(parts)
       const name = attrs.NAME || attrs.name || attrs.TITLE || attrs.title || attrs.ZONE || `Hazard Layer ${recordIndex}`
       const desc = attrs.DESC || attrs.desc || attrs.DESCRIPTION || attrs.description || ''
       const zoneTypeCandidate = (attrs.TYPE || attrs.type || attrs.HAZARD || attrs.hazard || (isLine ? 'fault_line' : 'liquefaction')).toLowerCase()
@@ -238,15 +294,13 @@ export function parseSHP(
         ? 'fault_line'
         : zoneTypeCandidate.includes('flood')
         ? 'flood'
+        : zoneTypeCandidate.includes('landslide')
+        ? 'landslide'
         : zoneTypeCandidate.includes('erosion')
         ? 'erosion'
         : 'liquefaction'
 
-      const risk_level = riskCandidate.includes('a') || riskCandidate.includes('high')
-        ? 'zone_a'
-        : riskCandidate.includes('b') || riskCandidate.includes('med')
-        ? 'zone_b'
-        : 'zone_c'
+      const risk_level = normalizeZoneRisk(riskCandidate)
 
       const primaryCoords = parts[0] || []
 
@@ -261,8 +315,8 @@ export function parseSHP(
               coordinates: numParts > 1 ? parts : primaryCoords,
             }
           : {
-              type: numParts > 1 ? 'MultiPolygon' : 'Polygon',
-              coordinates: numParts > 1 ? [parts] : parts,
+              type: polygons.length > 1 ? 'MultiPolygon' : 'Polygon',
+              coordinates: polygons.length > 1 ? polygons : polygons[0],
             },
         description: desc,
       })

@@ -3,13 +3,13 @@ import type { SettlementClassification } from '@/app/types'
 /**
  * Tilt and differential settlement classification.
  *
- * Thresholds are documented engineering limits, not AI output. The inspector
+ * Thresholds are project-defined screening thresholds, not AI output or a
+ * universal code acceptance limit. A domain engineer must assess site context. The inspector
  * enters a measurement; this module decides the label and states which
  * threshold produced it.
  *
  * Tilt is expressed as mm of horizontal deviation per metre of height, which is
- * equivalent to 1/n × 1000. The commonly cited limits for low- to mid-rise
- * buildings are 1/500 for "monitor" and 1/250 for "action required".
+ * equivalent to 1/n × 1000. The configured screening ratios are 1/500 for "monitor" and 1/250 for "action required".
  */
 
 export const TILT_THRESHOLDS_MM_PER_M = {
@@ -20,9 +20,9 @@ export const TILT_THRESHOLDS_MM_PER_M = {
 } as const
 
 export const DIFFERENTIAL_SETTLEMENT_THRESHOLDS_MM = {
-  /** Typical serviceability concern for framed structures. */
+  /** Project monitoring threshold; not a universally applicable limit. */
   monitor: 10,
-  /** Beyond this, load redistribution and cracking are expected. */
+  /** Project trigger for an engineer to investigate, not a failure prediction. */
   action: 25,
 } as const
 

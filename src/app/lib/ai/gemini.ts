@@ -10,7 +10,7 @@ import 'server-only'
  * Rules enforced here (see docs/capstone_v2_scope_contract.md §6):
  *  - the key is read server-side only and never returned to a caller
  *  - every response is validated by the caller's parser before use
- *  - a 429 falls through to the next model, and only then to the caller's
+ *  - a quota or temporary service failure advances once to the next model, then to the caller's
  *    deterministic fallback
  *  - no live AR frame path may call this module
  */
@@ -40,7 +40,8 @@ export class GeminiUnavailableError extends Error {
 }
 
 export function isGeminiConfigured(): boolean {
-  return Boolean(process.env.GEMINI_API_KEY)
+  const key = process.env.GEMINI_API_KEY?.trim()
+  return Boolean(key && key !== '[SENSITIVE]' && !/^(placeholder|your[-_])/i.test(key))
 }
 
 interface GenerateOptions {
@@ -110,7 +111,8 @@ async function callModel(
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: options.schema,
-          temperature: options.temperature ?? 0.2,
+          // Gemini 3/4 use default sampling; newer models deprecate overrides.
+          ...(/^gemini-[34](?:\.|-)/.test(model) ? {} : { temperature: options.temperature ?? 0.2 }),
         },
       }),
       signal: AbortSignal.timeout(options.timeoutMs ?? 30_000),
@@ -137,7 +139,12 @@ async function callModel(
     )
   }
 
-  const payload = (await response.json()) as GeminiResponse
+  let payload: GeminiResponse
+  try {
+    payload = await response.json() as GeminiResponse
+  } catch {
+    throw new GeminiUnavailableError('Gemini returned a malformed response body.', 'invalid_response')
+  }
 
   if (payload.error) {
     throw new GeminiUnavailableError(payload.error.message ?? 'Gemini error', 'transport')
@@ -147,18 +154,16 @@ async function callModel(
 }
 
 /**
- * Generate structured JSON, falling through the model chain on rate limits.
- *
- * Transport and validation errors do NOT fall through: a malformed response is a
- * failed call, and silently retrying it against another model would hide the
- * defect. Only 429 advances the chain.
+ * Advance through the bounded model chain on quota and temporary availability
+ * failures. Invalid output, authorization and request errors fail immediately.
+ * Each model is attempted at most once; the caller labels any final fallback.
  */
 export async function generateStructured<T>(
   options: GenerateOptions & { parse: (value: unknown) => T }
 ): Promise<{ value: T; model: string }> {
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) {
-    throw new GeminiUnavailableError('GEMINI_API_KEY is not configured.', 'not_configured')
+  const apiKey = process.env.GEMINI_API_KEY?.trim()
+  if (!apiKey || !isGeminiConfigured()) {
+    throw new GeminiUnavailableError('GEMINI_API_KEY is unavailable locally. Vercel sensitive exports are placeholders; configure a local-only key or run on Preview.', 'not_configured')
   }
 
   const chain = options.models ?? GEMINI_MODELS
@@ -187,7 +192,10 @@ export async function generateStructured<T>(
 
       return { value, model }
     } catch (error) {
-      if (error instanceof GeminiUnavailableError && error.code === 'rate_limited') {
+      if (error instanceof GeminiUnavailableError && (
+        error.code === 'rate_limited' ||
+        (error.code === 'transport' && (error.status === undefined || [408, 500, 502, 503, 504].includes(error.status)))
+      )) {
         lastError = error
         continue
       }
@@ -195,5 +203,5 @@ export async function generateStructured<T>(
     }
   }
 
-  throw lastError ?? new GeminiUnavailableError('All Gemini models are rate limited.', 'rate_limited')
+  throw lastError ?? new GeminiUnavailableError('No Gemini model is available.', 'transport')
 }

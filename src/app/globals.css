@@ -303,6 +303,11 @@ html.ar-immersive #ar-viewport {
     width: 100% !important;
   }
 
+  /* Preserve the report's own header while hiding the dashboard shell. */
+  .print-report > header {
+    display: block !important;
+  }
+
   .print-report .bg-slate-50 {
     background: white !important;
   }

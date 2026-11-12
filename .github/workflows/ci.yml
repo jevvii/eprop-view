@@ -22,7 +22,6 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
       NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: pk.placeholder
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
-      NODE_ENV: test
 
     steps:
       - uses: actions/checkout@v5
@@ -41,8 +40,51 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Verify TypeScript lint coverage
+        run: node src/scripts/check-lint-coverage.mjs
+
       - name: Test
         run: npm test
 
       - name: Build
         run: npm run build
+
+  database:
+    name: migrations and database permission/workflow tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_PASSWORD: local-ci-only
+          POSTGRES_DB: eprop_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: local-ci-only
+      PGDATABASE: eprop_test
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bootstrap Supabase platform fixtures
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/bootstrap.sql
+      - name: Apply all migrations
+        run: |
+          for migration in supabase/migrations/*.sql; do
+            psql -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Verify permissions and workflows
+        run: |
+          for suite in supabase/tests/*.sql; do
+            if [ "$suite" != "supabase/tests/bootstrap.sql" ]; then
+              psql -v ON_ERROR_STOP=1 -f "$suite"
+            fi
+          done

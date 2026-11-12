@@ -23,7 +23,7 @@ import { REBOUND_CORRELATION_REFERENCE } from '@/app/lib/structural/rebound'
 export function ConfigurationPanel() {
   return (
     <div className="space-y-6">
-      <Panel title="Crack Classification" description={`ACI 224R-01 width bands and exposure tolerances. Table version ${COST_TABLE_VERSION}.`}>
+      <Panel title="Crack Classification" description={`Project-defined width bands; ACI 224R-01 exposure guidance. Table version ${COST_TABLE_VERSION}.`}>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[420px]">
             <thead>

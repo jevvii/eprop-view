@@ -1,134 +1,82 @@
-'use client'
-
-import { useCallback, useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-import type { Report } from '@/app/types'
-
-/**
- * Report filters, kept in the URL.
- *
- * A filtered view must be reproducible from a link, so the state lives in query
- * parameters rather than component state. Selects update immediately; free text
- * is debounced so typing does not push a history entry per keystroke.
- */
-
-export interface ReportFilterState {
-  q: string
-  status: string
-  risk: string
-  from: string
-  to: string
-}
-
-export const EMPTY_FILTERS: ReportFilterState = { q: '', status: 'all', risk: 'all', from: '', to: '' }
-
-const RISK_BANDS: Record<string, [number, number]> = {
-  low: [0, 3.99],
-  moderate: [4, 6.99],
-  high: [7, 8.99],
-  critical: [9, 10],
-}
-
-export function filterReports(reports: Report[] | undefined, filters: ReportFilterState): Report[] {
-  if (!reports) return []
-
-  const query = filters.q.trim().toLowerCase()
-
-  return reports.filter((report) => {
-    if (filters.status !== 'all' && report.status !== filters.status) return false
-
-    if (filters.risk !== 'all') {
-      const band = RISK_BANDS[filters.risk]
-      if (!band) return true
-      if (report.risk_score < band[0] || report.risk_score > band[1]) return false
-    }
-
-    if (filters.from && report.date < filters.from) return false
-    if (filters.to && report.date > filters.to) return false
-
-    if (query) {
-      const haystack = [
-        report.report_id,
-        report.title,
-        report.location,
-        report.project_name,
-        report.key_findings,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-      if (!haystack.includes(query)) return false
-    }
-
-    return true
-  })
-}
-
-/**
- * Read the initial state from the address bar.
- *
- * `useSearchParams` would force every caller into a Suspense boundary during
- * static prerendering. Reading the query string once on the client keeps the
- * same behaviour — a filtered view is still linkable — without that constraint.
- */
-function readFromUrl(): ReportFilterState {
-  if (typeof window === 'undefined') return EMPTY_FILTERS
-
-  const params = new URLSearchParams(window.location.search)
-  return {
-    q: params.get('q') ?? '',
-    status: params.get('status') ?? 'all',
-    risk: params.get('risk') ?? 'all',
-    from: params.get('from') ?? '',
-    to: params.get('to') ?? '',
-  }
-}
-
-export function useReportFilters() {
-  const router = useRouter()
-  const pathname = usePathname()
-
-  const [filters, setFilters] = useState<ReportFilterState>(readFromUrl)
-
-  const syncUrl = useCallback(
-    (next: ReportFilterState) => {
-      const params = new URLSearchParams()
-      if (next.q) params.set('q', next.q)
-      if (next.status !== 'all') params.set('status', next.status)
-      if (next.risk !== 'all') params.set('risk', next.risk)
-      if (next.from) params.set('from', next.from)
-      if (next.to) params.set('to', next.to)
-
-      const query = params.toString()
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
-    },
-    [pathname, router]
-  )
-
-  const update = useCallback(
-    (patch: Partial<ReportFilterState>) => {
-      setFilters((current) => ({ ...current, ...patch }))
-    },
-    []
-  )
-
-  // Debounce only the text field.
+"use client";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { getWorkspaceFilterOptions } from "@/app/actions/filters";
+import {
+  EMPTY_WORKSPACE_FILTERS,
+  filterSchema,
+  filterSearch,
+  parseFilterSearch,
+  type WorkspaceFilters,
+} from "@/app/lib/workspace-filters";
+import { scoreToRiskLevel } from "@/app/lib/damage-score";
+import type { Report } from "@/app/types";
+export type ReportFilterState = WorkspaceFilters;
+export const EMPTY_FILTERS = EMPTY_WORKSPACE_FILTERS;
+const Context = createContext<{
+  filters: WorkspaceFilters;
+  update: (patch: Partial<WorkspaceFilters>) => void;
+  reset: () => void;
+}>({ filters: EMPTY_FILTERS, update: () => {}, reset: () => {} });
+export function WorkspaceFiltersProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const pathname = usePathname(),
+    router = useRouter();
+  const [filters, setFilters] = useState<WorkspaceFilters>(EMPTY_FILTERS);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    const handle = setTimeout(() => syncUrl(filters), 300)
-    return () => clearTimeout(handle)
-  }, [filters, syncUrl])
-
-  const reset = useCallback(() => {
-    setFilters(EMPTY_FILTERS)
-    router.replace(pathname, { scroll: false })
-  }, [pathname, router])
-
-  return { filters, update, reset }
+    const sync = () => {
+      setFilters(parseFilterSearch(window.location.search));
+      setReady(true);
+    };
+    sync();
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, [pathname]);
+  useEffect(() => {
+    if (!ready) return;
+    const timer = setTimeout(() => {
+      const q = filterSearch(filters, window.location.search);
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [filters, pathname, ready, router]);
+  const update = (patch: Partial<WorkspaceFilters>) =>
+    setFilters((current) => ({ ...current, ...patch }));
+  const reset = () => setFilters({ ...EMPTY_FILTERS });
+  return (
+    <Context.Provider value={{ filters, update, reset }}>
+      {children}
+    </Context.Provider>
+  );
 }
-
-const controlClass =
-  'rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold bg-slate-50 outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[40px]'
-
+export function useReportFilters() {
+  return useContext(Context);
+}
+export const useWorkspaceFilters = useReportFilters;
+export function filterReports(
+  reports: Report[] | undefined,
+  filters: WorkspaceFilters,
+): Report[] {
+  // Server filtering is authoritative. This compatibility helper uses the same
+  // band boundaries and never invents a second definition of Critical.
+  return (reports ?? []).filter(
+    (r) =>
+      filters.risk === "all" || scoreToRiskLevel(r.risk_score) === filters.risk,
+  );
+}
+const control =
+  "rounded-lg border border-slate-300 bg-white p-2 text-sm min-h-11 min-w-0 focus-visible:outline-2 focus-visible:outline-primary";
+type Options = Awaited<ReturnType<typeof getWorkspaceFilterOptions>>;
 export function ReportFilters({
   filters,
   onChange,
@@ -136,124 +84,263 @@ export function ReportFilters({
   resultCount,
   children,
 }: {
-  filters: ReportFilterState
-  onChange: (patch: Partial<ReportFilterState>) => void
-  onReset: () => void
-  resultCount: number
-  children?: React.ReactNode
+  filters: WorkspaceFilters;
+  onChange: (patch: Partial<WorkspaceFilters>) => void;
+  onReset: () => void;
+  resultCount?: number;
+  children?: ReactNode;
 }) {
-  const dirty =
-    filters.q !== '' || filters.status !== 'all' || filters.risk !== 'all' || filters.from !== '' || filters.to !== ''
-
+  const [options, setOptions] = useState<Options>({
+    buildings: [],
+    floors: [],
+    elements: [],
+  });
+  const [error, setError] = useState(""),
+    [preset, setPreset] = useState(""),
+    [presets, setPresets] = useState<Record<string, WorkspaceFilters>>({});
+  useEffect(() => {
+    let cancelled = false;
+    getWorkspaceFilterOptions()
+      .then((value) => {
+        if (!cancelled) setOptions(value);
+      })
+      .catch(() => {
+        if (!cancelled)
+          setError(
+            "Building filters are unavailable. Verify database setup and retry.",
+          );
+      });
+    try {
+      setPresets(
+        Object.fromEntries(
+          Object.entries(
+            JSON.parse(
+              localStorage.getItem("eprop-workspace-presets-v1") ?? "{}",
+            ),
+          )
+            .filter(([, value]) => filterSchema.safeParse(value).success)
+            .map(([name, value]) => [name, filterSchema.parse(value)]),
+        ),
+      );
+    } catch {
+      setPresets({});
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const select = (
+    key: keyof WorkspaceFilters,
+    label: string,
+    values: [string, string][],
+  ) => (
+    <label
+      key={key}
+      className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-slate-700"
+    >
+      {label}
+      <select
+        className={control}
+        value={filters[key]}
+        onChange={(e) =>
+          onChange({
+            ...{ [key]: e.target.value },
+            ...(key === "building"
+              ? { floor: "", element: "" }
+              : key === "floor"
+                ? { element: "" }
+                : {}),
+          })
+        }
+      >
+        {values.map(([value, title]) => (
+          <option key={value} value={value}>
+            {title}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
   return (
-    <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs space-y-3">
-      <div className="flex flex-wrap items-end gap-2.5">
-        <div className="min-w-0 flex-1">
-          <label htmlFor="filter-q" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-            Search
-          </label>
+    <section
+      aria-label="Workspace filters"
+      className="no-print rounded-2xl border border-slate-200 bg-white p-3 space-y-3"
+    >
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        <label className="flex flex-col gap-1 text-xs font-semibold">
+          Search
           <input
-            id="filter-q"
             type="search"
+            className={control}
             value={filters.q}
-            onChange={(event) => onChange({ q: event.target.value })}
-            className={`${controlClass} w-full min-w-[180px]`}
-            placeholder="Report ID, title, location, findings"
+            onChange={(e) => onChange({ q: e.target.value })}
           />
-        </div>
-
-        <div>
-          <label htmlFor="filter-status" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-            Status
-          </label>
-          <select
-            id="filter-status"
-            value={filters.status}
-            onChange={(event) => onChange({ status: event.target.value })}
-            className={controlClass}
+        </label>
+        {select("status", "Status", [
+          ["all", "All statuses"],
+          ...[
+            "open",
+            "in_review",
+            "critical",
+            "completed",
+            "pending",
+            "in_progress",
+            "requires_followup",
+            "deferred",
+          ].map((s) => [s, s.replaceAll("_", " ")] as [string, string]),
+        ])}
+        {select("risk", "Risk band", [
+          ["all", "All risk bands"],
+          ["low", "Low (<4)"],
+          ["moderate", "Moderate (4–<6)"],
+          ["high", "High (6–<8)"],
+          ["critical", "Critical (8–10)"],
+        ])}
+        {select("severity", "Detection severity", [
+          ["all", "All severities"],
+          ...["low", "medium", "high", "critical"].map(
+            (s) => [s, s] as [string, string],
+          ),
+        ])}
+        {select("damage", "Damage type", [
+          ["all", "All damage"],
+          ...[
+            "crack",
+            "corrosion",
+            "spalling",
+            "deformation",
+            "leakage",
+            "none",
+          ].map((s) => [s, s] as [string, string]),
+        ])}
+        {select("crack", "Crack category", [
+          ["all", "All crack bands"],
+          ...["hairline", "fine", "medium", "wide", "severe"].map(
+            (s) => [s, s] as [string, string],
+          ),
+        ])}
+        {select("building", "Building", [
+          ["", "All buildings"],
+          ...options.buildings.map((x) => [x.id, x.name] as [string, string]),
+        ])}
+        {select("floor", "Floor", [
+          ["", "All floors"],
+          ...options.floors
+            .filter(
+              (x) => !filters.building || x.building_id === filters.building,
+            )
+            .map((x) => [x.id, x.name] as [string, string]),
+        ])}
+        {select("element", "Element", [
+          ["", "All elements"],
+          ...options.elements
+            .filter((x) => !filters.floor || x.floor_id === filters.floor)
+            .map((x) => [x.id, x.identifier] as [string, string]),
+        ])}
+        {select("verification", "Verification", [
+          ["all", "Any verification"],
+          ["verified", "Engineer verified"],
+          ["unverified", "Awaiting verification"],
+        ])}
+        {(["from", "to"] as const).map((key) => (
+          <label
+            key={key}
+            className="flex flex-col gap-1 text-xs font-semibold"
           >
-            <option value="all">All</option>
-            <option value="open">Open</option>
-            <option value="in_review">In review</option>
-            <option value="critical">Critical</option>
-            <option value="completed">Completed</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="filter-risk" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-            Risk band
+            {key === "from" ? "From" : "To"}
+            <input
+              type="date"
+              className={control}
+              value={filters[key]}
+              onChange={(e) => onChange({ [key]: e.target.value })}
+            />
           </label>
-          <select
-            id="filter-risk"
-            value={filters.risk}
-            onChange={(event) => onChange({ risk: event.target.value })}
-            className={controlClass}
-          >
-            <option value="all">All</option>
-            <option value="low">Low (0–3.9)</option>
-            <option value="moderate">Moderate (4–6.9)</option>
-            <option value="high">High (7–8.9)</option>
-            <option value="critical">Critical (9–10)</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="filter-from" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-            From
-          </label>
-          <input
-            id="filter-from"
-            type="date"
-            value={filters.from}
-            onChange={(event) => onChange({ from: event.target.value })}
-            className={controlClass}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="filter-to" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-            To
-          </label>
-          <input
-            id="filter-to"
-            type="date"
-            value={filters.to}
-            onChange={(event) => onChange({ to: event.target.value })}
-            className={controlClass}
-          />
-        </div>
-
+        ))}
         {children}
       </div>
-
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
-          {resultCount} {resultCount === 1 ? 'report' : 'reports'} shown
-        </p>
-        {dirty && (
-          <button
-            type="button"
-            onClick={onReset}
-            className="text-[11px] font-bold uppercase tracking-wider text-primary hover:underline"
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-xs">
+          Saved preset
+          <select
+            className={control}
+            value={preset}
+            onChange={(e) => {
+              const name = e.target.value;
+              setPreset(name);
+              if (presets[name]) onChange(presets[name]);
+            }}
           >
-            Clear filters
-          </button>
+            <option value="">Choose preset</option>
+            {Object.keys(presets).map((name) => (
+              <option key={name}>{name}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs">
+          Preset name
+          <input
+            className={control}
+            value={preset}
+            maxLength={60}
+            onChange={(e) => setPreset(e.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          disabled={!preset.trim()}
+          className={control}
+          onClick={() => {
+            const next = { ...presets, [preset.trim()]: filters };
+            setPresets(next);
+            try {
+              localStorage.setItem(
+                "eprop-workspace-presets-v1",
+                JSON.stringify(next),
+              );
+            } catch {
+              setError("Preset could not be saved in this browser.");
+            }
+          }}
+        >
+          Save preset
+        </button>
+        <button type="button" className={control} onClick={onReset}>
+          Clear filters
+        </button>
+        {resultCount !== undefined && (
+          <p role="status" className="text-xs text-slate-600">
+            {resultCount} records shown
+          </p>
         )}
       </div>
-    </div>
-  )
+      {error && (
+        <p role="alert" className="text-xs text-red-700">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+export function WorkspaceFilterBar() {
+  const value = useWorkspaceFilters();
+  return (
+    <ReportFilters
+      filters={value.filters}
+      onChange={value.update}
+      onReset={value.reset}
+    />
+  );
 }
 
 /** Trigger a browser download for a server-generated file. */
 export function downloadCsv(filename: string, csv: string): void {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  document.body.appendChild(anchor)
-  anchor.click()
-  document.body.removeChild(anchor)
-  URL.revokeObjectURL(url)
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
 }

@@ -1,151 +1,90 @@
+import { z } from 'zod'
 import { createClient } from '@/app/lib/supabase/server'
-import type { GeospatialZone } from '@/app/types'
+
+const zoneSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  zone_type: z.string(),
+  risk_level: z.enum(['zone_a', 'zone_b', 'zone_c']),
+  covers_site: z.boolean(),
+  distance_m: z.number().finite().nonnegative().nullable(),
+  is_active: z.boolean().default(true),
+})
+const contextSchema = z.object({
+  project_id: z.string(),
+  project_name: z.string(),
+  latitude: z.number().finite().min(-90).max(90),
+  longitude: z.number().finite().min(-180).max(180),
+  zones: z.array(zoneSchema),
+  observed_erosion: z.enum(['none', 'minor', 'moderate', 'severe']).nullable(),
+})
 
 export interface RiskComputationResult {
   overall_risk_score: number
   fault_line_proximity: 'none' | 'low' | 'moderate' | 'high' | 'very_high'
   soil_liquefaction_risk: 'zone_a' | 'zone_b' | 'zone_c' | 'none'
   erosion_potential: 'severe' | 'moderate' | 'low' | 'negligible'
-  overlappingZones: GeospatialZone[]
+  overlappingZones: z.infer<typeof zoneSchema>[]
+  /** Actual geometry memberships; a missing layer is not evidence of absence. */
+  memberships: Record<string, boolean>
+  coverage: string[]
+  nearestFaultDistanceKm: number | null
   additional_analysis: string
 }
 
 /**
- * Calculates Euclidean distance between two geographic coordinates in kilometers (Haversine formula).
- */
-function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371 // Earth radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLon = ((lon2 - lon1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
-}
-
-/**
- * Point in polygon test using ray casting algorithm.
- */
-function isPointInPolygon(point: [number, number], polygon: number[][]): boolean {
-  const [lng, lat] = point
-  let inside = false
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i][0], yi = polygon[i][1]
-    const xj = polygon[j][0], yj = polygon[j][1]
-    const intersect = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi
-    if (intersect) inside = !inside
-  }
-  return inside
-}
-
-/**
- * Analyzes active geospatial zones against project coordinates to compute an automated
- * civil environmental risk assessment score (0 to 10 scale).
+ * Project-defined decision-support formula, not an engineering safety standard.
+ * Geometry answers come from PostGIS: ST_Distance(geography) measures distance to
+ * the entire trace; ST_Covers handles boundaries, polygon holes and multipolygons.
+ * https://postgis.net/docs/ST_Distance.html · https://postgis.net/docs/ST_Covers.html
  */
 export async function computeProjectEnvironmentalRisk(projectId: string): Promise<RiskComputationResult> {
   const supabase = await createClient()
-
-  // Fetch project location
-  const { data: project, error: projError } = await supabase
-    .from('projects')
-    .select('id, name, location, latitude, longitude, geom')
-    .eq('id', projectId)
-    .single()
-
-  if (projError || !project) {
-    throw new Error(`Project ${projectId} not found`)
+  const { data, error } = await supabase.rpc('project_hazard_context', { p_project_id: projectId })
+  if (error) throw new Error(`Could not assess mapped hazards: ${error.message}`)
+  const parsed = contextSchema.safeParse(data)
+  if (!parsed.success) {
+    throw new Error('Project geometry/coordinates or hazard context are unavailable. Record the real site coordinates and verify the GIS migration before assessing hazards.')
   }
-
-  const projLat = project.latitude ?? project.geom?.coordinates?.[1] ?? 14.6507
-  const projLon = project.longitude ?? project.geom?.coordinates?.[0] ?? 121.0484
-
-  // Fetch all active geospatial zones
-  const { data: rawZones, error: zonesError } = await supabase
-    .from('geospatial_zones')
-    .select('*')
-    .or(`project_id.eq.${projectId},project_id.is.null`)
-
-  if (zonesError) throw zonesError
-  const zones = (rawZones || []) as GeospatialZone[]
-
-  let minFaultDistKm = Infinity
-  let highestLiquefactionZone: 'zone_a' | 'zone_b' | 'zone_c' | 'none' = 'none'
-  let highestErosion: 'severe' | 'moderate' | 'low' | 'negligible' = 'negligible'
-  let floodOverlap = false
-  const overlappingZones: GeospatialZone[] = []
-
-  for (const zone of zones) {
-    if (!zone.coordinates || zone.coordinates.length === 0) continue
-
-    const isInside = isPointInPolygon([projLon, projLat], zone.coordinates)
-    if (isInside) {
-      overlappingZones.push(zone)
-    }
-
-    // Measure distance to closest point in zone geometry
-    for (const pt of zone.coordinates) {
-      if (Array.isArray(pt) && pt.length >= 2) {
-        const dist = calculateDistanceKm(projLat, projLon, pt[1], pt[0])
-        if (zone.zone_type === 'fault_line' && dist < minFaultDistKm) {
-          minFaultDistKm = dist
-        }
-      }
-    }
-
-    if (zone.zone_type === 'liquefaction' && (isInside || minFaultDistKm < 2)) {
-      if (zone.risk_level === 'zone_a') highestLiquefactionZone = 'zone_a'
-      else if (zone.risk_level === 'zone_b' && highestLiquefactionZone !== 'zone_a') highestLiquefactionZone = 'zone_b'
-      else if (highestLiquefactionZone === 'none') highestLiquefactionZone = 'zone_c'
-    }
-
-    if (zone.zone_type === 'erosion' && isInside) {
-      if (zone.risk_level === 'zone_a') highestErosion = 'severe'
-      else if (zone.risk_level === 'zone_b' && highestErosion !== 'severe') highestErosion = 'moderate'
-      else if (highestErosion === 'negligible') highestErosion = 'low'
-    }
-
-    if (zone.zone_type === 'flood' && isInside) {
-      floodOverlap = true
+  const context = parsed.data
+  const zones = context.zones.filter((zone) => zone.is_active)
+  const coverage = [...new Set(zones.map((zone) => zone.zone_type))].sort()
+  const memberships: Record<string, boolean> = {}
+  for (const type of coverage) memberships[type] = zones.some((zone) => zone.zone_type === type && zone.covers_site)
+  const overlappingZones = zones.filter((zone) => zone.covers_site).sort((a, b) => a.id.localeCompare(b.id) || a.zone_type.localeCompare(b.zone_type))
+  const faultDistances = zones.filter((zone) => zone.zone_type === 'fault_line' && zone.distance_m != null).map((zone) => zone.distance_m as number)
+  const faultDistance = faultDistances.length ? Math.min(...faultDistances) / 1000 : null
+  const fault: RiskComputationResult['fault_line_proximity'] = faultDistance == null ? 'none'
+    : faultDistance < 1 ? 'very_high' : faultDistance < 5 ? 'high'
+      : faultDistance < 15 ? 'moderate' : faultDistance < 30 ? 'low' : 'none'
+  const ranks = ['none', 'zone_c', 'zone_b', 'zone_a'] as const
+  let liquefaction: RiskComputationResult['soil_liquefaction_risk'] = 'none'
+  let erosion: RiskComputationResult['erosion_potential'] = 'negligible'
+  const erosionRanks = ['negligible', 'low', 'moderate', 'severe'] as const
+  for (const zone of overlappingZones) {
+    if (zone.zone_type === 'liquefaction' && ranks.indexOf(zone.risk_level) > ranks.indexOf(liquefaction)) liquefaction = zone.risk_level
+    if (zone.zone_type === 'erosion') {
+      const candidate = zone.risk_level === 'zone_a' ? 'severe' : zone.risk_level === 'zone_b' ? 'moderate' : 'low'
+      if (erosionRanks.indexOf(candidate) > erosionRanks.indexOf(erosion)) erosion = candidate
     }
   }
-
-  // Derive fault line proximity classification
-  let faultLineProximity: 'none' | 'low' | 'moderate' | 'high' | 'very_high' = 'none'
-  if (minFaultDistKm < 1.0) faultLineProximity = 'very_high'
-  else if (minFaultDistKm < 5.0) faultLineProximity = 'high'
-  else if (minFaultDistKm < 15.0) faultLineProximity = 'moderate'
-  else if (minFaultDistKm < 30.0) faultLineProximity = 'low'
-
-  // Weighted scoring computation (0 to 10)
-  // Fault proximity weight: 40%
-  const faultScoreMap = { very_high: 9.5, high: 7.5, moderate: 5.0, low: 2.5, none: 1.0 }
-  const faultScore = faultScoreMap[faultLineProximity] * 0.40
-
-  // Liquefaction weight: 30%
-  const liqScoreMap = { zone_a: 9.0, zone_b: 6.0, zone_c: 3.5, none: 1.0 }
-  const liqScore = liqScoreMap[highestLiquefactionZone] * 0.30
-
-  // Erosion weight: 15%
-  const erosionScoreMap = { severe: 9.0, moderate: 6.0, low: 3.0, negligible: 1.0 }
-  const erosionScore = erosionScoreMap[highestErosion] * 0.15
-
-  // Flood impact weight: 15%
-  const floodScore = (floodOverlap ? 8.5 : 1.5) * 0.15
-
-  const totalCalculated = Math.min(10, Math.max(0.5, Number((faultScore + liqScore + erosionScore + floodScore).toFixed(1))))
-
-  const summary = `Automated GIS layer synthesis for ${project.name}: Detected ${overlappingZones.length} hazard zone intersections. Fault proximity: ${faultLineProximity.toUpperCase()} (${minFaultDistKm < 100 ? `${minFaultDistKm.toFixed(1)} km to active trace` : 'outside primary fault buffer'}). Liquefaction category: ${highestLiquefactionZone.toUpperCase()}. Erosion potential: ${highestErosion.toUpperCase()}.${floodOverlap ? ' Site intersects mapped flood inundation zone.' : ''}`
-
+  const observedErosion = context.observed_erosion === 'severe' ? 'severe' : context.observed_erosion === 'moderate' ? 'moderate' : context.observed_erosion === 'minor' ? 'low' : 'negligible'
+  if (erosionRanks.indexOf(observedErosion) > erosionRanks.indexOf(erosion)) erosion = observedErosion
+  const score = ({ none: 1, low: 2.5, moderate: 5, high: 7.5, very_high: 9.5 }[fault] * 0.4)
+    + ({ none: 1, zone_c: 3.5, zone_b: 6, zone_a: 9 }[liquefaction] * 0.3)
+    + ({ negligible: 1, low: 3, moderate: 6, severe: 9 }[erosion] * 0.15)
+    + ((memberships.flood ? 8.5 : 1.5) * 0.15)
+  const coverageNotice = coverage.length === 0 ? ' No active mapped hazard layers cover this assessment area; this is missing coverage, not proof of safety.' : ` Active dataset types: ${coverage.join(', ')}. Unmapped hazard types remain unverified.`
+  const summary = `Project-defined GIS screening for ${context.project_name}: ${overlappingZones.length} site intersections. Fault proximity ${fault}${faultDistance == null ? ' (no active fault trace available)' : ` (${faultDistance.toFixed(2)} km from the complete trace)`}. Liquefaction ${liquefaction}; erosion ${erosion}.${context.observed_erosion ? ` Latest field observation: ${context.observed_erosion} erosion.` : ''}${coverageNotice}`
   return {
-    overall_risk_score: totalCalculated,
-    fault_line_proximity: faultLineProximity,
-    soil_liquefaction_risk: highestLiquefactionZone,
-    erosion_potential: highestErosion,
+    overall_risk_score: Number(Math.min(10, Math.max(0, score)).toFixed(1)),
+    fault_line_proximity: fault,
+    soil_liquefaction_risk: liquefaction,
+    erosion_potential: erosion,
     overlappingZones,
+    memberships,
+    coverage,
+    nearestFaultDistanceKm: faultDistance,
     additional_analysis: summary,
   }
 }

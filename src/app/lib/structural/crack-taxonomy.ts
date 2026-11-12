@@ -9,28 +9,33 @@ import type {
 /**
  * Crack taxonomy.
  *
- * Width bands and tolerances follow ACI 224R-01 ("Control of Cracking in
- * Concrete Structures"), §4.1. Cause categories follow ACI 201.1R ("Guide for
- * Conducting a Visual Inspection of Concrete in Service"). NSCP 2015 is
- * ACI-derived, which is why this is the reference used rather than Eurocode.
+ * Exposure tolerances follow ACI 224R-01 ("Control of Cracking in
+ * Concrete Structures"), §4.1. Width bands are project-defined screening bands,
+ * not ACI severity or safety classifications. Cause categories follow ACI 201.1R ("Guide for
+ * Conducting a Visual Inspection of Concrete in Service").
  *
+ * Source table reproduced in ACI Foundation CRC-83, Table 2-1 (PDF page 38):
+ * https://www.acifoundation.org/Portals/12/Files/PDFs/CRC-83-Final-Report.pdf#page=38
+ * These are serviceability guidelines, not structural-safety acceptance limits.
  * Everything here is a documented lookup, not a model. The AI may propose a
  * width; this module decides which band it falls in.
  */
 
 /** ACI 224R-01 §4.1 recommended tolerable crack widths at first exposure, in mm. */
 export const ACI_224R_EXPOSURE_LIMITS_MM: Record<ConcreteExposure, number> = {
-  dry_air: 0.1,
-  humid: 0.15,
+  dry_air: 0.41,
+  humid: 0.30,
   deicing_chemicals: 0.18,
-  water_retaining: 0.3,
+  water_retaining: 0.10,
+  seawater: 0.15,
 }
 
 export const EXPOSURE_LABELS: Record<ConcreteExposure, string> = {
   dry_air: 'Dry air or protective membrane',
   humid: 'Humid air, moist ground',
   deicing_chemicals: 'Deicing chemicals',
-  water_retaining: 'Water-retaining structures, seawater',
+  water_retaining: 'Water-retaining structures',
+  seawater: 'Seawater and spray, wetting and drying',
 }
 
 interface BandDefinition {
@@ -43,7 +48,7 @@ interface BandDefinition {
 }
 
 export const CRACK_WIDTH_BANDS: BandDefinition[] = [
-  { band: 'hairline', minExclusive: 0, maxInclusive: 0.1, label: 'Hairline (< 0.10 mm)' },
+  { band: 'hairline', minExclusive: 0, maxInclusive: 0.1, label: 'Hairline (≤ 0.10 mm)' },
   { band: 'fine', minExclusive: 0.1, maxInclusive: 0.3, label: 'Fine (0.10 – 0.30 mm)' },
   { band: 'medium', minExclusive: 0.3, maxInclusive: 1.0, label: 'Medium (0.30 – 1.00 mm)' },
   { band: 'wide', minExclusive: 1.0, maxInclusive: 2.0, label: 'Wide (1.00 – 2.00 mm)' },
@@ -78,12 +83,12 @@ export const CAUSE_LABELS: Record<CrackCause, string> = {
 }
 
 function assertNonNegative(value: number, field: string): void {
-  if (typeof value !== 'number' || Number.isNaN(value) || value < 0) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     throw new RangeError(`${field} must be a non-negative number`)
   }
 }
 
-/** Classify a measured crack width into its ACI 224R band. */
+/** Classify a measured crack width into its project-defined screening band. */
 export function classifyCrackWidth(widthMm: number): CrackWidthBand {
   assertNonNegative(widthMm, 'Crack width')
 

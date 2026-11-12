@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useGeospatialZones, useProjects, useRiskHotspots } from "@/app/lib/queries";
+import { useGeospatialZones, useProjects, useRiskHotspots, useSettlementOverview } from "@/app/lib/queries";
 
 const riskColors: Record<string, string> = {
     zone_a: "#ef4444", // Red
@@ -70,6 +70,7 @@ export function GeospatialMap() {
     const { data: zones } = useGeospatialZones();
     const { data: projects } = useProjects();
     const { data: hotspots } = useRiskHotspots();
+    const {data: movements}=useSettlementOverview();
     // Heatmap is on by default: the density of recorded problems is the first
     // thing the dashboard map should say. The toggle remains for a clean view.
     const [showHeatmap, setShowHeatmap] = useState(true);
@@ -217,6 +218,16 @@ export function GeospatialMap() {
             }
         });
     }, [isStyleLoaded, projects]);
+
+    useEffect(()=>{
+        if(!map.current||!isStyleLoaded)return;
+        const markers=(movements??[]).filter(row=>row.classification!=='none'&&row.latitude!=null&&row.longitude!=null).map(row=>
+            new mapboxgl.Marker({color:row.classification==='action_required'?'#b91c1c':'#b45309'})
+            .setLngLat([row.longitude!,row.latitude!])
+            .setPopup(new mapboxgl.Popup({offset:20}).setText(`${row.building_name}: ${row.classification.replaceAll('_',' ')}. Tilt ${row.tilt_mm_per_m??'not measured'} mm/m; settlement ${row.differential_settlement_mm??'not measured'} mm. Recorded ${new Date(row.observed_at).toLocaleDateString()}.`))
+            .addTo(map.current!));
+        return()=>markers.forEach(marker=>marker.remove());
+    },[isStyleLoaded,movements]);
 
     // 3. Sync Zone Data
     useEffect(() => {

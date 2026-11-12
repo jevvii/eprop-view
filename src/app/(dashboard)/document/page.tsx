@@ -1,5 +1,7 @@
 'use client'
 
+import { WorkspaceFilterBar } from '@/components/shared/report-filters'
+
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { ScanLine, Microscope } from 'lucide-react'
@@ -42,7 +44,7 @@ export default function DocumentPage() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6 sm:space-y-8"><WorkspaceFilterBar />
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-1 sm:px-2">
         <div>
           <h2 className="text-2xl font-koulen text-primary tracking-wide uppercase">Asset Vault & Registry</h2>

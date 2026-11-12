@@ -28,7 +28,7 @@ async function main() {
 
   if (!url || !key) {
     console.error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.')
-    console.error('Run it through Vercel: vercel env run --environment preview -- npm run seed:preview')
+    console.error('Set actual preview values locally, or seed through Settings on a Preview deployment. Sensitive CLI exports are placeholders.')
     process.exit(1)
   }
 
@@ -40,7 +40,7 @@ async function main() {
     process.exit(1)
   }
 
-  const isPreviewProject = host.includes(PREVIEW_PROJECT_REF)
+  const isPreviewProject = host === `${PREVIEW_PROJECT_REF}.supabase.co`
 
   console.log('──────────────────────────────────────────────')
   console.log('  ePropView — preview demo seed')
@@ -48,9 +48,8 @@ async function main() {
   console.log(`  Project: ${DEMO_PROJECT_NAME}`)
   console.log('──────────────────────────────────────────────')
 
-  if (!isPreviewProject && process.env.ALLOW_ANY_PROJECT !== '1') {
+  if (!isPreviewProject) {
     console.error(`Refusing to seed ${host}: it is not the preview project (${PREVIEW_PROJECT_REF}).`)
-    console.error('Set ALLOW_ANY_PROJECT=1 only if you are certain this is a disposable database.')
     process.exit(1)
   }
 

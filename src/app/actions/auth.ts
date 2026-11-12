@@ -5,6 +5,19 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/app/lib/supabase/server'
 import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { z } from 'zod'
+import { createHash } from 'node:crypto'
+
+async function checkAuthBudget(operation: 'login' | 'signup', email: string): Promise<string | null> {
+  const account = createHash('sha256').update(email.trim().toLowerCase()).digest('hex')
+  try {
+    await enforceRateLimit(`${operation}:${account}`, operation === 'login' ? 10 : 5, operation === 'login' ? 900 : 3600)
+    return null
+  } catch (error) {
+    return error instanceof Error && error.message === 'RATE_LIMITED'
+      ? 'Too many attempts. Please wait before trying again.'
+      : 'Sign-in protection is temporarily unavailable. Please try again shortly.'
+  }
+}
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -30,7 +43,8 @@ export async function login(prevState: unknown, formData: FormData) {
     return { error: firstError ?? 'Invalid form data' }
   }
 
-  await enforceRateLimit(`login:${validated.data.email.toLowerCase()}`, 10, 900)
+  const budgetError = await checkAuthBudget('login', validated.data.email)
+  if (budgetError) return { error: budgetError }
 
   const { data: authData, error } = await supabase.auth.signInWithPassword({
     email: validated.data.email,
@@ -56,7 +70,7 @@ export async function login(prevState: unknown, formData: FormData) {
     // Role comes from profiles only. user_metadata is user-writable.
     const role = profile.role as string
     revalidatePath('/', 'layout')
-    redirect(role === 'inspector' ? '/document' : '/dashboard')
+    redirect(role === 'inspector' ? '/document' : role === 'viewer' ? '/reports' : '/dashboard')
   }
 
   revalidatePath('/', 'layout')
@@ -77,7 +91,8 @@ export async function signup(prevState: unknown, formData: FormData) {
     return { error: firstError ?? 'Invalid form data' }
   }
 
-  await enforceRateLimit(`signup:${validated.data.email.toLowerCase()}`, 5, 3600)
+  const budgetError = await checkAuthBudget('signup', validated.data.email)
+  if (budgetError) return { error: budgetError }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   const { data, error } = await supabase.auth.signUp({
@@ -97,7 +112,7 @@ export async function signup(prevState: unknown, formData: FormData) {
   revalidatePath('/', 'layout')
 
   if (data?.session) {
-    redirect('/dashboard')
+    redirect('/reports')
   }
 
   redirect('/?message=Check your email to confirm your account')

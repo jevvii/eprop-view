@@ -37,7 +37,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
 
   const { data: shareRow } = await supabase
     .from('share_tokens')
-    .select('report_id, expires_at, revoked_at')
+    .select('expires_at, revoked_at, snapshot')
     .eq('token', token)
     .maybeSingle()
 
@@ -57,31 +57,17 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
     )
   }
 
-  const [{ data: report }, { data: limitation }, { data: recommendations }] = await Promise.all([
-    supabase
-      .from('reports')
-      .select('report_id, title, date, location, status, risk_score, key_findings')
-      .eq('id', shareRow.report_id)
-      .maybeSingle(),
-    supabase
-      .from('report_limitations')
-      .select('standard_exclusions, free_text')
-      .eq('report_id', shareRow.report_id)
-      .maybeSingle(),
-    supabase
-      .from('recommendations')
-      .select('id, final_text, signed_at')
-      .eq('report_id', shareRow.report_id)
-      .eq('status', 'signed')
-      .order('signed_at', { ascending: false }),
-  ])
-
-  if (!report) {
-    return <Shell title="Report unavailable">The shared report could not be read. Ask the sender to share it again.</Shell>
+  const snapshot = shareRow.snapshot as {
+    report?: SharedReport
+    limitation?: { standard_exclusions: string[]; free_text?: string | null }
+    recommendations?: SharedRecommendation[]
+  } | null
+  if (!snapshot?.report || !Array.isArray(snapshot.recommendations)) {
+    return <Shell title="Link needs renewal">Ask the sender for a new link with an immutable report snapshot.</Shell>
   }
-
-  const typedReport = report as SharedReport
-  const signed = (recommendations ?? []) as SharedRecommendation[]
+  const typedReport = snapshot.report
+  const limitation = snapshot.limitation
+  const signed = snapshot.recommendations
 
   return (
     <main className="min-h-screen bg-slate-50 py-10 px-4">
