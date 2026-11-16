@@ -91,20 +91,17 @@ export function Sidebar() {
       /* Off-screen drawer must not remain in the tab order. */
       inert={!isDesktop && !isOpen}
     >
-      <div className="flex items-center justify-between mb-8 sm:mb-12 px-2">
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 relative drop-">
-            <Image 
-              src="/logo-blue.png" 
-              alt="EPROP VIEW Logo" 
-              fill
-              priority
-              sizes="40px"
-              className="object-contain" 
-            />
-            <div className="absolute inset-0 bg-primary/5 rounded-xl -z-10 scale-125" />
-          </div>
-          <span className="text-black font-koulen text-2xl tracking-wider leading-none pt-1">EPROP VIEW</span>
+      <div className="flex items-start justify-between gap-2 mb-8 sm:mb-10 px-2">
+        <div className="flex flex-col items-start gap-2 min-w-0">
+          <Image
+            src="/logo-blue.png"
+            alt="NDB Engineering Company Logo"
+            width={800}
+            height={349}
+            priority
+            className="w-32 lg:w-44 h-auto object-contain"
+          />
+          <span className="text-black font-koulen text-xl tracking-wider leading-none">EPROP VIEW</span>
         </div>
         
         {/* Mobile Close Button - 44x44px accessible hit target */}

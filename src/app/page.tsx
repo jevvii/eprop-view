@@ -10,17 +10,14 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md p-6 sm:p-8 md:p-12 bg-white rounded-lg sm:rounded-lg border border-slate-200">
         <div className="flex flex-col items-center text-center mb-8 sm:mb-12">
-          <div className="w-20 h-20 relative mb-6 drop-">
-            <Image
-              src="/logo-blue.png"
-              alt="EPROP VIEW Logo"
-              fill
-              priority
-              sizes="80px"
-              className="object-contain"
-            />
-            <div className="absolute inset-0 bg-primary/5 rounded-lg -z-10 scale-125" />
-          </div>
+          <Image
+            src="/logo-blue.png"
+            alt="NDB Engineering Company Logo"
+            width={800}
+            height={349}
+            priority
+            className="w-56 sm:w-64 h-auto object-contain mb-5"
+          />
           <h1 className="text-3xl sm:text-4xl font-koulen tracking-wider text-black mb-2 uppercase">EPROP VIEW</h1>
           <p className="text-xs font-bold text-slate-600">Authorized Personnel Only</p>
         </div>
