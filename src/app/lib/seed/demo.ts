@@ -224,6 +224,9 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
         storage_path: storagePath,
         caption: spec.caption,
         uploader_id: inspectorId,
+        // Demo images are generated placeholders, never training data.
+        training_eligible: false,
+        scale_source: 'unknown',
       })
       .select('id')
       .single()
