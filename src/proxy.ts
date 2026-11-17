@@ -33,6 +33,7 @@ export async function proxy(request: NextRequest) {
     isPath(path, '/reports') ||
     isPath(path, '/document') ||
     isPath(path, '/ar') ||
+    isPath(path, '/annotate') ||
     isPath(path, '/profile') ||
     isPath(path, '/settings')
   const isAuthRoute = path === '/' || path === '/login' || path === '/signup'
@@ -72,7 +73,7 @@ export async function proxy(request: NextRequest) {
   if (
     user &&
     role === 'viewer' &&
-    (isPath(path, '/document') || isPath(path, '/projects'))
+    (isPath(path, '/document') || isPath(path, '/projects') || isPath(path, '/annotate'))
   ) {
     const redirectResponse = NextResponse.redirect(new URL('/reports', request.url))
     copyCookies(supabaseResponse, redirectResponse)
