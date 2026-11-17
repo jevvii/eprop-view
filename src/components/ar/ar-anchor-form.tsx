@@ -6,6 +6,7 @@ import { analyzeCapturedFrame } from '@/app/actions/ai-frame'
 import { useARSessionContext } from './ar-session-manager'
 import { Button } from '@/components/ui/button'
 import type { ReferenceEvidence } from '@/app/lib/ar/capture-reference'
+import { gsdFromReference } from '@/app/lib/capture/geometry'
 import type { ARPose, DamageType, SeverityLevel } from '@/app/types'
 
 interface ARAnchorFormProps {
@@ -104,6 +105,11 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
         throw new Error('The captured photo uses another target. Retake it for the visible reference.')
       }
       const evidence = snapshot || currentEvidence.snapshotDataUrl
+      // Metric scale only exists while the printed target is measurable.
+      const gsdMmPerPx =
+        freshPose.reference && currentEvidence.observedWidthPx > 0
+          ? gsdFromReference(freshPose.reference.target.sizeMm, currentEvidence.observedWidthPx)
+          : undefined
       await createAnchor.mutateAsync({
         sessionId,
         inspectionId,
@@ -113,6 +119,8 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
         severity,
         notes,
         snapshotDataUrl: evidence,
+        gsdMmPerPx,
+        scaleSource: freshPose.reference ? 'printed_reference' : 'unknown',
       })
 
       setSnapshot(null)

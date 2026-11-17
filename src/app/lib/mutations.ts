@@ -25,6 +25,7 @@ import type {
   Vector3,
   DamageType,
   SeverityLevel,
+  ScaleSource,
 } from '@/app/types'
 
 let client: ReturnType<typeof createClient> | null = null
@@ -266,6 +267,8 @@ export function useCreateARAnchor() {
       detectionId,
       notes,
       snapshotDataUrl,
+      gsdMmPerPx,
+      scaleSource,
     }: {
       sessionId: string
       inspectionId: string
@@ -277,6 +280,8 @@ export function useCreateARAnchor() {
       detectionId?: string
       notes?: string
       snapshotDataUrl?: string
+      gsdMmPerPx?: number
+      scaleSource?: ScaleSource
     }) => {
       return createARAnchor({
         sessionId,
@@ -289,6 +294,8 @@ export function useCreateARAnchor() {
         detectionId,
         notes,
         snapshotDataUrl,
+        gsdMmPerPx,
+        scaleSource,
       })
     },
     onSuccess: (_, variables) => {

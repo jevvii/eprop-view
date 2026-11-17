@@ -9,7 +9,8 @@ import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { computeFinalDamageScore, scoreToRiskLevel, severityToScore } from '@/app/lib/damage-score'
 import { referencePoseSchema } from '@/app/lib/ar/printed-reference'
 import { sessionTrackingSchema } from '@/app/lib/ar/markerless'
-import type { ARSession, ARAnchor, ARPose, Vector3, DamageType, SeverityLevel } from '@/app/types'
+import { buildCaptureRow } from '@/app/lib/capture/geometry'
+import type { ARSession, ARAnchor, ARPose, Vector3, DamageType, SeverityLevel, ScaleSource } from '@/app/types'
 
 const BUCKET = 'inspection-images'
 const MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024
@@ -156,6 +157,8 @@ interface CreateARAnchorInput {
   detectionId?: string
   notes?: string
   snapshotDataUrl?: string
+  gsdMmPerPx?: number
+  scaleSource?: ScaleSource
 }
 
 const createAnchorSchema = z
@@ -177,6 +180,8 @@ const createAnchorSchema = z
     detectionId: z.string().uuid().optional(),
     notes: z.string().max(2000).optional(),
     snapshotDataUrl: z.string().max(12_000_000).optional(),
+    gsdMmPerPx: z.number().positive().max(100).optional(),
+    scaleSource: z.enum(['printed_reference', 'manual_gsd', 'unknown']).optional(),
   })
   .strict()
   .refine((input) => !input.pose.reference || input.pose.reference.target.inspectionId === input.inspectionId, {
@@ -191,7 +196,7 @@ async function storeSnapshot(
   dataUrl: string,
   inspectionId: string,
   userId: string
-): Promise<string> {
+): Promise<{ storagePath: string; width: number; height: number }> {
   const match = /^data:image\/[a-z+.-]+;base64,/i.exec(dataUrl)
   if (!match) throw new Error('Invalid snapshot payload')
 
@@ -217,7 +222,9 @@ async function storeSnapshot(
     .upload(storagePath, normalized, { contentType: 'image/jpeg', upsert: false })
 
   if (error) throw new Error(`Snapshot upload failed: ${error.message}`)
-  return storagePath
+
+  const stored = await sharp(normalized).metadata()
+  return { storagePath, width: stored.width ?? 0, height: stored.height ?? 0 }
 }
 
 /**
@@ -281,9 +288,10 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
   const severity =
     anchorInput.severity && validSeverities.includes(anchorInput.severity) ? anchorInput.severity : null
 
-  const snapshotPath = anchorInput.snapshotDataUrl
+  const snapshot = anchorInput.snapshotDataUrl
     ? await storeSnapshot(supabase, anchorInput.snapshotDataUrl, anchorInput.inspectionId, userId)
     : null
+  const snapshotPath = snapshot?.storagePath ?? null
 
   const { data, error } = await supabase
     .from('ar_anchors')
@@ -310,9 +318,49 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
     throw error ?? new Error('Failed to create AR anchor')
   }
 
+  // An AR snapshot is evidence, and the only imagery in the system with a
+  // printed-reference scale. Register it so it can be annotated and exported.
+  if (snapshot && snapshotPath) {
+    const { data: existingImage } = await supabase
+      .from('inspection_images')
+      .select('id')
+      .eq('source_anchor_id', data.id)
+      .maybeSingle()
+
+    if (!existingImage) {
+      const captureRow = buildCaptureRow({
+        metadata: { width: snapshot.width, height: snapshot.height, orientation: 1 },
+        storedWidth: snapshot.width,
+        storedHeight: snapshot.height,
+        capture: {
+          lighting: 'unknown',
+          surfaceState: 'unknown',
+          elementType: 'other',
+          gsdMmPerPx: anchorInput.gsdMmPerPx ?? null,
+          scaleSource:
+            anchorInput.scaleSource ?? (anchorInput.pose.reference ? 'printed_reference' : 'unknown'),
+        },
+      })
+
+      const { error: imageError } = await supabase.from('inspection_images').insert({
+        inspection_id: anchorInput.inspectionId,
+        storage_path: snapshotPath,
+        caption: anchorInput.label,
+        uploader_id: userId,
+        source_anchor_id: data.id,
+        capture_method: anchorInput.pose.reference ? 'ar_printed_reference' : 'ar_markerless',
+        ...captureRow,
+      })
+      if (imageError) {
+        // The anchor is already saved; a missing image row must not fail the
+        // capture, but it must be visible in logs.
+        console.error('AR anchor image row creation failed:', imageError.message)
+      }
+    }
+  }
+
   if (severity) {
-    try {
-      const score = computeFinalDamageScore(severityToScore(severity), 1.2, 1.0, 1.0)
+    try {      const score = computeFinalDamageScore(severityToScore(severity), 1.2, 1.0, 1.0)
       const riskLevel = scoreToRiskLevel(score)
       await supabase
         .from('inspections')

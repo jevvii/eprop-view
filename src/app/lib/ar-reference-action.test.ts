@@ -14,11 +14,11 @@ const sessionId = '22222222-2222-4222-8222-222222222222'
 const userId = '33333333-3333-4333-8333-333333333333'
 const otherId = '44444444-4444-4444-8444-444444444444'
 const targetId = '55555555-5555-4555-8555-555555555555'
-type Table = 'ar_anchors' | 'ar_sessions' | 'inspections'
+type Table = 'ar_anchors' | 'ar_sessions' | 'inspections' | 'inspection_images'
 type Row = Record<string, unknown>
 const state = {
   actor: { userId, role: 'inspector' as Role },
-  tables: { ar_anchors: [] as Row[], ar_sessions: [] as Row[], inspections: [] as Row[] },
+  tables: { ar_anchors: [] as Row[], ar_sessions: [] as Row[], inspections: [] as Row[], inspection_images: [] as Row[] },
   insertError: null as Error | null,
   inserts: 0,
   uploads: 0,
@@ -123,6 +123,7 @@ beforeEach(() => {
   state.actor = { userId, role: 'inspector' }
   state.tables = {
     ar_anchors: [],
+    inspection_images: [],
     ar_sessions: [{ id: sessionId, inspection_id: inspectionId, started_by: userId, status: 'active', started_at: '2026-11-11T08:00:00Z' }],
     inspections: [{ id: inspectionId, lead_inspector_id: userId }],
   }
