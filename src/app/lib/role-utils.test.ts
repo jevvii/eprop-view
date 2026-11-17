@@ -130,3 +130,18 @@ describe('Role-Based Access Control (RBAC) Matrix Tests', () => {
     })
   })
 })
+
+describe('Annotation capabilities', () => {
+  test('inspectors may annotate but not approve', () => {
+    assert.equal(hasCapability('inspector', 'annotation:write'), true)
+    assert.equal(hasCapability('inspector', 'annotation:review'), false)
+  })
+
+  test('engineers approve, admins export, viewers read only', () => {
+    assert.equal(hasCapability('engineer', 'annotation:review'), true)
+    assert.equal(hasCapability('engineer', 'dataset:export'), false)
+    assert.equal(hasCapability('admin', 'dataset:export'), true)
+    assert.equal(hasCapability('viewer', 'annotation:write'), false)
+    assert.equal(hasCapability('viewer', 'annotation:read'), true)
+  })
+})
