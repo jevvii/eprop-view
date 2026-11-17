@@ -177,18 +177,25 @@ export function AnnotationEditor({
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <AnnotationCanvas
-          imageUrl={imageUrl}
-          width={width}
-          height={height}
-          annotations={draft.annotations}
-          selectedId={draft.selectedId}
-          tool={tool}
-          onBox={handleBox}
-          onPolygon={handlePolygon}
-          onMeasure={handleMeasure}
-          onSelect={draft.setSelectedId}
-        />
+        <div className="hidden md:block">
+          <AnnotationCanvas
+            imageUrl={imageUrl}
+            width={width}
+            height={height}
+            annotations={draft.annotations}
+            selectedId={draft.selectedId}
+            tool={tool}
+            onBox={handleBox}
+            onPolygon={handlePolygon}
+            onMeasure={handleMeasure}
+            onSelect={draft.setSelectedId}
+          />
+        </div>
+
+        <div className="rounded-lg border border-[#EAEAEA] bg-white p-4 text-sm font-medium text-slate-600 md:hidden">
+          Annotation needs a tablet or a larger screen. On a phone, review findings read-only and open
+          this image on a tablet to label it.
+        </div>
 
         <div className="space-y-4">
           <AnnotationSidebar

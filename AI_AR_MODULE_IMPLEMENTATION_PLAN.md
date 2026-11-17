@@ -67,6 +67,8 @@ NotebookLM fast research surfaced the datasets below. For a capstone prototype, 
 
 ### 3.2 Preprocessing & Training Notes for the Implementer Agent
 
+> **Update (2026-11-18):** capture discipline and the in-app annotation pipeline are now specified and planned separately. See `docs/superpowers/specs/2026-11-18-capture-discipline-and-annotation-design.md`, `docs/superpowers/plans/2026-11-18-capture-discipline-and-annotation.md`, and the research note *AI-ML Module Implementation Research* in the project's Obsidian vault. That work produces the labelled dataset this section assumes.
+
 1. **Tiled inference is mandatory.** High-resolution inspection images must be sliced into 1024×1024 patches with overlap before inference; hairline cracks vanish when whole images are downsampled to 640 px.
 2. **Deduplicate with perceptual hashing (pHash).** Use a Hamming-distance threshold (< 30 %) to remove redundant drone/video frames before training.
 3. **Balance classes.** Crack classes dominate most datasets; subsample majority classes and augment minority classes (rotation ±70°, flips, perspective, contrast jitter, blur).

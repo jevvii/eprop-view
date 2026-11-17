@@ -181,6 +181,54 @@ graph TD
 | **Import GeoJSON & Shapefile GIS Datasets** | None | None | Full | None |
 | **Storage Lifecycle & S3 Archival Governance** | None | None | Full | None |
 
+
+---
+
+## 3.5 Capturing Training-Grade Evidence & Annotating
+
+The AI module learns from imagery the platform stores, so evidence carries its capture conditions.
+
+### Capture conditions
+
+When uploading from the Asset Vault, set three fields before confirming:
+
+| Field | Values | Why it matters |
+| :--- | :--- | :--- |
+| **Lighting** | direct sun, diffuse, flash, low light, unknown | Shadows and glare are the largest source of false positives |
+| **Surface** | dry, wet, efflorescence, debris, unknown | Wet and dirty surfaces change what a defect looks like |
+| **Element** | deck, wall, column, beam, slab, pavement, foundation, other | Material and orientation change the failure mode |
+
+The **distance** field is optional. Without a printed reference target or a known scale, the image records `scale unknown`: widths stay in pixels, and the image cannot contribute millimetre measurements to a dataset.
+
+**Use the printed reference target** when a crack width matters. The target carries its own physical size in the QR payload, so the platform derives millimetres per pixel from it. AR captures taken against the target are the only imagery with an automatic metric scale.
+
+### Annotation
+
+Open **Annotate** in the sidebar.
+
+- **Inspectors** see their own captures. **Engineers and admins** see everything, plus anything awaiting review.
+- The editor opens with heuristic candidates already drawn as *drafts*. Correct them rather than drawing from scratch.
+- Tools: **Box** (spalls, corrosion patches), **Polygon** (cracks and other linear defects), **Ruler** (crack width across two edges), **Select**.
+- Keyboard: `1`–`4` tools, `Ctrl/Cmd+Z` undo, `Delete` remove, `Esc` back to select.
+- **No findings** records a clean review. These export as negative samples and are valuable — an empty image is data.
+- **Submit image** moves drafts to `submitted` and rasterises a mask per finding.
+
+### Review and roles
+
+Inspectors label their own work; an engineer's **Approve** is what makes an annotation part of a dataset. Approved annotations are frozen — they can no longer be edited or deleted. Rejections are retained for threshold tuning.
+
+### Exporting a dataset
+
+Export runs from the command line against the **preview** project only, because it copies imagery out of the platform:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://gbuwldihkmapzondxkto.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=<preview service role key> \
+npm run export:dataset
+```
+
+It writes `dataset/images`, `dataset/labels` (YOLO-seg), `dataset/masks`, `manifest.json` and `splits.json`. Splits are keyed by building, so repeat visits to one structure never straddle train and test.
+
 ---
 
 ## 4. Pre-Seeded Accounts for System Evaluation
