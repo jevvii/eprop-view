@@ -9,7 +9,7 @@ import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { computeFinalDamageScore, scoreToRiskLevel, severityToScore } from '@/app/lib/damage-score'
 import { referencePoseSchema } from '@/app/lib/ar/printed-reference'
 import { sessionTrackingSchema } from '@/app/lib/ar/markerless'
-import { buildCaptureRow } from '@/app/lib/capture/geometry'
+import { buildCaptureRow, orientedDimensions } from '@/app/lib/capture/geometry'
 import type { ARSession, ARAnchor, ARPose, Vector3, DamageType, SeverityLevel, ScaleSource } from '@/app/types'
 
 const BUCKET = 'inspection-images'
@@ -196,7 +196,13 @@ async function storeSnapshot(
   dataUrl: string,
   inspectionId: string,
   userId: string
-): Promise<{ storagePath: string; width: number; height: number }> {
+): Promise<{
+  storagePath: string
+  sourceWidth: number
+  sourceHeight: number
+  width: number
+  height: number
+}> {
   const match = /^data:image\/[a-z+.-]+;base64,/i.exec(dataUrl)
   if (!match) throw new Error('Invalid snapshot payload')
 
@@ -224,7 +230,14 @@ async function storeSnapshot(
   if (error) throw new Error(`Snapshot upload failed: ${error.message}`)
 
   const stored = await sharp(normalized).metadata()
-  return { storagePath, width: stored.width ?? 0, height: stored.height ?? 0 }
+  const source = orientedDimensions(metadata)
+  return {
+    storagePath,
+    sourceWidth: source.width,
+    sourceHeight: source.height,
+    width: stored.width ?? source.width,
+    height: stored.height ?? source.height,
+  }
 }
 
 /**
@@ -329,7 +342,9 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
 
     if (!existingImage) {
       const captureRow = buildCaptureRow({
-        metadata: { width: snapshot.width, height: snapshot.height, orientation: 1 },
+        // The reference span was measured on the source frame, so GSD must be
+        // rescaled against the snapshot's stored pixels, not assumed equal.
+        metadata: { width: snapshot.sourceWidth, height: snapshot.sourceHeight, orientation: 1 },
         storedWidth: snapshot.width,
         storedHeight: snapshot.height,
         capture: {

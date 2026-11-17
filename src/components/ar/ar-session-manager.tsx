@@ -524,8 +524,10 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
           const stream = await navigator.mediaDevices.getUserMedia({
             video: {
               facingMode: { ideal: 'environment' },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
+              // AR captures are training candidates; 1280x720 falls below
+              // the 1.5 MP eligibility floor.
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
             },
             audio: false,
           })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   createAnnotation,
   deleteAnnotation,
@@ -42,11 +42,19 @@ export function useAnnotationDraft(initial: ImageAnnotation[], imageId: string) 
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const history = useRef<ImageAnnotation[][]>([])
+  const future = useRef<ImageAnnotation[][]>([])
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
+
+  // router.refresh() hands us a new array from the server; without this the
+  // mounted editor would keep showing stale statuses after submit or approve.
+  useEffect(() => {
+    setAnnotations(initial)
+  }, [initial])
 
   const snapshot = useCallback((next: ImageAnnotation[]) => {
     history.current.push(annotations)
     if (history.current.length > HISTORY_LIMIT) history.current.shift()
+    future.current = []
     setAnnotations(next)
   }, [annotations])
 
@@ -104,6 +112,8 @@ export function useAnnotationDraft(initial: ImageAnnotation[], imageId: string) 
           setSaving(false)
           if (!isActionResult(result) || !result.ok) {
             setError(isActionResult(result) && !result.ok ? result.error : 'The edit could not be saved.')
+            // A refused edit must not stay on screen as though it saved.
+            setAnnotations((rows) => rows.map((row) => (row.id === id ? current : row)))
             return
           }
           const saved = result.data as ImageAnnotation
@@ -131,8 +141,16 @@ export function useAnnotationDraft(initial: ImageAnnotation[], imageId: string) 
   const undo = useCallback(() => {
     const previous = history.current.pop()
     if (!previous) return
+    future.current.push(annotations)
     setAnnotations(previous)
-  }, [])
+  }, [annotations])
+
+  const redo = useCallback(() => {
+    const next = future.current.pop()
+    if (!next) return
+    history.current.push(annotations)
+    setAnnotations(next)
+  }, [annotations])
 
   const replaceAll = useCallback((next: ImageAnnotation[]) => {
     setAnnotations(next)
@@ -151,7 +169,9 @@ export function useAnnotationDraft(initial: ImageAnnotation[], imageId: string) 
     update,
     remove,
     undo,
+    redo,
     replaceAll,
     canUndo: history.current.length > 0,
+    canRedo: future.current.length > 0,
   }
 }

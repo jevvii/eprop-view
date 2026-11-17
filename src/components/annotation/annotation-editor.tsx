@@ -6,6 +6,7 @@ import { AnnotationCanvas, type AnnotationTool } from './annotation-canvas'
 import { AnnotationToolbar } from './annotation-toolbar'
 import { AnnotationSidebar } from './annotation-sidebar'
 import { useAnnotationDraft } from './use-annotation-draft'
+import { CaptureCorrection } from './capture-correction'
 import { preAnnotateImage } from '@/app/actions/pre-annotate'
 import { reviewAnnotation, submitImageAnnotations } from '@/app/actions/annotations'
 import { isActionResult } from '@/app/lib/action-result'
@@ -136,7 +137,8 @@ export function AnnotationEditor({
       if (event.key === 'Escape') setTool('select')
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
         event.preventDefault()
-        draft.undo()
+        if (event.shiftKey) draft.redo()
+        else draft.undo()
       }
       if (event.key === 'Delete' && draft.selectedId) {
         event.preventDefault()
@@ -145,14 +147,14 @@ export function AnnotationEditor({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [draft])
+  }, [draft.undo, draft.redo, draft.remove, draft.selectedId])
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-slate-500">
         <span className="tabular-nums">
           {width}×{height}
-          {image.gsd_mm_per_px ? ` · ${image.gsd_mm_per_px} mm/px` : ' · scale unknown'}
+          {image.gsd_mm_per_px ? ` · ${image.gsd_mm_per_px.toFixed(2)} mm/px` : ' · scale unknown'}
           {image.lighting ? ` · ${image.lighting.replace('_', ' ')}` : ''}
           {image.element_type ? ` · ${image.element_type}` : ''}
         </span>
@@ -165,16 +167,20 @@ export function AnnotationEditor({
         </p>
       )}
 
+      <div className="hidden md:block">
       <AnnotationToolbar
         tool={tool}
         onTool={setTool}
         onUndo={draft.undo}
         canUndo={draft.canUndo}
+        onRedo={draft.redo}
+        canRedo={draft.canRedo}
         onDelete={() => draft.selectedId && draft.remove(draft.selectedId)}
         canDelete={Boolean(draft.selectedId)}
         onSuggest={handleSuggest}
         suggesting={suggesting}
       />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="hidden md:block">
@@ -192,12 +198,26 @@ export function AnnotationEditor({
           />
         </div>
 
-        <div className="rounded-lg border border-[#EAEAEA] bg-white p-4 text-sm font-medium text-slate-600 md:hidden">
-          Annotation needs a tablet or a larger screen. On a phone, review findings read-only and open
-          this image on a tablet to label it.
+        <div className="space-y-3 md:hidden">
+          <p className="rounded-lg border border-[#EAEAEA] bg-white p-4 text-sm font-medium text-slate-600">
+            Annotation needs a tablet or a larger screen. Findings are shown read-only here; open this
+            image on a tablet to label it.
+          </p>
+          <ul className="divide-y divide-[#EAEAEA] rounded-lg border border-[#EAEAEA] bg-white">
+            {draft.annotations.map((annotation, index) => (
+              <li key={annotation.id} className="p-3 text-xs font-semibold text-slate-700">
+                {index + 1}. {annotation.damage_type === 'none' ? 'No damage' : annotation.damage_type}
+                {annotation.severity ? ` · ${annotation.severity}` : ''}
+                <span className="ml-1 text-[10px] uppercase text-slate-400">{annotation.status}</span>
+              </li>
+            ))}
+            {draft.annotations.length === 0 && (
+              <li className="p-3 text-xs font-medium text-slate-500">No findings recorded.</li>
+            )}
+          </ul>
         </div>
 
-        <div className="space-y-4">
+        <div className="hidden space-y-4 md:block">
           <AnnotationSidebar
             annotations={draft.annotations}
             selected={draft.selected}
@@ -211,6 +231,8 @@ export function AnnotationEditor({
             scaleKnown={scaleKnown}
             gsdMmPerPx={image.gsd_mm_per_px ?? null}
           />
+
+          <CaptureCorrection image={image} onSaved={() => router.refresh()} />
 
           <div className="flex flex-wrap gap-2">
             <button

@@ -53,3 +53,6 @@ native/node_modules/
 native/ios/App/Pods/
 .env*
 !.env.example
+
+# Exported annotation datasets contain preview imagery
+/dataset/

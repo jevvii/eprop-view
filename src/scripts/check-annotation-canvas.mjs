@@ -19,13 +19,20 @@ import { AnnotationCanvas } from './src/components/annotation/annotation-canvas'
 function Harness() {
   const [tool, setTool] = React.useState('box')
   window.__setTool = setTool
-  window.__events = []
+  window.__tool = tool
+  window.__events = window.__events || []
   const emit = (kind) => (...args) => window.__events.push([kind, ...args])
   return React.createElement(AnnotationCanvas, {
     imageUrl: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#888"/></svg>'),
     width: 400,
     height: 300,
-    annotations: [],
+    annotations: [{
+      id: 'sample', image_id: 'image', damage_type: 'crack', severity: 'high', severity_score: 70,
+      geometry_kind: 'box', polygon: null, bbox: { x: 0.1, y: 0.1, width: 0.3, height: 0.2 },
+      crack_width_mm: null, measured_width_px: null, mask_path: null, source: 'manual',
+      source_confidence: null, original_geometry: null, status: 'draft', notes: '',
+      created_by: null, reviewed_by: null, reviewed_at: null, created_at: '', updated_at: '',
+    }],
     selectedId: null,
     tool,
     onBox: emit('box'),
@@ -67,6 +74,14 @@ async function runFlow(contextOptions, pointerType) {
   page.on('pageerror', (error) => errors.push(String(error)))
   await page.goto(`http://127.0.0.1:${port}/`)
   await page.waitForSelector('img')
+
+  // A non-scaling stroke with a sub-pixel width renders invisibly; assert the
+  // overlay actually paints (regression for the invisible-outline bug).
+  const strokeWidth = await page.evaluate(() => {
+    const rect = document.querySelector('svg rect')
+    return rect ? Number.parseFloat(getComputedStyle(rect).strokeWidth) : 0
+  })
+  assert.ok(strokeWidth >= 1, `overlay stroke is visible (got ${strokeWidth}px)`)
 
   const surface = page.locator('div.touch-none').first()
   const box = await surface.boundingBox()
@@ -111,6 +126,7 @@ async function runFlow(contextOptions, pointerType) {
   await page.evaluate(() => window.__setTool('polygon'))
   for (const [x, y] of [[0.2, 0.2], [0.6, 0.2], [0.6, 0.6], [0.2, 0.2]]) {
     await dispatch('pointerdown', x, y, pointerType, 2)
+    await dispatch('pointerup', x, y, pointerType, 2)
     await page.waitForTimeout(30)
   }
 
@@ -122,6 +138,7 @@ async function runFlow(contextOptions, pointerType) {
   await page.evaluate(() => window.__setTool('ruler'))
   for (const [x, y] of [[0.1, 0.5], [0.6, 0.5]]) {
     await dispatch('pointerdown', x, y, pointerType, 3)
+    await dispatch('pointerup', x, y, pointerType, 3)
     await page.waitForTimeout(30)
   }
 
@@ -132,7 +149,7 @@ async function runFlow(contextOptions, pointerType) {
 
   assert.deepEqual(errors, [], 'no page errors')
   await context.close()
-  return { pointerType, boxWidth: bbox.width, measured: measureEvent[3] }
+  return { pointerType, boxWidth: bbox.width, measured: measureEvent[3], strokeWidth }
 }
 
 try {

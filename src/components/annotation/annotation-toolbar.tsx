@@ -1,6 +1,6 @@
 'use client'
 
-import { Square, Hexagon, Ruler, MousePointer2, Undo2, Trash2, Sparkles } from 'lucide-react'
+import { Square, Hexagon, Ruler, MousePointer2, Undo2, Redo2, Trash2, Sparkles } from 'lucide-react'
 import type { AnnotationTool } from './annotation-canvas'
 
 const TOOLS: { id: AnnotationTool; label: string; icon: typeof Square; key: string }[] = [
@@ -15,6 +15,8 @@ export function AnnotationToolbar({
   onTool,
   onUndo,
   canUndo,
+  onRedo,
+  canRedo,
   onDelete,
   canDelete,
   onSuggest,
@@ -24,6 +26,8 @@ export function AnnotationToolbar({
   onTool: (tool: AnnotationTool) => void
   onUndo: () => void
   canUndo: boolean
+  onRedo: () => void
+  canRedo: boolean
   onDelete: () => void
   canDelete: boolean
   onSuggest: () => void
@@ -57,6 +61,11 @@ export function AnnotationToolbar({
       <button type="button" className={buttonClass(false)} onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)">
         <Undo2 className="h-4 w-4" aria-hidden="true" />
         <span className="hidden sm:inline">Undo</span>
+      </button>
+
+      <button type="button" className={buttonClass(false)} onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)">
+        <Redo2 className="h-4 w-4" aria-hidden="true" />
+        <span className="hidden sm:inline">Redo</span>
       </button>
 
       <button type="button" className={buttonClass(false)} onClick={onDelete} disabled={!canDelete} title="Delete (Del)">

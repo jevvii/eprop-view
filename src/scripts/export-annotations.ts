@@ -29,6 +29,8 @@ interface ExportImage {
   storage_bucket: string | null
   width_px: number | null
   height_px: number | null
+  scale_source: string | null
+  gsd_mm_per_px: number | null
 }
 
 async function main() {
@@ -59,7 +61,7 @@ async function main() {
 
   const { data: images, error: imageError } = await supabase
     .from('inspection_images')
-    .select('id, inspection_id, storage_path, storage_bucket, width_px, height_px')
+    .select('id, inspection_id, storage_path, storage_bucket, width_px, height_px, scale_source, gsd_mm_per_px')
     .eq('training_eligible', true)
     .not('width_px', 'is', null)
     .not('height_px', 'is', null)
@@ -122,6 +124,12 @@ async function main() {
 
   const manifestImages: ManifestImage[] = []
   const splitRows: { image_id: string; structure_key: string; split: string }[] = []
+  const widthRows: {
+    annotation_id: string
+    image_id: string
+    damage_type: string
+    crack_width_mm: number | null
+  }[] = []
   let annotationCount = 0
   let negativeCount = 0
 
@@ -137,11 +145,19 @@ async function main() {
     await writeFile(join(OUTPUT_DIR, 'images', `${image.id}.jpg`), Buffer.from(await blob.arrayBuffer()))
 
     const labelLines: string[] = []
+    const classes: Record<string, number> = {}
     let widthOmitted = 0
 
     for (const annotation of rows) {
       if (annotation.geometry_kind === 'none') continue
       if (annotation.crack_width_mm === null) widthOmitted++
+      classes[annotation.damage_type] = (classes[annotation.damage_type] ?? 0) + 1
+      widthRows.push({
+        annotation_id: annotation.id,
+        image_id: image.id,
+        damage_type: annotation.damage_type,
+        crack_width_mm: annotation.crack_width_mm,
+      })
 
       if (annotation.geometry_kind === 'polygon' && annotation.polygon && annotation.polygon.length >= 3) {
         labelLines.push(toYoloSegLine(annotation.damage_type as Exclude<DamageType, 'none'>, annotation.polygon as Point[]))
@@ -178,6 +194,9 @@ async function main() {
       approved: rows.filter((row) => row.geometry_kind !== 'none').length,
       negativeOnly: labelLines.length === 0,
       widthOmitted,
+      classes,
+      scaleSource: image.scale_source ?? 'unknown',
+      gsdKnown: image.gsd_mm_per_px !== null && image.gsd_mm_per_px !== undefined,
     })
     splitRows.push({ image_id: image.id, structure_key: structureKeyFor(image), split: splits[index] })
   }
@@ -188,6 +207,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
   })
 
+  await writeFile(join(OUTPUT_DIR, 'widths.json'), JSON.stringify(widthRows, null, 2))
   await writeFile(join(OUTPUT_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2))
   await writeFile(join(OUTPUT_DIR, 'splits.json'), JSON.stringify({ seed: SPLIT_SEED, rows: splitRows }, null, 2))
 

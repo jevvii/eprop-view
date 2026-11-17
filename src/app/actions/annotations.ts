@@ -7,7 +7,7 @@ import { recordAuditEvent } from '@/app/lib/audit'
 import { actionOk, actionRefuse, type ActionResult } from '@/app/lib/action-result'
 import { validatePolygon } from '@/app/lib/annotation/geometry'
 import { rasteriseMask } from '@/app/lib/annotation/rasterise'
-import { canEditAnnotation, nextStatusAfterReview } from '@/app/lib/annotation/lifecycle'
+import { canEditAnnotation, nextStatusAfterReview, shouldSnapshotCandidate } from '@/app/lib/annotation/lifecycle'
 import { deriveCrackWidthMm } from '@/app/lib/capture/geometry'
 import { computeTrainingEligible } from '@/app/lib/capture/geometry'
 import { severityToScore } from '@/app/lib/damage-score'
@@ -134,7 +134,7 @@ function severityScoreFor(severity: SeverityLevel | null): number | null {
 }
 
 export async function createAnnotation(input: unknown): Promise<ActionResult<ImageAnnotation>> {
-  const { userId } = await requireRole(['inspector', 'engineer', 'admin'])
+  const { userId, role } = await requireRole(['inspector', 'engineer', 'admin'])
   const parsed = createSchema.safeParse(input)
   if (!parsed.success) return actionRefuse('Invalid annotation.')
   const value = parsed.data
@@ -145,6 +145,11 @@ export async function createAnnotation(input: unknown): Promise<ActionResult<Ima
   const supabase = await createClient()
   const image = await loadImage(supabase, value.imageId)
   if (!image) return actionRefuse('The image no longer exists.')
+
+  // Inspectors label their own captures; engineers and admins label anything.
+  if (role === 'inspector' && image.uploader_id && image.uploader_id !== userId) {
+    return actionRefuse('Inspectors may only annotate their own captures.')
+  }
 
   const crackWidthMm =
     value.crackWidthMm ??
@@ -210,21 +215,23 @@ export async function updateAnnotation(input: unknown): Promise<ActionResult<Ima
   const refusal = geometryRefusal({ geometryKind, polygon: nextPolygon, bbox: nextBbox })
   if (refusal) return actionRefuse(refusal)
 
-  // The first edit of a model-proposed candidate keeps what the model said, so
-  // "how often was the candidate right" stays answerable after the fact.
-  const candidateSources = ['heuristic', 'gemini', 'model']
-  const editedCandidate =
-    candidateSources.includes(current.source) && !current.original_geometry
-      ? {
-          original_geometry: {
-            polygon: current.polygon,
-            bbox: current.bbox,
-            damage_type: current.damage_type,
-            severity: current.severity,
-          },
-          source: 'manual' as const,
-        }
-      : {}
+  // Only a real geometry or class change claims the candidate as manual.
+  const snapshotCandidate = shouldSnapshotCandidate(current, {
+    polygon: value.polygon,
+    bbox: value.bbox,
+    damageType: value.damageType,
+  })
+  const editedCandidate = snapshotCandidate
+    ? {
+        original_geometry: {
+          polygon: current.polygon,
+          bbox: current.bbox,
+          damage_type: current.damage_type,
+          severity: current.severity,
+        },
+        source: 'manual' as const,
+      }
+    : {}
 
   const patch: Record<string, unknown> = {
     ...editedCandidate,
@@ -241,6 +248,36 @@ export async function updateAnnotation(input: unknown): Promise<ActionResult<Ima
   } else if (value.measuredWidthPx !== undefined) {
     const image = await loadImage(supabase, current.image_id)
     patch.crack_width_mm = deriveCrackWidthMm(value.measuredWidthPx, image?.gsd_mm_per_px ?? null)
+  }
+
+  // A submitted annotation is still editable, so its mask must follow the
+  // geometry. Otherwise approval could ship a mask that disagrees with its label.
+  const geometryTouched = value.polygon !== undefined || value.bbox !== undefined
+  if (current.status === 'submitted' && geometryTouched && geometryKind !== 'none') {
+    const image = await loadImage(supabase, current.image_id)
+    const width = image?.width_px ?? image?.source_width_px ?? 0
+    const height = image?.height_px ?? image?.source_height_px ?? 0
+    const polygon = value.polygon !== undefined ? value.polygon : current.polygon
+    const bbox = value.bbox !== undefined ? value.bbox : current.bbox
+
+    if (image && width > 0 && height > 0 && (polygon || bbox)) {
+      try {
+        const mask = await rasteriseMask(
+          geometryKind === 'polygon'
+            ? { kind: 'polygon', polygon: polygon ?? [] }
+            : { kind: 'box', bbox: bbox! },
+          width,
+          height
+        )
+        const maskPath = `${image.inspection_id}/${current.image_id}/${current.id}.png`
+        const { error: uploadError } = await supabase.storage
+          .from(ANNOTATION_BUCKET)
+          .upload(maskPath, mask, { contentType: 'image/png', upsert: true })
+        if (!uploadError) patch.mask_path = maskPath
+      } catch (caught) {
+        console.error('Annotation mask refresh failed:', caught)
+      }
+    }
   }
 
   const { data, error } = await supabase
@@ -350,8 +387,12 @@ export async function submitImageAnnotations(imageId: string): Promise<ActionRes
       }
     }
 
-    const { error } = await supabase.from('image_annotations').update(patch).eq('id', row.id)
-    if (!error) submitted++
+    const { data: updated, error } = await supabase
+      .from('image_annotations')
+      .update(patch)
+      .eq('id', row.id)
+      .select('id')
+    if (!error && updated && updated.length > 0) submitted++
   }
 
   await recordAuditEvent({
@@ -471,6 +512,7 @@ export async function listAnnotationQueue(input?: {
   inspectionId?: string
   status?: AnnotationStatus
   mineOnly?: boolean
+  showIneligible?: boolean
 }): Promise<AnnotationQueueItem[]> {
   const { userId, role } = await requireRole(['inspector', 'engineer', 'admin'])
   const supabase = await createClient()
@@ -479,8 +521,10 @@ export async function listAnnotationQueue(input?: {
     .from('inspection_images')
     .select('*')
     .order('uploaded_at', { ascending: false })
-    .limit(200)
+    .limit(100)
 
+  // Seeded placeholders and sub-resolution images are not labelable data.
+  if (!input?.showIneligible) query = query.eq('training_eligible', true)
   if (input?.inspectionId) query = query.eq('inspection_id', input.inspectionId)
   if (input?.mineOnly || role === 'inspector') query = query.eq('uploader_id', userId)
 

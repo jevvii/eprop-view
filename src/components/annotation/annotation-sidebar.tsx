@@ -1,6 +1,7 @@
 'use client'
 
 import type { DamageType, ImageAnnotation, SeverityLevel } from '@/app/types'
+import { canEditAnnotation } from '@/app/lib/annotation/lifecycle'
 
 const DAMAGE_TYPES: { id: DamageType; label: string }[] = [
   { id: 'crack', label: 'Crack' },
@@ -90,6 +91,11 @@ export function AnnotationSidebar({
 
       {selected && selected.geometry_kind !== 'none' && (
         <section className="space-y-3 rounded-lg border border-[#EAEAEA] p-3">
+          {!canEditAnnotation(selected.status) && (
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-600">
+              This finding has been reviewed and is frozen. Approve or reject decisions cannot be undone.
+            </p>
+          )}
           <div>
             <label className="mb-1 block text-[11px] font-bold text-slate-500" htmlFor="annotation-damage">
               Defect
@@ -98,6 +104,7 @@ export function AnnotationSidebar({
               id="annotation-damage"
               className={inputClass}
               value={selected.damage_type}
+              disabled={!canEditAnnotation(selected.status)}
               onChange={(event) => onUpdate(selected.id, { damageType: event.target.value })}
             >
               {DAMAGE_TYPES.map((type) => (
@@ -114,6 +121,7 @@ export function AnnotationSidebar({
               id="annotation-severity"
               className={inputClass}
               value={selected.severity ?? 'low'}
+              disabled={!canEditAnnotation(selected.status)}
               onChange={(event) => onUpdate(selected.id, { severity: event.target.value })}
             >
               {SEVERITIES.map((level) => (
@@ -131,7 +139,7 @@ export function AnnotationSidebar({
               type="number"
               step="0.1"
               min={0}
-              disabled={!scaleKnown}
+              disabled={!scaleKnown || !canEditAnnotation(selected.status)}
               className={inputClass}
               value={selected.crack_width_mm ?? ''}
               placeholder={scaleKnown ? (selected.measured_width_px ? 'Derived from ruler' : 'Optional') : 'Scale unknown'}
@@ -153,6 +161,7 @@ export function AnnotationSidebar({
               rows={2}
               className={`${inputClass} min-h-[72px]`}
               value={selected.notes}
+              disabled={!canEditAnnotation(selected.status)}
               onChange={(event) => onUpdate(selected.id, { notes: event.target.value })}
             />
           </div>

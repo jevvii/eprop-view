@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BoundingBox, ImageAnnotation, Point } from '@/app/types'
 import { rulerDistancePx } from '@/app/lib/annotation/geometry'
 
@@ -50,7 +50,10 @@ export function AnnotationCanvas({
   const [dragCurrent, setDragCurrent] = useState<Point | null>(null)
   const [vertices, setVertices] = useState<Point[]>([])
   const [measureStart, setMeasureStart] = useState<Point | null>(null)
+  const [hoverPoint, setHoverPoint] = useState<Point | null>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
+  const pointers = useRef(new Map<number, Point>())
+  const pinchDistance = useRef<number | null>(null)
 
   const toNormalised = useCallback((event: React.PointerEvent | React.MouseEvent): Point => {
     const rect = surfaceRef.current?.getBoundingClientRect()
@@ -69,9 +72,46 @@ export function AnnotationCanvas({
     [onPolygon]
   )
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (tool !== 'polygon') return
+      const target = event.target as HTMLElement | null
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        closePolygon(vertices)
+      }
+      if (event.key === 'Backspace') {
+        event.preventDefault()
+        setVertices((current) => current.slice(0, -1))
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [tool, vertices, closePolygon])
+
   const handlePointerDown = (event: React.PointerEvent) => {
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+    // Two fingers mean a pinch, never a drawing gesture.
+    if (pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()]
+      pinchDistance.current = Math.hypot(b.x - a.x, b.y - a.y)
+      try {
+        event.currentTarget.setPointerCapture?.(event.pointerId)
+      } catch {
+        // Synthetic or already-released pointers cannot be captured.
+      }
+      return
+    }
+
     if (tool === 'select') return
     event.preventDefault()
+    try {
+      event.currentTarget.setPointerCapture?.(event.pointerId)
+    } catch {
+      // Synthetic or already-released pointers cannot be captured.
+    }
     const point = toNormalised(event)
 
     if (tool === 'box') {
@@ -105,11 +145,29 @@ export function AnnotationCanvas({
   }
 
   const handlePointerMove = (event: React.PointerEvent) => {
+    if (pointers.current.has(event.pointerId)) {
+      pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    }
+
+    if (pointers.current.size === 2 && pinchDistance.current) {
+      const [a, b] = [...pointers.current.values()]
+      const distance = Math.hypot(b.x - a.x, b.y - a.y)
+      const ratio = distance / pinchDistance.current
+      if (Math.abs(ratio - 1) > 0.02) {
+        setZoom((value) => Math.min(6, Math.max(1, value * ratio)))
+        pinchDistance.current = distance
+      }
+      return
+    }
+
+    setHoverPoint(toNormalised(event))
     if (tool !== 'box' || !dragStart) return
     setDragCurrent(toNormalised(event))
   }
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (event: React.PointerEvent) => {
+    pointers.current.delete(event.pointerId)
+    if (pointers.current.size < 2) pinchDistance.current = null
     if (tool !== 'box' || !dragStart || !dragCurrent) return
     const bbox: BoundingBox = {
       x: Math.min(dragStart.x, dragCurrent.x),
@@ -159,7 +217,14 @@ export function AnnotationCanvas({
         </button>
       </div>
 
-      <div className="max-h-[70vh] overflow-auto rounded-lg border border-[#EAEAEA] bg-slate-50">
+      <div
+        className="max-h-[70vh] overflow-auto rounded-lg border border-[#EAEAEA] bg-slate-50"
+        onWheel={(event) => {
+          if (!event.ctrlKey && !event.metaKey) return
+          event.preventDefault()
+          setZoom((value) => Math.min(6, Math.max(1, value * (event.deltaY < 0 ? 1.1 : 0.9))))
+        }}
+      >
         <div style={{ width: `${zoom * 100}%` }} className="relative">
           <div
             ref={surfaceRef}
@@ -197,7 +262,7 @@ export function AnnotationCanvas({
                       points={points}
                       fill="rgba(255,255,255,0.08)"
                       stroke={severityStroke[annotation.severity ?? 'low'] ?? '#16a34a'}
-                      strokeWidth={selectedId === annotation.id ? 0.006 : 0.003}
+                      strokeWidth={selectedId === annotation.id ? 2 : 1}
                       vectorEffect="non-scaling-stroke"
                       onPointerDown={(event) => {
                         event.stopPropagation()
@@ -216,7 +281,7 @@ export function AnnotationCanvas({
                       height={annotation.bbox.height}
                       fill="rgba(255,255,255,0.08)"
                       stroke={severityStroke[annotation.severity ?? 'low'] ?? '#16a34a'}
-                      strokeWidth={selectedId === annotation.id ? 0.006 : 0.003}
+                      strokeWidth={selectedId === annotation.id ? 2 : 1}
                       vectorEffect="non-scaling-stroke"
                       onPointerDown={(event) => {
                         event.stopPropagation()
@@ -233,7 +298,7 @@ export function AnnotationCanvas({
                   d={polygonPreview}
                   fill="none"
                   stroke="#2563eb"
-                  strokeWidth={0.004}
+                  strokeWidth={2}
                   vectorEffect="non-scaling-stroke"
                 />
               )}
@@ -249,12 +314,28 @@ export function AnnotationCanvas({
                   height={boxPreview.height}
                   fill="rgba(37,99,235,0.12)"
                   stroke="#2563eb"
-                  strokeWidth={0.004}
+                  strokeWidth={2}
                   vectorEffect="non-scaling-stroke"
                 />
               )}
 
-              {measureStart && <circle cx={measureStart.x} cy={measureStart.y} r={0.006} fill="#dc2626" />}
+              {measureStart && (
+                <>
+                  <circle cx={measureStart.x} cy={measureStart.y} r={0.006} fill="#dc2626" />
+                  {hoverPoint && (
+                    <line
+                      x1={measureStart.x}
+                      y1={measureStart.y}
+                      x2={hoverPoint.x}
+                      y2={hoverPoint.y}
+                      stroke="#dc2626"
+                      strokeWidth={2}
+                      vectorEffect="non-scaling-stroke"
+                      strokeDasharray="4 3"
+                    />
+                  )}
+                </>
+              )}
             </svg>
           </div>
         </div>

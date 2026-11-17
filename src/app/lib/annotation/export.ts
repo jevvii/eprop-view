@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { DamageType, Point } from '@/app/types'
 
 /**
@@ -72,6 +73,9 @@ export interface ManifestImage {
   approved: number
   negativeOnly: boolean
   widthOmitted: number
+  classes?: Record<string, number>
+  scaleSource?: string
+  gsdKnown?: boolean
 }
 
 export interface Manifest {
@@ -82,6 +86,10 @@ export interface Manifest {
   negativeImageCount: number
   widthOmittedCount: number
   structureCount: number
+  classCounts: Record<string, number>
+  gsdCoverage: number
+  scaleSourceDistribution: Record<string, number>
+  contentHash: string
   images: ManifestImage[]
 }
 
@@ -90,6 +98,34 @@ export function buildManifest(input: {
   seed: number
   generatedAt: string
 }): Manifest {
+  const classCounts: Record<string, number> = {}
+  const scaleSourceDistribution: Record<string, number> = {}
+  let gsdKnownCount = 0
+
+  for (const image of input.images) {
+    for (const [name, count] of Object.entries(image.classes ?? {})) {
+      classCounts[name] = (classCounts[name] ?? 0) + count
+    }
+    const source = image.scaleSource ?? 'unknown'
+    scaleSourceDistribution[source] = (scaleSourceDistribution[source] ?? 0) + 1
+    if (image.gsdKnown) gsdKnownCount++
+  }
+
+  const contentHash = createHash('sha256')
+    .update(
+      JSON.stringify({
+        seed: input.seed,
+        images: input.images.map((image) => ({
+          id: image.id,
+          structureKey: image.structureKey,
+          approved: image.approved,
+          negativeOnly: image.negativeOnly,
+        })),
+      })
+    )
+    .digest('hex')
+    .slice(0, 16)
+
   return {
     generatedAt: input.generatedAt,
     seed: input.seed,
@@ -98,6 +134,10 @@ export function buildManifest(input: {
     negativeImageCount: input.images.filter((image) => image.negativeOnly).length,
     widthOmittedCount: input.images.reduce((sum, image) => sum + image.widthOmitted, 0),
     structureCount: new Set(input.images.map((image) => image.structureKey)).size,
+    classCounts,
+    gsdCoverage: input.images.length === 0 ? 0 : gsdKnownCount / input.images.length,
+    scaleSourceDistribution,
+    contentHash,
     images: input.images,
   }
 }

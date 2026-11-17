@@ -47,16 +47,6 @@ export async function preAnnotateImage(imageId: string): Promise<ActionResult<{ 
   if (imageError) throw imageError
   if (!image) return actionRefuse('The image no longer exists.')
 
-  // Only replace our own untouched candidates. Manual work and reviewed rows stay.
-  const { error: clearError } = await supabase
-    .from('image_annotations')
-    .delete()
-    .eq('image_id', imageId)
-    .eq('status', 'draft')
-    .eq('source', 'heuristic')
-
-  if (clearError) return actionRefuse(clearError.message)
-
   const bucket = image.storage_bucket || 'inspection-images'
   const { data: blob, error: downloadError } = await supabase.storage.from(bucket).download(image.storage_path)
   if (downloadError || !blob) return actionRefuse('The stored image could not be read.')
@@ -65,15 +55,24 @@ export async function preAnnotateImage(imageId: string): Promise<ActionResult<{ 
 
   let detections
   try {
-    const result = await runDetection(bytes, HEURISTIC_MODEL, {
-      imageWidth: image.width_px ?? undefined,
-      imageHeight: image.height_px ?? undefined,
-    })
+    // The heuristic is an 8×8 grid over a normalised tensor; running it at the
+    // stored resolution buys nothing and allocates hundreds of MB in a request.
+    const result = await runDetection(bytes, HEURISTIC_MODEL)
     detections = result.detections
   } catch (error) {
     console.error('Heuristic pre-annotation failed:', error)
     return actionRefuse('The heuristic could not analyse this image.')
   }
+
+  // Replace only our own untouched candidates. Manual work and reviewed rows stay.
+  const { error: clearError } = await supabase
+    .from('image_annotations')
+    .delete()
+    .eq('image_id', imageId)
+    .eq('status', 'draft')
+    .eq('source', 'heuristic')
+
+  if (clearError) return actionRefuse(clearError.message)
 
   const rows = detections.flatMap((detection) => {
     if (!isPlausibleBbox(detection.bbox)) return []
