@@ -17,9 +17,9 @@ interface AIAnalysisPanelProps {
 
 export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
   const { data: profile } = useProfile()
-  const { data: models, isLoading: modelsLoading } = useAIModels()
-  const { data: detections, isLoading: detectionsLoading } = useAIDetections(imageId)
-  const { data: jobs, isLoading: jobsLoading } = useAIAnalysisJobs(imageId)
+  const { data: models, isLoading: modelsLoading, isError: modelsError } = useAIModels()
+  const { data: detections, isLoading: detectionsLoading, isError: detectionsError } = useAIDetections(imageId)
+  const { data: jobs, isLoading: jobsLoading, isError: jobsError } = useAIAnalysisJobs(imageId)
   const runAnalysis = useRunAIAnalysis()
 
   const [selectedModelId, setSelectedModelId] = useState<string>('')
@@ -31,7 +31,8 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
     : models?.find((model) => model.is_active) ?? models?.[0]
 
   const latestJob = jobs?.[0]
-  const isRunning = latestJob?.status === 'running' || latestJob?.status === 'pending' || runAnalysis.isPending
+  const isRunning = runAnalysis.isPending
+  const unfinished = latestJob?.status === 'running' || latestJob?.status === 'pending'
 
   const handleRun = () => {
     if (!activeModel) return
@@ -39,8 +40,9 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
   }
 
   // Calculate aggregate damage score if detections exist
-  const damageScore = detections && detections.length > 0
-    ? computeFinalDamageScore(Math.max(...detections.map((d) => d.severity_score)), 1.2, 1.0, 1.0)
+  const screened = detections?.filter(d => !d.is_rejected && d.damage_type !== 'none' && d.provenance !== 'synthetic' && d.provenance !== 'legacy_synthetic')
+  const damageScore = screened && screened.length > 0
+    ? computeFinalDamageScore(Math.max(...screened.map((d) => d.severity_score)), 1.2, 1.0, 1.0)
     : null
 
   const riskLevel = damageScore !== null ? scoreToRiskLevel(damageScore) : null
@@ -52,6 +54,10 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         <div className="h-8 bg-slate-100 rounded w-1/2"></div>
       </div>
     )
+  }
+
+  if (modelsError || detectionsError || jobsError) {
+    return <p role="alert" className="p-4 text-xs text-red-700">Could not load the image analysis. Refresh to try again.</p>
   }
 
   return (
@@ -80,7 +86,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
             <span className="text-xs font-bold text-blue-700">Inference Active</span>
           </div>
-        ) : latestJob?.completed_at ? (
+        ) : latestJob?.status === 'completed' && latestJob.completed_at ? (
           <div className="text-right">
             <span className="text-xs font-mono text-slate-500 font-medium">
               Completed {new Date(latestJob.completed_at).toLocaleTimeString()}
@@ -89,6 +95,9 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         ) : null}
       </div>
 
+      {unfinished && !isRunning && (
+        <p role="status" className="text-xs text-slate-600">The previous run has no recorded result. You can retry the analysis.</p>
+      )}
       {isRunning && (
         <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
           <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-primary animate-spin" aria-hidden="true" />
@@ -176,7 +185,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between border-t border-slate-200 pt-4">
             <span className="text-xs font-bold text-slate-700">
-              Identified Defects ({detections.length})
+              Findings for review ({detections.length})
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
               {detections.map((d) => (
@@ -189,8 +198,8 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
       ) : (
         <div className="text-xs text-slate-500 font-medium border-t border-slate-200 pt-4">
           {latestJob?.status === 'completed'
-            ? 'No defect patterns detected in this image by the heuristic.'
-            : 'Not analyzed yet. Run analysis to inspect this image.'}
+            ? `${latestJob.method === 'gemini' ? 'Gemini' : 'The heuristic'} reported no visible defect patterns.`
+            : latestJob ? 'No findings are available for this image.' : 'Not analyzed yet. Run analysis to inspect this image.'}
         </div>
       )}
     </div>

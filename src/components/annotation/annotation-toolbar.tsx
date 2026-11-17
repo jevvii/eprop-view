@@ -20,6 +20,7 @@ export function AnnotationToolbar({
   onDelete,
   canDelete,
   onSuggest,
+  canSuggest,
   suggesting,
 }: {
   tool: AnnotationTool
@@ -31,6 +32,7 @@ export function AnnotationToolbar({
   onDelete: () => void
   canDelete: boolean
   onSuggest: () => void
+  canSuggest: boolean
   suggesting: boolean
 }) {
   const buttonClass = (active: boolean) =>
@@ -73,7 +75,7 @@ export function AnnotationToolbar({
         <span className="hidden sm:inline">Delete</span>
       </button>
 
-      <button type="button" className={buttonClass(false)} onClick={onSuggest} disabled={suggesting}>
+      <button type="button" className={buttonClass(false)} onClick={onSuggest} disabled={suggesting || !canSuggest}>
         <Sparkles className="h-4 w-4" aria-hidden="true" />
         <span className="hidden sm:inline">{suggesting ? 'Suggesting…' : 'Suggest'}</span>
       </button>

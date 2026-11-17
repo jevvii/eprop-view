@@ -1,3 +1,4 @@
+import sharp from 'sharp'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { loadServerModule } from './test-support/server-module'
@@ -8,16 +9,19 @@ const imageId = '11111111-1111-4111-8111-111111111111'
 const userId = '22222222-2222-4222-8222-222222222222'
 const input: Parameters<typeof import('../actions/gemini-analysis').suggestRepairCost>[0] = { damageType: 'crack', severity: 'medium', elementType: 'column', context: 'Measured surface crack; quantities require a site visit.' }
 
-function actions(response: unknown, unavailable = false) {
+function actions(response: unknown, unavailable = false, modelAvailable = false, owner: string | null = userId) {
   class UnavailableError extends Error { code = "transport" }
   let writes = 0
+  let downloads = 0
   const client = {
-    rpc: async (_name:string,args:{p_rows?:Record<string,unknown>[]}) => {
+    rpc: async (_name:string,args:{p_rows?:Record<string,unknown>[];p_provenance:string}) => {
       writes++
-      return {data:(args.p_rows??[]).map(row=>({...row,id:imageId,provenance:'gemini'})),error:null}
+      assert.equal(_name, 'commit_image_analysis')
+      return {data:{detections:(args.p_rows??[]).map(row=>({...row,id:imageId,provenance:args.p_provenance}))},error:null}
     },
     from: (table: string) => {
-      const rows = table === 'inspection_images' ? [{ id: imageId, inspection_id: imageId, storage_path: 'evidence.jpg', storage_bucket: 'inspection-images', inspections: { lead_inspector_id: userId } }] : []
+      const rows = table === 'inspection_images' ? [{ id: imageId, inspection_id: imageId, storage_path: 'evidence.jpg', storage_bucket: 'inspection-images', inspections: { lead_inspector_id: owner } }] :
+        table === 'ai_models' && modelAvailable ? [{ id:imageId, format:'heuristic', task:'detection', version:'2', input_width:64, input_height:64 }] : []
       const query = {
         select: () => query, eq: () => query, in: () => query, order: () => query, limit: () => query,
         single: async () => ({ data: rows[0], error: null }), maybeSingle: async () => ({ data: rows[0], error: null }),
@@ -26,7 +30,7 @@ function actions(response: unknown, unavailable = false) {
       }
       return query
     },
-    storage: { from: () => ({ download: async () => ({ data: new Blob(['photo'], { type: 'image/jpeg' }), error: null }) }) },
+    storage: { from: () => ({ download: async () => { downloads++; return { data: new Blob([new Uint8Array(await sharp({create:{width:18,height:12,channels:3,background:'gray'}}).png().toBuffer())], { type: 'image/png' }), error: null } } }) },
   }
   const api = loadServerModule<typeof import('../actions/gemini-analysis')>(new URL('../actions/gemini-analysis.ts', import.meta.url), {
     '@/app/lib/supabase/server': { createClient: async () => client },
@@ -45,7 +49,7 @@ function actions(response: unknown, unavailable = false) {
       },
     },
   })
-  return { api, writes: () => writes }
+  return { api, writes: () => writes, downloads: () => downloads }
 }
 
 test('rejects reversed or internally inconsistent repair cost ranges', async () => {
@@ -113,5 +117,21 @@ test('negative vision result persists no new defect rows', async () => {
 test('missing fallback configuration cannot masquerade as a successful empty analysis', async () => {
   const { api, writes } = actions({}, true)
   await assert.rejects(api.analyzeImageWithGemini(imageId), /no active heuristic configuration/)
+  assert.equal(writes(), 0)
+})
+
+test('a provider outage finishes a local run from the same downloaded pixels', async () => {
+  const { api, writes, downloads } = actions({}, true, true)
+  const result = await api.analyzeImageWithGemini(imageId)
+  assert.equal(result.provenance, 'heuristic')
+  assert.deepEqual(result.detections, [])
+  assert.equal(downloads(), 1)
+  assert.equal(writes(), 1)
+})
+
+test('an inspector needs an assigned inspection before its photo can be processed', async () => {
+  const { api, downloads, writes } = actions({}, false, false, null)
+  await assert.rejects(api.analyzeImageWithGemini(imageId), /assigned inspections/)
+  assert.equal(downloads(), 0)
   assert.equal(writes(), 0)
 })

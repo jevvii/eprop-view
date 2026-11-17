@@ -193,6 +193,7 @@ export interface InspectionImage {
   uploader_name?: string
   uploaded_at: string
   signed_url?: string | null
+  annotation_suggested_at?: string | null
   comment_count?: number
   // Capture metadata (migration 023). Null means "not recorded", never a default.
   source_width_px?: number | null
@@ -258,6 +259,7 @@ export interface AIModel {
 }
 
 export interface AIDamageDetection {
+  is_rejected?: boolean
   id: string
   image_id: string
   model_id: string | null
@@ -282,6 +284,7 @@ export interface AIDamageDetection {
 }
 
 export interface AIAnalysisJob {
+  method?: 'heuristic' | 'gemini'
   id: string
   image_id: string
   model_id: string | null
@@ -605,7 +608,7 @@ export interface ReportLimitation {
 }
 
 // A6. Cost estimates
-export type CostProvenance = 'table' | 'gemini' | 'engineer'
+export type CostProvenance = 'table' | 'gemini' | 'engineer' | 'synthetic'
 
 export interface CostEstimate {
   id: string
@@ -638,7 +641,7 @@ export interface Recommendation {
   draft_text: string | null
   final_text: string | null
   status: RecommendationStatus
-  provenance: Exclude<DetectionProvenance, 'model' | 'synthetic' | 'legacy_synthetic'>
+  provenance: 'gemini' | 'heuristic' | 'engineer' | 'synthetic'
   signed_by: string | null
   signed_at: string | null
   created_at: string

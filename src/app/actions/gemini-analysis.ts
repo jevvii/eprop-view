@@ -158,26 +158,14 @@ export async function getGeminiAvailability(): Promise<GeminiAvailability> {
   return { configured: isGeminiConfigured(), notice: GEMINI_DATA_NOTICE }
 }
 
-async function readStoredImage(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  storagePath: string,
-  bucket = 'inspection-images'
-): Promise<{ data: string; mimeType: string; bytes: number }> {
-  const { data: blob, error } = await supabase.storage.from(bucket).download(storagePath)
-  if (error || !blob) {
-    throw new Error(`Stored image could not be read: ${error?.message ?? 'object missing'}`)
-  }
-
-  const buffer = Buffer.from(await blob.arrayBuffer())
-  if (buffer.byteLength > MAX_INLINE_IMAGE_BYTES) {
-    throw new Error(
-      `Image is ${(buffer.byteLength / 1024 / 1024).toFixed(1)} MB, above the ${MAX_INLINE_IMAGE_BYTES / 1024 / 1024} MB inline limit.`
-    )
-  }
-
-  const mimeType = blob.type && blob.type.startsWith('image/') ? blob.type : 'image/jpeg'
-
-  return { data: buffer.toString('base64'), mimeType, bytes: buffer.byteLength }
+async function prepareVisionImage(blob: Blob) {
+  if (!blob.size || blob.size > 15 * 1024 * 1024) throw new Error('Image must be between 1 byte and 15 MB.')
+  const { default: sharp } = await import('sharp')
+  const bytes = await sharp(Buffer.from(await blob.arrayBuffer()), { limitInputPixels: 40_000_000 })
+    .rotate().resize({ width: 2048, height: 2048, fit: 'inside', withoutEnlargement: true })
+    .flatten({ background: 'white' }).jpeg({ quality: 85 }).toBuffer()
+  if (bytes.length > MAX_INLINE_IMAGE_BYTES) throw new Error('Prepared image exceeds the inline image limit.')
+  return { data: bytes.toString('base64'), mimeType: 'image/jpeg' }
 }
 
 /**
@@ -186,8 +174,8 @@ async function readStoredImage(
  */
 async function runHeuristicFallback(
   imageId: string,
-  storagePath: string,
-  bucket = 'inspection-images'
+  blob: Blob,
+  userId: string
 ): Promise<AIDamageDetection[]> {
   const supabase = await createClient()
 
@@ -195,6 +183,8 @@ async function runHeuristicFallback(
     .from('ai_models')
     .select('*')
     .eq('is_active', true)
+    .eq('task', 'detection')
+    .eq('format', 'heuristic')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -202,20 +192,16 @@ async function runHeuristicFallback(
   if (modelError) throw modelError
   if (!model) throw new Error('Gemini is unavailable and no active heuristic configuration exists. Existing findings have been retained.')
 
-  const { data: blob, error } = await supabase.storage.from(bucket).download(storagePath)
-  if (error || !blob) throw new Error('Stored image could not be read for fallback analysis.')
-
   const { runDetection } = await import('@/app/lib/ai/inference-worker')
   const result = await runDetection(blob, model)
 
-  const { userId } = await requireRole(['inspector', 'engineer', 'admin'])
-  const { data: inserted, error: insertError } = await createServiceClient().rpc('replace_image_detections', {
-    p_image_id: imageId, p_actor_id: userId, p_provenance: 'heuristic',
+  const { data: inserted, error: insertError } = await createServiceClient().rpc('commit_image_analysis', {
+    p_image_id: imageId, p_actor_id: userId, p_provenance: 'heuristic', p_job_id: null, p_model_id: model.id,
     p_rows: result.detections.map(detection => ({ ...detection, model_id: model.id })),
   })
   if (insertError) throw insertError
 
-  return (inserted || []) as AIDamageDetection[]
+  return inserted.detections as AIDamageDetection[]
 }
 
 // -----------------------------------------------------------------
@@ -251,8 +237,7 @@ export async function analyzeImageWithGemini(imageId: string): Promise<DeepAnaly
   const inspection = image.inspections as { lead_inspector_id?: string } | null
   if (
     role === 'inspector' &&
-    inspection?.lead_inspector_id &&
-    inspection.lead_inspector_id !== userId
+    inspection?.lead_inspector_id !== userId
   ) {
     throw new Error('Access denied: inspectors may only analyse their assigned inspections.')
   }
@@ -271,10 +256,14 @@ export async function analyzeImageWithGemini(imageId: string): Promise<DeepAnaly
     'summary is one or two sentences an engineer can paste into a report.',
   ].join(' ')
 
+  const { data: blob, error: downloadError } = await supabase.storage.from(location.bucket).download(location.path)
+  if (downloadError || !blob) throw new Error('Stored image could not be read.')
+
   let result: DeepAnalysisResult
 
   try {
-    const imagePayload = await readStoredImage(supabase, location.path, location.bucket)
+    if (!isGeminiConfigured()) throw new GeminiUnavailableError('Gemini is not configured.', 'not_configured')
+    const imagePayload = await prepareVisionImage(blob)
 
     const { value, model } = await generateStructured({
       prompt,
@@ -290,11 +279,11 @@ export async function analyzeImageWithGemini(imageId: string): Promise<DeepAnaly
       crack_orientation: value.crack_orientation ?? null,
       crack_pattern: value.crack_pattern ?? null, crack_cause: value.crack_cause ?? null,
     }]
-    const { data: inserted, error: insertError } = await createServiceClient().rpc('replace_image_detections', {
-      p_image_id: parsedImageId, p_actor_id: userId, p_provenance: 'gemini', p_rows: rows,
+    const { data: inserted, error: insertError } = await createServiceClient().rpc('commit_image_analysis', {
+      p_image_id: parsedImageId, p_actor_id: userId, p_provenance: 'gemini', p_rows: rows, p_job_id: null, p_model_id: null,
     })
     if (insertError) throw insertError
-    result = { provenance: 'gemini', model, detections: (inserted ?? []) as AIDamageDetection[], summary: value.summary }
+    result = { provenance: 'gemini', model, detections: inserted.detections as AIDamageDetection[], summary: value.summary }
 
   } catch (error) {
     const unavailable = error instanceof GeminiUnavailableError
@@ -303,7 +292,7 @@ export async function analyzeImageWithGemini(imageId: string): Promise<DeepAnaly
       throw error
     }
 
-    const detections = await runHeuristicFallback(parsedImageId, location.path, location.bucket)
+    const detections = await runHeuristicFallback(parsedImageId, blob, userId)
     result = {
       provenance: 'heuristic',
       model: null,

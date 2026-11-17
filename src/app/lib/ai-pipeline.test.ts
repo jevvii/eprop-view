@@ -155,6 +155,31 @@ describe('Phase A: Real-Time AI Damage Detection Pipeline Tests', () => {
       }
     })
 
+    test('locates a narrow line at the image border without marking the clean interior', async () => {
+      const width = 160
+      const pixels = Buffer.alloc(width * width * 3, 180)
+      for (let y = 4; y < 18; y++) pixels.fill(12, (y * width + 9) * 3, (y * width + 10) * 3)
+      const png = await sharp(pixels, { raw: { width, height: width, channels: 3 } }).png().toBuffer()
+      const result = await runDetection(png, heuristicModel, { imageWidth: width, imageHeight: width })
+      const cracks = result.detections.filter(d => d.damage_type === 'crack')
+      assert.equal(cracks.length, 1)
+      assert.deepEqual(cracks[0].bbox, { x: 0, y: 0, width: 0.125, height: 0.125 })
+    })
+
+    test('rejects unsupported checkpoints and unbounded registry dimensions before decoding', async () => {
+      await assert.rejects(runDetection(new Uint8Array(), { ...heuristicModel, format: 'onnx' }), /heuristic detection/)
+      await assert.rejects(runDetection(new Uint8Array(), { ...heuristicModel, input_height: 99999 }), /dimensions/)
+    })
+
+    test('minor variations on a neutral wall do not become crack detections', async () => {
+      const width = 80
+      const pixels = Buffer.alloc(width * width * 3)
+      for (let i = 0; i < pixels.length; i++) pixels[i] = 160 + (Math.floor(i / 3) % 4)
+      const png = await sharp(pixels, { raw: { width, height: width, channels: 3 } }).png().toBuffer()
+      const result = await runDetection(png, heuristicModel, { imageWidth: width, imageHeight: width })
+      assert.equal(result.detections.length, 0)
+    })
+
     test('arbitrary non-image bytes are rejected, never turned into detections', async () => {
       const bytes = new Uint8Array(64 * 1024)
       for (let i = 0; i < bytes.length; i++) {

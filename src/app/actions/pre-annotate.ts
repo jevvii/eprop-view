@@ -8,8 +8,7 @@ import { recordAuditEvent } from '@/app/lib/audit'
 import { actionOk, actionRefuse, type ActionResult } from '@/app/lib/action-result'
 import { runDetection } from '@/app/lib/ai/inference-worker'
 import { isPlausibleBbox, mapDetectionToCandidate } from '@/app/lib/annotation/mapping'
-import { severityToScore } from '@/app/lib/damage-score'
-import type { AIModel, ImageAnnotation } from '@/app/types'
+import type { AIModel } from '@/app/types'
 
 /**
  * Model-assisted annotation.
@@ -26,13 +25,13 @@ const HEURISTIC_MODEL: AIModel = {
   task: 'detection',
   format: 'heuristic',
   storage_path: null,
-  labels: ['crack', 'corrosion', 'spalling', 'deformation', 'leakage'],
+  labels: ['crack', 'corrosion', 'spalling'],
   is_active: true,
   created_at: new Date(0).toISOString(),
 }
 
-export async function preAnnotateImage(imageId: string): Promise<ActionResult<{ created: number }>> {
-  const { userId } = await requireRole(['inspector', 'engineer', 'admin'])
+export async function preAnnotateImage(imageId: string, firstVisit = false): Promise<ActionResult<{ created: number }>> {
+  const { userId, role } = await requireRole(['inspector', 'engineer', 'admin'])
   const parsed = z.string().uuid().safeParse(imageId)
   if (!parsed.success) return actionRefuse('Invalid image id.')
   await enforceRateLimit(`annotate:${userId}`, 120, 3600)
@@ -40,39 +39,31 @@ export async function preAnnotateImage(imageId: string): Promise<ActionResult<{ 
   const supabase = await createClient()
   const { data: image, error: imageError } = await supabase
     .from('inspection_images')
-    .select('id, inspection_id, storage_path, storage_bucket, width_px, height_px')
+    .select('id, uploader_id, annotation_suggested_at, storage_path, storage_bucket')
     .eq('id', imageId)
     .maybeSingle()
 
   if (imageError) throw imageError
   if (!image) return actionRefuse('The image no longer exists.')
 
+  if (role === 'inspector' && image.uploader_id !== userId) return actionRefuse('Inspectors may only annotate their own captures.')
+
+  if (firstVisit && image.annotation_suggested_at) return actionOk({ created: 0 })
+
   const bucket = image.storage_bucket || 'inspection-images'
   const { data: blob, error: downloadError } = await supabase.storage.from(bucket).download(image.storage_path)
   if (downloadError || !blob) return actionRefuse('The stored image could not be read.')
-
-  const bytes = new Uint8Array(await blob.arrayBuffer())
 
   let detections
   try {
     // The heuristic is an 8×8 grid over a normalised tensor; running it at the
     // stored resolution buys nothing and allocates hundreds of MB in a request.
-    const result = await runDetection(bytes, HEURISTIC_MODEL)
+    const result = await runDetection(blob, HEURISTIC_MODEL)
     detections = result.detections
   } catch (error) {
     console.error('Heuristic pre-annotation failed:', error)
     return actionRefuse('The heuristic could not analyse this image.')
   }
-
-  // Replace only our own untouched candidates. Manual work and reviewed rows stay.
-  const { error: clearError } = await supabase
-    .from('image_annotations')
-    .delete()
-    .eq('image_id', imageId)
-    .eq('status', 'draft')
-    .eq('source', 'heuristic')
-
-  if (clearError) return actionRefuse(clearError.message)
 
   const rows = detections.flatMap((detection) => {
     if (!isPlausibleBbox(detection.bbox)) return []
@@ -84,44 +75,22 @@ export async function preAnnotateImage(imageId: string): Promise<ActionResult<{ 
     }
     return [
       {
-        image_id: imageId,
         damage_type: candidate.damageType,
         severity: candidate.severity,
-        severity_score: severityToScore(candidate.severity),
-        geometry_kind: 'box' as const,
+        severity_score: detection.severity_score,
         bbox: candidate.bbox,
-        source: 'heuristic' as const,
         source_confidence: candidate.sourceConfidence,
-        status: 'draft' as const,
-        notes: '',
-        created_by: userId,
       },
     ]
   })
 
-  if (rows.length === 0) {
-    await recordAuditEvent({
-      action: 'annotation.pre_annotate',
-      entityType: 'inspection_image',
-      entityId: imageId,
-      metadata: { created: 0, actor: userId },
-    })
-    return actionOk({ created: 0 })
-  }
-
-  const { data: inserted, error: insertError } = await supabase
-    .from('image_annotations')
-    .insert(rows)
-    .select()
-
-  if (insertError) return actionRefuse(insertError.message)
-
-  await recordAuditEvent({
-    action: 'annotation.pre_annotate',
-    entityType: 'inspection_image',
-    entityId: imageId,
-    metadata: { created: (inserted as ImageAnnotation[] | null)?.length ?? 0, actor: userId },
+  const { data: created, error } = await supabase.rpc('replace_annotation_candidates', {
+    p_image_id: imageId, p_rows: rows, p_first_visit: firstVisit,
   })
-
-  return actionOk({ created: (inserted as ImageAnnotation[] | null)?.length ?? 0 })
+  if (error) return actionRefuse('Suggestions could not be saved. Your existing drafts are still available.')
+  await recordAuditEvent({
+    action: 'annotation.pre_annotate', entityType: 'inspection_image', entityId: imageId,
+    metadata: { created, actor: userId },
+  })
+  return actionOk({ created: created as number })
 }

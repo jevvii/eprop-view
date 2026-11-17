@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnnotationCanvas, type AnnotationTool } from './annotation-canvas'
 import { AnnotationToolbar } from './annotation-toolbar'
@@ -15,11 +15,13 @@ import type { BoundingBox, ImageAnnotation, InspectionImage, Point, Role } from 
 export function AnnotationEditor({
   image,
   imageUrl,
+  canSuggest,
   initialAnnotations,
   role,
   nextImageId,
 }: {
   image: InspectionImage
+  canSuggest: boolean
   imageUrl: string
   initialAnnotations: ImageAnnotation[]
   role: Role
@@ -76,18 +78,30 @@ export function AnnotationEditor({
     void draft.create({ damageType: 'none', severity: null, geometryKind: 'none' })
   }, [draft])
 
-  const handleSuggest = useCallback(async () => {
+  const handleSuggest = useCallback(async (firstVisit = false) => {
     setSuggesting(true)
     setNotice(null)
-    const result = await preAnnotateImage(image.id)
-    setSuggesting(false)
-    if (!isActionResult(result) || !result.ok) {
-      setNotice(isActionResult(result) && !result.ok ? result.error : 'Suggestions could not be generated.')
-      return
+    try {
+      const result = await preAnnotateImage(image.id, firstVisit)
+      if (!result.ok) {
+        setNotice(result.error)
+        return
+      }
+      setNotice(`${result.data.created} candidate${result.data.created === 1 ? '' : 's'} added as drafts.`)
+      router.refresh()
+    } catch {
+      setNotice('Suggestions could not be generated. You can retry or annotate manually.')
+    } finally {
+      setSuggesting(false)
     }
-    setNotice(`${result.data.created} candidate${result.data.created === 1 ? '' : 's'} added as drafts.`)
-    router.refresh()
   }, [image.id, router])
+
+  const autoRequested = useRef(false)
+  useEffect(() => {
+    if (!canSuggest || autoRequested.current || image.annotation_suggested_at || initialAnnotations.length) return
+    autoRequested.current = true
+    void handleSuggest(true)
+  }, [canSuggest, handleSuggest, image.annotation_suggested_at, initialAnnotations.length])
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true)
@@ -177,7 +191,8 @@ export function AnnotationEditor({
         canRedo={draft.canRedo}
         onDelete={() => draft.selectedId && draft.remove(draft.selectedId)}
         canDelete={Boolean(draft.selectedId)}
-        onSuggest={handleSuggest}
+        onSuggest={() => void handleSuggest()}
+        canSuggest={canSuggest && !draft.saving && !draft.error}
         suggesting={suggesting}
       />
       </div>
@@ -238,7 +253,7 @@ export function AnnotationEditor({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || draft.annotations.length === 0}
+              disabled={submitting || suggesting || draft.saving || Boolean(draft.error) || draft.annotations.length === 0}
               className="min-h-[44px] flex-1 rounded-lg bg-primary px-4 text-xs font-bold text-primary-foreground disabled:opacity-50"
             >
               {submitting ? 'Submitting…' : 'Submit image'}

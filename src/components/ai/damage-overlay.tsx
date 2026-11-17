@@ -23,7 +23,7 @@ export function DamageOverlay({ imageId }: DamageOverlayProps) {
   return (
     <div className="absolute inset-0 pointer-events-none">
       {detections.map((detection) => {
-        if (!detection.bbox) return null
+        if (detection.is_rejected || detection.provenance === 'synthetic' || detection.provenance === 'legacy_synthetic' || !detection.bbox) return null
         const { x, y, width, height } = detection.bbox
 
         return (

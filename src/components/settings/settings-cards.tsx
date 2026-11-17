@@ -1,5 +1,6 @@
 'use client'
 
+import { supportsLocalInference } from '@/app/lib/ai/registry'
 import { useEffect, useMemo, useState } from 'react'
 import {
   useGeospatialZones,
@@ -36,8 +37,8 @@ export function SettingsCards() {
   const [modelName, setModelName] = useState('')
   const [modelVersion, setModelVersion] = useState('1.0.0')
   const [modelTask, setModelTask] = useState<AIModelTask>('detection')
-  const [modelFormat, setModelFormat] = useState<AIModelFormat>('onnx')
-  const [modelLabels, setModelLabels] = useState('crack, corrosion, spalling, deformation, leakage')
+  const [modelFormat, setModelFormat] = useState<AIModelFormat>('heuristic')
+  const [modelLabels, setModelLabels] = useState('crack, corrosion, spalling')
 
   const isAdmin = profile?.role === 'admin'
 
@@ -214,6 +215,7 @@ export function SettingsCards() {
                     </td>
                     <td className="py-4 text-right pr-2">
                       <button
+                        disabled={!model.is_active && !supportsLocalInference(model)}
                         onClick={() => handleToggleModel(model.id, model.is_active)}
  className={`text-xs font-bold px-3.5 py-2 min-h-[36px] rounded-xl transition-all border ${
                           model.is_active
@@ -221,7 +223,7 @@ export function SettingsCards() {
                             : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
                         }`}
                       >
-                        {model.is_active ? 'Active' : 'Standby'}
+                        {model.is_active ? 'Active' : supportsLocalInference(model) ? 'Standby' : 'Registry only'}
                       </button>
                     </td>
                   </tr>
@@ -273,7 +275,7 @@ export function SettingsCards() {
                   Register Analysis Method
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
-                  Register neural network weights
+                  The preview runs heuristic detection. Other methods are recorded for reference.
                 </p>
               </div>
               <button

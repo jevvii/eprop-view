@@ -55,6 +55,7 @@ interface GenerateOptions {
 }
 
 interface GeminiPart {
+  thought?: boolean
   text?: string
   inlineData?: { mimeType: string; data: string }
 }
@@ -72,7 +73,12 @@ interface GeminiResponse {
 
 function extractText(payload: GeminiResponse): string {
   const candidate = payload.candidates?.[0]
-  const text = candidate?.content?.parts?.map((part) => part.text ?? '').join('').trim()
+  if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+    throw new GeminiUnavailableError('Gemini did not complete the response.', 'invalid_response')
+  }
+  const parts = candidate?.content?.parts
+  const text = Array.isArray(parts) ? parts.filter(part => !part?.thought && typeof part?.text === 'string')
+    .map(part => part.text).join('').trim() : ''
 
   if (!text) {
     const blocked = payload.promptFeedback?.blockReason
@@ -130,10 +136,8 @@ async function callModel(
   }
 
   if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    const detail = body.slice(0, 300)
     throw new GeminiUnavailableError(
-      `Gemini responded ${response.status}${detail ? `: ${detail}` : ''}`,
+      `Gemini returned HTTP ${response.status}.`,
       'transport',
       response.status
     )
@@ -146,6 +150,9 @@ async function callModel(
     throw new GeminiUnavailableError('Gemini returned a malformed response body.', 'invalid_response')
   }
 
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new GeminiUnavailableError('Gemini returned a malformed response body.', 'invalid_response')
+  }
   if (payload.error) {
     throw new GeminiUnavailableError(payload.error.message ?? 'Gemini error', 'transport')
   }

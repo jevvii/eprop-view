@@ -43,6 +43,9 @@ export function useAnnotationDraft(initial: ImageAnnotation[], imageId: string) 
   const [saving, setSaving] = useState(false)
   const history = useRef<ImageAnnotation[][]>([])
   const future = useRef<ImageAnnotation[][]>([])
+  type Edit = Partial<AnnotationDraftInput> & { notes?: string }
+  const pending = useRef(new Map<string, Edit>())
+  const writing = useRef(new Set<string>())
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
   // router.refresh() hands us a new array from the server; without this the
@@ -74,6 +77,31 @@ export function useAnnotationDraft(initial: ImageAnnotation[], imageId: string) 
     [annotations, imageId, snapshot]
   )
 
+  const savePending = useCallback(async (id: string) => {
+    if (writing.current.has(id)) return
+    writing.current.add(id)
+    let unsaved: Edit | undefined
+    try {
+      // Serialize edits to each row and merge changes made within one debounce.
+      while (pending.current.has(id)) {
+        unsaved = pending.current.get(id)!
+        pending.current.delete(id)
+        const result = await updateAnnotation({ annotationId: id, ...unsaved })
+        if (!result.ok) throw new Error(result.error)
+        unsaved = undefined
+        if (!pending.current.has(id)) {
+          setAnnotations(rows => rows.map(row => row.id === id ? result.data : row))
+        }
+      }
+    } catch (error) {
+      if (unsaved) pending.current.set(id, { ...unsaved, ...pending.current.get(id) })
+      setError(error instanceof Error ? error.message : 'The edit could not be saved.')
+    } finally {
+      writing.current.delete(id)
+      setSaving(writing.current.size > 0 || timers.current.size > 0)
+    }
+  }, [])
+
   const update = useCallback(
     (id: string, patch: Partial<AnnotationDraftInput> & { notes?: string }) => {
       const current = annotations.find((annotation) => annotation.id === id)
@@ -95,33 +123,15 @@ export function useAnnotationDraft(initial: ImageAnnotation[], imageId: string) 
       const existing = timers.current.get(id)
       if (existing) clearTimeout(existing)
 
-      timers.current.set(
-        id,
-        setTimeout(async () => {
-          setSaving(true)
-          const result = await updateAnnotation({
-            annotationId: id,
-            damageType: patch.damageType,
-            severity: patch.severity,
-            polygon: patch.polygon,
-            bbox: patch.bbox,
-            measuredWidthPx: patch.measuredWidthPx,
-            crackWidthMm: patch.crackWidthMm,
-            notes: patch.notes,
-          })
-          setSaving(false)
-          if (!isActionResult(result) || !result.ok) {
-            setError(isActionResult(result) && !result.ok ? result.error : 'The edit could not be saved.')
-            // A refused edit must not stay on screen as though it saved.
-            setAnnotations((rows) => rows.map((row) => (row.id === id ? current : row)))
-            return
-          }
-          const saved = result.data as ImageAnnotation
-          setAnnotations((current) => current.map((annotation) => (annotation.id === id ? saved : annotation)))
-        }, AUTOSAVE_MS)
-      )
+      pending.current.set(id, { ...pending.current.get(id), ...patch })
+      setError(null)
+      setSaving(true)
+      timers.current.set(id, setTimeout(() => {
+        timers.current.delete(id)
+        void savePending(id)
+      }, AUTOSAVE_MS))
     },
-    [annotations, snapshot]
+    [annotations, snapshot, savePending]
   )
 
   const remove = useCallback(

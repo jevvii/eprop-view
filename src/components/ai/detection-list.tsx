@@ -42,7 +42,7 @@ export function DetectionList({ detections }: DetectionListProps) {
   }
 
   const saveEdit = async (detectionId: string) => {
-    await updateDetection.mutateAsync({
+    updateDetection.mutate({
       detectionId,
       params: {
         damage_type: editDamageType,
@@ -50,8 +50,7 @@ export function DetectionList({ detections }: DetectionListProps) {
         severity_score: editScore,
         notes: editNotes,
       },
-    })
-    setEditingId(null)
+    }, { onSuccess: () => setEditingId(null) })
   }
 
   if (detections.length === 0) {
@@ -64,12 +63,12 @@ export function DetectionList({ detections }: DetectionListProps) {
 
   return (
     <div className="space-y-3">
+      {(updateDetection.isError || verify.isError) && (
+        <p role="alert" className="text-xs text-red-700">The review could not be saved. Retry the action.</p>
+      )}
       {detections.map((detection) => {
         const isVerified = Boolean(detection.verified_by)
-        const isRejected = !isVerified && (
-          detection.notes?.toLowerCase().includes('reject') ||
-          detection.notes?.toLowerCase().includes('false positive')
-        )
+        const isRejected = detection.is_rejected
         const isEditing = editingId === detection.id
 
         if (isEditing) {
@@ -241,7 +240,6 @@ export function DetectionList({ detections }: DetectionListProps) {
                       verify.mutate({
                         detectionId: detection.id,
                         approved: true,
-                        notes: 'Verified by structural engineer.',
                       })
                     }
                     className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors"
@@ -259,7 +257,6 @@ export function DetectionList({ detections }: DetectionListProps) {
                       verify.mutate({
                         detectionId: detection.id,
                         approved: false,
-                        notes: 'Rejected: Marked as false positive.',
                       })
                     }
                     className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
@@ -277,7 +274,6 @@ export function DetectionList({ detections }: DetectionListProps) {
                       verify.mutate({
                         detectionId: detection.id,
                         approved: false,
-                        notes: 'Rejected: Marked as false positive.',
                       })
                     }
                     className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-slate-200 text-slate-600 transition-colors"

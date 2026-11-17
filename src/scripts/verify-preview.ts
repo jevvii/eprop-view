@@ -97,6 +97,7 @@ async function run() {
       "create_report_share(uuid,text,timestamp with time zone)",
       "commit_storage_archive(uuid,text,text,text,text,text,bigint)",
       "import_project_records(jsonb)", "project_hazard_context(uuid)",
+      "replace_annotation_candidates(uuid,jsonb,boolean)", "commit_image_analysis(uuid,uuid,text,uuid,jsonb,uuid)",
       "settlement_overview(uuid)", "replace_image_detections(uuid,uuid,text,jsonb)",
       "filter_workspace_records(text,jsonb)", "filtered_dashboard_stats(jsonb)",
       "filtered_damage_trends(jsonb)",

@@ -3,8 +3,6 @@ import { createClient } from '@/app/lib/supabase/server'
 import { verifySession } from '@/app/lib/dal'
 import { PageHeader } from '@/components/shared/page-header'
 import { AnnotationEditor } from '@/components/annotation/annotation-editor'
-import { preAnnotateImage } from '@/app/actions/pre-annotate'
-import { isActionResult } from '@/app/lib/action-result'
 import type { ImageAnnotation, InspectionImage } from '@/app/types'
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +16,7 @@ export const dynamic = 'force-dynamic'
  */
 export default async function AnnotateImagePage({ params }: { params: Promise<{ imageId: string }> }) {
   const { imageId } = await params
-  const { role } = await verifySession()
+  const { role, userId } = await verifySession()
   const supabase = await createClient()
 
   const { data: imageRow, error: imageError } = await supabase
@@ -31,29 +29,15 @@ export default async function AnnotateImagePage({ params }: { params: Promise<{ 
   if (!imageRow) notFound()
   const image = imageRow as InspectionImage
 
-  const { data: annotationRows } = await supabase
+  const { data: annotationRows, error: annotationError } = await supabase
     .from('image_annotations')
     .select('*')
     .eq('image_id', imageId)
     .order('created_at', { ascending: true })
 
-  let annotations = (annotationRows ?? []) as ImageAnnotation[]
-
-  if (annotations.length === 0) {
-    try {
-      const result = await preAnnotateImage(imageId)
-      if (isActionResult(result) && result.ok && result.data.created > 0) {
-        const { data: refreshed } = await supabase
-          .from('image_annotations')
-          .select('*')
-          .eq('image_id', imageId)
-          .order('created_at', { ascending: true })
-        annotations = (refreshed ?? []) as ImageAnnotation[]
-      }
-    } catch {
-      // Suggestions are an accelerator; their absence must not block the editor.
-    }
-  }
+  if (annotationError) throw annotationError
+  const annotations = (annotationRows ?? []) as ImageAnnotation[]
+  const canSuggest = role === 'admin' || role === 'engineer' || (role === 'inspector' && image.uploader_id === userId)
 
   const bucket = image.storage_bucket || 'inspection-images'
   const { data: signed } = await supabase.storage.from(bucket).createSignedUrl(image.storage_path, 3600)
@@ -77,6 +61,8 @@ export default async function AnnotateImagePage({ params }: { params: Promise<{ 
 
       {signed?.signedUrl ? (
         <AnnotationEditor
+          key={image.id}
+          canSuggest={canSuggest}
           image={image}
           imageUrl={signed.signedUrl}
           initialAnnotations={annotations}

@@ -21,6 +21,7 @@ export async function decodeImage(
   targetWidth: number,
   targetHeight: number
 ): Promise<DecodedImage> {
+  if (input instanceof Blob && input.size > MAX_INPUT_BYTES) throw new Error('Image payload exceeds 15 MB')
   const bytes =
     input instanceof Blob
       ? Buffer.from(await input.arrayBuffer())
@@ -49,6 +50,7 @@ export async function decodeImage(
   const { data } = await sharp(bytes)
     .rotate()
     .resize(targetWidth, targetHeight, { fit: 'fill' })
+    .toColourspace('srgb')
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
