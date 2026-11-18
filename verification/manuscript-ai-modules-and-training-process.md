@@ -1,8 +1,7 @@
 # Manuscript sections — AI Modules and Training Process
 
 Draft for the capstone manuscript. Every number below is measured on the frozen
-DamSegment v1 detection split unless marked otherwise. Values still to be
-inserted from the final evaluation are marked `TBD`.
+DamSegment v1 detection split; none is projected or estimated.
 
 ## AI Modules
 
@@ -66,8 +65,10 @@ TorchVision's documented COCO-pretrained weights; the classification head was
 replaced with a three-class head and the box-regression head retained. Input was
 320×320 with horizontal flip, colour jitter and mild blur. Optimisation used SGD
 (momentum 0.9, weight decay 5×10⁻⁴, cosine schedule, batch 8, seed 20261118) on
-a 4 GB GTX 1650; `TBD` epochs took `TBD`. Checkpoints were written every epoch
-and the best validation box F1 was retained.
+a 4 GB GTX 1650. Sixty epochs took 972 s (~13–16 s per epoch); checkpoints were
+written every epoch and the best validation box F1 (epoch 42) was retained. The
+crack-scale anchor range (0.03–0.95 versus the stock 0.2–0.95) was the decisive
+architectural choice: it raised validation box F1 from 0.178 to 0.282.
 
 **Selection and evaluation.** The score threshold and checkpoint were chosen on
 validation only, against gates fixed before the test split was opened: photo-level
@@ -77,12 +78,18 @@ then run on identical held-out images through their production code paths.
 
 | Method | Photo recall | Box precision | Box recall | Box F1 @ IoU 0.50 | False alerts / negative photo |
 | --- | --- | --- | --- | --- | --- |
-| Heuristic (validation) | 0.729 | 0.010 | 0.011 | 0.011 | 0.875 |
-| Trained (validation, TBD) | TBD | TBD | TBD | TBD | TBD |
-| Heuristic (test) | TBD | TBD | TBD | TBD | TBD |
-| Trained (test, TBD) | TBD | TBD | TBD | TBD | TBD |
+| Heuristic (validation) | 0.756 | 0.0101 | 0.0112 | 0.0106 | 0.875 |
+| Trained (validation, 0.45) | 0.912 | 0.5208 | 0.1398 | 0.2205 | 0.000 |
+| Heuristic (test) | 0.801 | 0.0086 | 0.0107 | 0.0095 | 0.875 |
+| Trained (test, 0.45) | 0.847 | 0.4914 | 0.1263 | 0.2010 | 0.500 |
 
-**Errors and limits.** TBD — representative misses and false alarms are attached
-as overlays. The pilot covers one dam and eight crack-negative test photos, so
-it supports a within-source claim only. It is not evidence of accuracy on local
-buildings, and it carries no engineering certification.
+**Errors and limits.** The trained detector misses dense, faint crack maps
+(for example a test image with 93 annotated cracks received no prediction at the
+selected threshold), and its remaining false alarms cluster on rust-stained
+spall cavities. On one of the three source sections it recalls fewer photos than
+the heuristic (0.648 vs 0.831) even though the aggregate gate passes, which is
+reported rather than smoothed over. Overlays for a true positive, a dense miss
+and a false alarm are in `dataset/runs/r2/overlays-explicit/`. The pilot covers
+one dam and eight crack-negative test photos, so it supports a within-source
+claim only. It is not evidence of accuracy on local buildings, and it carries no
+engineering certification.

@@ -16,8 +16,8 @@ model and not field-validated. See `docs/capstone_v2_scope_contract.md`
 | Output | Boxes (frame coordinates), scores, labels; SSD post-process (score floor 0.01, NMS 0.55) |
 | Served by | `onnxruntime-node` 1.31.1 on the Node.js runtime, CPU execution provider |
 | Consumed classes | `crack` only. Spalling is trained as a separate class so a spalling region is not called a crack; the app's heuristic still supplies corrosion/spalling on saved photos |
-| SHA-256 | `<!-- FILL: artifact sha256 -->` |
-| Bytes | `<!-- FILL: bytes -->` |
+| SHA-256 | `7a20253df77ae6f91eb7bbc3a2c15ea4850e6404e9af6cd7f3472a375c72db5b` |
+| Bytes | `10,300,143` |
 
 Reproduce with `ml/README.md`. Training code is in `ml/train.py`; export and
 parity check in `ml/export_onnx.py`.
@@ -66,21 +66,35 @@ split only.
 | Software | torch 2.5.1+cu121, torchvision 0.20.1+cu121, CUDA 12.1, cuDNN 90100 |
 | Base weights | `ssdlite320_mobilenet_v3_large_coco-a79551df.pth` (COCO_V1) |
 | Optimizer | SGD, momentum 0.9, weight decay 5e-4 |
-| LR schedule | Cosine annealing from `<!-- FILL -->` to 5% |
+| LR schedule | Cosine annealing from 0.005 to 5% (0.00025) |
 | Batch size | 8 |
-| Epochs | `<!-- FILL -->` (time-boxed; see the run log) |
+| Epochs | 60 (best checkpoint at epoch 42) |
 | Seed | 20261118 (Python, NumPy, PyTorch, CUDA) |
 | Augmentation | horizontal flip 0.5; colour jitter 0.6; Gaussian blur 0.2 |
-| Anchors | `<!-- FILL: min/max ratio -->` |
-| Run log / config | `dataset/runs/<!-- FILL -->/log.jsonl`, `config.json` |
-| Checkpoint | `dataset/runs/<!-- FILL -->/ckpt_best.pth`, sha256 `<!-- FILL -->` |
-| Wall clock | `<!-- FILL -->` |
+| Anchors | `min_ratio` 0.03, `max_ratio` 0.95, aspect ratios [2, 3] (crack-tuned; stock 0.2–0.95 performed worse) |
+| Run log / config | `dataset/runs/r2/log.jsonl`, `config.json` |
+| Checkpoint | `dataset/runs/r2/ckpt_best.pth`, sha256 `6013d47e0e6eeb3bee18cb80582705d7330c887c91a894476a9b083e29101596` |
+| Wall clock | 972.4 s (60 epochs, ~13–16 s/epoch) |
 
 Final training losses and the exact command are in the run log and manifest.
 
 ## Evaluation
 
-`<!-- FILL: val + test table, per-image counts, misses, false alarms -->`
+Final training losses (epoch 60): classification 1.6495, box regression 0.7627,
+total 2.4122.
+
+Validation at the selected 0.45 threshold: box precision 0.521, recall 0.140,
+F1 0.221; photo-level recall 0.912; 0 of 8 reviewed negatives alerted.
+
+Held-out test (read once, after the rule was frozen):
+
+| Method | TP | FP | FN | Precision | Recall | Box F1 @0.50 | Photo recall | False-alert photos / negative |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Heuristic | 29 | 3,358 | 2,678 | 0.0086 | 0.0107 | 0.0095 | 0.801 | 0.875 |
+| This model @0.45 | 342 | 354 | 2,365 | 0.491 | 0.126 | 0.201 | 0.847 | 0.5 |
+
+Source E is the weak slice (photo recall 0.648 vs the heuristic's 0.831); the
+overall gate still passes. See `preview-trained-detector-2026-11-19.md`.
 
 ## Limitations
 

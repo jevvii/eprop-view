@@ -86,12 +86,17 @@ async function openDocument(page, base) {
 
 async function upload(page, file) {
   const input = page.locator('input[type="file"][accept="image/*"]').first()
+  const name = path.basename(file)
+  const selector = `img[alt="${name}"]`
+  const before = await page.locator(selector).count()
   await input.setInputFiles(file)
   await page.getByRole('button', { name: 'Confirm Upload' }).click()
-  const name = path.basename(file)
-  const img = page.locator(`img[alt="${name}"]`)
-  await img.waitFor({ timeout: 90_000 })
-  return img
+  await page.waitForFunction(
+    ({ sel, n }) => document.querySelectorAll(sel).length > n,
+    { sel: selector, n: before },
+    { timeout: 90_000 },
+  )
+  return page.locator(selector).nth(before)
 }
 
 function cardFor(img) {
@@ -123,13 +128,23 @@ async function main() {
   const expect = arg('expect', '')
   fs.mkdirSync(out, { recursive: true })
 
+  const statePath = arg('state', path.join(out, '.state.json'))
+  const hasState = fs.existsSync(statePath)
   const browser = await chromium.launch()
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 })
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 1100 },
+    deviceScaleFactor: 1,
+    ...(hasState ? { storageState: statePath } : {}),
+  })
+  const page = await context.newPage()
   const consoleErrors = []
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 300)) })
   const result = { base, scenario, expect, ok: false, started_at: new Date().toISOString() }
   try {
-    await signIn(page, base)
+    if (!hasState) {
+      await signIn(page, base)
+      await context.storageState({ path: statePath })
+    }
     await openDocument(page, base)
 
     if (scenario === 'analyze' || scenario === 'review-rerun') {
