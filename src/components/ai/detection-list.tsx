@@ -15,6 +15,23 @@ interface DetectionListProps {
 const damageTypeOptions: DamageType[] = ['crack', 'corrosion', 'spalling', 'deformation', 'leakage', 'none']
 const severityOptions: SeverityLevel[] = ['low', 'medium', 'high', 'critical']
 
+/** Per-finding attribution: which method produced this box. */
+function methodLabel(provenance: AIDamageDetection['provenance']): string {
+  switch (provenance) {
+    case 'model':
+      return 'Trained detector'
+    case 'heuristic':
+      return 'Heuristic (non-ML)'
+    case 'gemini':
+      return 'Gemini'
+    case 'synthetic':
+    case 'legacy_synthetic':
+      return 'Synthetic preview data'
+    default:
+      return 'unrecorded'
+  }
+}
+
 export function DetectionList({ detections }: DetectionListProps) {
   const { data: profile } = useProfile()
   const verify = useVerifyDetection()
@@ -207,8 +224,15 @@ export function DetectionList({ detections }: DetectionListProps) {
                 )}
               </div>
               <div className="text-xs text-slate-500 font-medium flex items-center gap-2 flex-wrap">
-                <span>Method: {detection.provenance ?? 'unrecorded'}</span>
-                <span className="tabular-nums" title="This value is not a calibrated measure of accuracy.">{detection.provenance === 'gemini' ? 'Model confidence' : 'Response strength'} {(detection.confidence * 100).toFixed(1)}% (uncalibrated)</span>
+                <span>Method: {methodLabel(detection.provenance)}</span>
+                <span className="tabular-nums" title="This value is not a calibrated measure of accuracy.">
+                  {detection.provenance === 'gemini'
+                    ? 'Model confidence'
+                    : detection.provenance === 'model'
+                      ? 'Detection score'
+                      : 'Response strength'}{' '}
+                  {(detection.confidence * 100).toFixed(1)}% (uncalibrated)
+                </span>
                 <span>·</span>
                 <span className="tabular-nums">Score {detection.severity_score}/100</span>
                 {detection.notes && (

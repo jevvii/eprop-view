@@ -207,11 +207,20 @@ export async function toggleAIModelStatus(modelId: string, currentStatus: boolea
   }
 
   const supabase = await createClient()
-  let query = supabase.from('ai_models').update({ is_active: !currentStatus }).eq('id', modelId)
-  if (!currentStatus) query = query.eq('format', 'heuristic').eq('task', 'detection')
-  const { data, error } = await query.select('id').maybeSingle()
+  if (!currentStatus) {
+    // Activating is only allowed for a method this deployment can actually run:
+    // the heuristic, or the exact artifact the build ships.
+    const { data: row, error: readError } = await supabase
+      .from('ai_models').select('*').eq('id', modelId).maybeSingle()
+    if (readError) return { error: readError.message }
+    if (!row || !supportsLocalInference(row as AIModel)) {
+      return { error: 'Only a locally runnable method (heuristic or the bundled trained artifact) can be activated.' }
+    }
+  }
+  const { data, error } = await supabase
+    .from('ai_models').update({ is_active: !currentStatus }).eq('id', modelId).select('id').maybeSingle()
   if (error) return { error: error.message }
-  if (!data) return { error: 'Only heuristic detection methods can be activated in this preview.' }
+  if (!data) return { error: 'The model could not be updated.' }
   revalidatePath('/settings')
   return { success: true }
 }

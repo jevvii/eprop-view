@@ -1,0 +1,71 @@
+{
+  "artifact": "crack-ssdlite320-damsegment-v1",
+  "version": "1.0.0",
+  "architecture": "ssdlite320_mobilenet_v3_large",
+  "sha256": "7a20253df77ae6f91eb7bbc3a2c15ea4850e6404e9af6cd7f3472a375c72db5b",
+  "bytes": 10300143,
+  "input_size": 320,
+  "labels": [
+    "crack",
+    "spalling"
+  ],
+  "class_map": {
+    "0": "background",
+    "1": "crack",
+    "2": "spalling"
+  },
+  "consumes": [
+    "crack"
+  ],
+  "dataset": "DamSegment v1 detection release",
+  "dataset_doi": "10.17632/z5z6gtt5t4.1",
+  "dataset_license": "CC BY 4.0",
+  "dataset_credit": "Gharehbaghi, Bennett, Lequesne, Zhao, Li (University of Kansas)",
+  "trained_on": "Fine-tuned from TorchVision COCO-pretrained SSDLite320-MobileNetV3-Large",
+  "base_weights": "torchvision COCO_V1 ssdlite320_mobilenet_v3_large_coco-a79551df.pth",
+  "opset": 17,
+  "parity": {
+    "torch_detections": 300,
+    "onnx_detections": 300,
+    "max_box_delta": 0.00023651123046875,
+    "max_score_delta": 1.6093254089355469e-06,
+    "labels_match": true,
+    "onnxruntime_python": "1.32.0"
+  },
+  "checkpoint_sha256": "6013d47e0e6eeb3bee18cb80582705d7330c887c91a894476a9b083e29101596",
+  "training": {
+    "seed": 20261118,
+    "epochs": 60,
+    "batch_size": 8,
+    "optimizer": "SGD",
+    "lr": 0.005,
+    "momentum": 0.9,
+    "weight_decay": 0.0005,
+    "scheduler": "cosine",
+    "augmentations": [
+      "RandomHorizontalFlip(p=0.5)",
+      "ColorJitter(brightness=.3,contrast=.3,saturation=.2,hue=.02) p=0.6",
+      "GaussianBlur(k=3,sigma=.1-1.2) p=0.2"
+    ],
+    "anchor_scales": {
+      "min_ratio": 0.03,
+      "max_ratio": 0.95,
+      "aspect_ratios": [
+        2,
+        3
+      ]
+    },
+    "torch": "2.5.1+cu121",
+    "torchvision": "0.20.1+cu121",
+    "cuda_runtime": "12.1",
+    "cudnn": 90100,
+    "device": "NVIDIA GeForce GTX 1650",
+    "split_hashes": {
+      "test": "fe40dfaa99724dc1aa92b4ebf9ba84122adf0a68e0a5c65c75a824baf0d9d304",
+      "train": "9cad70d5fad5f243aad934dfabd069fbd89993b3675f616888519c29348b030a",
+      "val": "33a9d071219ccda23149d30e4f6efceb74b223d0bd075b3b3bd7152bd335dbdc"
+    },
+    "command": "dataset/.venv/bin/python -I ml/train.py --split dataset/split.json --images 'dataset/raw/damsegment-detection/extracted/Damage Detection/Images' --out dataset/runs/r2 --epochs 60 --batch 8 --lr 0.005 --seed 20261118 --min-ratio 0.03 --max-ratio 0.95 --input 320",
+    "finished_utc": "2026-11-18T04:44:20Z"
+  }
+}

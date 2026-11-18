@@ -4,6 +4,7 @@ import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
 import { enforceRateLimit } from '@/app/lib/rate-limit'
 import { supportsLocalInference } from '@/app/lib/ai/registry'
+import type { TrainedInferenceResult } from '@/app/lib/ai/onnx-detector'
 import { z } from 'zod'
 import { createServiceClient } from '@/app/lib/supabase/service'
 import { resolveEvidenceLocation } from '@/app/lib/storage-location'
@@ -32,6 +33,33 @@ export async function getActiveAIModels(): Promise<AIModel[]> {
 
   if (error) throw error
   return (data || []) as AIModel[]
+}
+
+/**
+ * Which crack method a saved-photo analysis will actually use, for display.
+ * Never selects a model: the run action re-resolves the pinned artifact.
+ */
+export async function getTrainedDetectorStatus(): Promise<{
+  enabled: boolean
+  flag: 'on' | 'off' | 'blocked-production'
+  model: AIModel | null
+}> {
+  const { trainedCrackDetectorEnabled, trainedCrackDetectorFlagState } = await import('@/app/lib/ai/flags')
+  const { isTrainedCrackDetector } = await import('@/app/lib/ai/registry')
+  const flag = trainedCrackDetectorFlagState()
+  if (!trainedCrackDetectorEnabled()) return { enabled: false, flag, model: null }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('ai_models')
+    .select('*')
+    .eq('is_active', true)
+    .eq('format', 'onnx')
+    .eq('task', 'detection')
+    .limit(10)
+  if (error) throw error
+  const model = ((data ?? []) as AIModel[]).find(isTrainedCrackDetector) ?? null
+  return { enabled: Boolean(model), flag, model }
 }
 
 /**
@@ -67,6 +95,12 @@ export async function getAnalysisJobsForImage(imageId: string): Promise<AIAnalys
 /**
  * Run AI analysis on an inspection image. Validates model, cleans up previous
  * detections on re-runs, persists new detections, and updates parent inspection risk.
+ *
+ * With the Preview flag on, a saved photo is analyzed by the project-trained
+ * crack detector (including a legitimate empty result) plus the heuristic's
+ * corrosion/spalling suggestions. Any load, checksum, timeout or inference
+ * failure falls back to the complete heuristic, and the job records which
+ * method actually ran and why.
  */
 export async function runAIAnalysis(
   imageId: string,
@@ -103,9 +137,30 @@ export async function runAIAnalysis(
   if (modelError) throw modelError
   if (!model || !supportsLocalInference(model)) throw new Error('No active heuristic detector is available.')
 
+  // The trained detector is selected by its pinned artifact identity, never by
+  // whichever `onnx` row happens to exist.
+  const { trainedCrackDetectorEnabled, trainedCrackDetectorFlagState } = await import('@/app/lib/ai/flags')
+  const { isTrainedCrackDetector } = await import('@/app/lib/ai/registry')
+  const flagState = trainedCrackDetectorFlagState()
+  let trainedModel: AIModel | null = null
+  if (trainedCrackDetectorEnabled() && modelId === undefined) {
+    const { data: onnxRows, error: onnxError } = await supabase
+      .from('ai_models').select('*').eq('is_active', true).eq('format', 'onnx').eq('task', 'detection')
+      .order('created_at', { ascending: false }).limit(10)
+    if (onnxError) throw onnxError
+    trainedModel = ((onnxRows ?? []) as AIModel[]).find(isTrainedCrackDetector) ?? null
+  }
+
   const service = createServiceClient()
+  const intendedMethod: 'model' | 'heuristic' = trainedModel ? 'model' : 'heuristic'
   const { data: job, error: jobError } = await service.from('ai_analysis_jobs')
-    .insert({ image_id: imageId, model_id: model.id, status: 'running', started_at: new Date().toISOString() })
+    .insert({
+      image_id: imageId,
+      model_id: (trainedModel ?? model).id,
+      method: intendedMethod,
+      status: 'running',
+      started_at: new Date().toISOString(),
+    })
     .select().single()
   if (jobError || !job) throw jobError ?? new Error('Failed to start analysis')
 
@@ -124,13 +179,82 @@ export async function runAIAnalysis(
     }
 
     const { runDetection } = await import('@/app/lib/ai/inference-worker')
-    const inferenceResult = await runDetection(downloadedBlob, model)
 
-    // Persist a whole validated run, including no findings, atomically. Other
-    // methods and engineering confirmations are independent evidence.
-    const { data, error } = await service.rpc('commit_image_analysis', {
-      p_image_id: imageId, p_actor_id: userId, p_provenance: 'heuristic',
-      p_job_id: job.id, p_model_id: model.id, p_rows: inferenceResult.detections,
+    let trained: TrainedInferenceResult | null = null
+    let trainedFailure: string | null = null
+    if (trainedModel) {
+      try {
+        const { runTrainedDetection } = await import('@/app/lib/ai/onnx-detector')
+        trained = await runTrainedDetection(downloadedBlob, trainedModel)
+      } catch (error) {
+        trainedFailure = error instanceof Error ? error.message : 'Trained detector failed'
+      }
+    }
+
+    if (trained && trainedModel) {
+      // The trained model owns crack evidence; the heuristic still supplies the
+      // defect classes it is not trained on. A heuristic failure must not throw
+      // away a valid trained result.
+      let others: typeof trained.detections = []
+      let heuristicFailure: string | null = null
+      let heuristicLatency: number | null = null
+      try {
+        const heuristic = await runDetection(downloadedBlob, model)
+        heuristicLatency = heuristic.latencyMs
+        others = heuristic.detections.filter((d) => d.damage_type !== 'crack')
+      } catch (error) {
+        heuristicFailure = error instanceof Error ? error.message : 'Heuristic fallback failed'
+      }
+
+      const rows = [
+        ...trained.detections.map((d) => ({ ...d, provenance: 'model' as const })),
+        ...others.map((d) => ({ ...d, provenance: 'heuristic' as const })),
+      ]
+      const detail = {
+        primary: 'model',
+        flag: flagState,
+        artifact_sha256: trained.artifactSha256,
+        crack_count: trained.crackCount,
+        other_count: rows.length - trained.crackCount,
+        trained_latency_ms: trained.latencyMs,
+        ...(heuristicLatency === null ? {} : { heuristic_latency_ms: heuristicLatency }),
+        ...(heuristicFailure ? { heuristic_failure: heuristicFailure } : {}),
+      }
+      const { data, error } = await service.rpc('commit_image_analysis_v2', {
+        p_image_id: imageId, p_actor_id: userId, p_method: 'model',
+        p_model_id: trainedModel.id, p_rows: rows, p_job_id: job.id, p_method_detail: detail,
+      })
+      if (error) throw error
+      return data as { job: AIAnalysisJob; detections: AIDamageDetection[] }
+    }
+
+    // Fallback: the complete heuristic, identified as the method that ran.
+    const fallbackReason = trainedFailure
+      ?? (flagState !== 'on'
+        ? 'Trained detector flag is off.'
+        : modelId !== undefined
+          ? 'A specific heuristic model was requested for this run.'
+          : 'No active trained detector is registered.')
+    if (trainedModel) {
+      await service.from('ai_analysis_jobs')
+        .update({
+          method: 'heuristic', model_id: model.id,
+          method_detail: { primary: 'heuristic', flag: flagState, fallback_reason: fallbackReason },
+        })
+        .eq('id', job.id).eq('status', 'running')
+    }
+    const heuristic = await runDetection(downloadedBlob, model)
+    const detail = {
+      primary: 'heuristic', flag: flagState,
+      fallback_reason: fallbackReason,
+      heuristic_latency_ms: heuristic.latencyMs,
+      other_count: heuristic.detections.length,
+    }
+    const { data, error } = await service.rpc('commit_image_analysis_v2', {
+      p_image_id: imageId, p_actor_id: userId, p_method: 'heuristic',
+      p_model_id: model.id,
+      p_rows: heuristic.detections.map((d) => ({ ...d, provenance: 'heuristic' as const })),
+      p_job_id: job.id, p_method_detail: detail,
     })
     if (error) throw error
     return data as { job: AIAnalysisJob; detections: AIDamageDetection[] }

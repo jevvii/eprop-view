@@ -3,7 +3,7 @@ import { DeepAnalysisButton } from './deep-analysis-button'
 import { ClipboardCheck } from 'lucide-react'
 
 import { useState } from 'react'
-import { useAIModels, useAIDetections, useAIAnalysisJobs, useProfile } from '@/app/lib/queries'
+import { useAIModels, useAIDetections, useAIAnalysisJobs, useProfile, useTrainedDetectorStatus } from '@/app/lib/queries'
 import { useRunAIAnalysis } from '@/app/lib/mutations'
 import { hasCapability } from '@/app/lib/role-utils'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
   const { data: models, isLoading: modelsLoading, isError: modelsError } = useAIModels()
   const { data: detections, isLoading: detectionsLoading, isError: detectionsError } = useAIDetections(imageId)
   const { data: jobs, isLoading: jobsLoading, isError: jobsError } = useAIAnalysisJobs(imageId)
+  const { data: trainedStatus } = useTrainedDetectorStatus()
   const runAnalysis = useRunAIAnalysis()
 
   const [selectedModelId, setSelectedModelId] = useState<string>('')
@@ -36,7 +37,9 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
 
   const handleRun = () => {
     if (!activeModel) return
-    runAnalysis.mutate({ imageId, modelId: activeModel.id })
+    // With the trained detector enabled the method is chosen server-side; an
+    // explicit model id would pin the run to the heuristic instead.
+    runAnalysis.mutate({ imageId, modelId: trainedStatus?.enabled ? undefined : activeModel.id })
   }
 
   // Calculate aggregate damage score if detections exist
@@ -66,19 +69,28 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="text-xs font-bold text-slate-700">Visual Damage Review</h3>
-            {activeModel && (
+            {trainedStatus?.enabled ? (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">
+                Trained detector (ONNX)
+              </span>
+            ) : activeModel ? (
               <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
                 {activeModel.format === 'heuristic' || activeModel.format === 'mock'
                   ? 'Heuristic (non-ML)'
                   : activeModel.format}
               </span>
-            )}
+            ) : null}
             <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 tabular-nums">
-              {activeModel?.input_width || 640}×{activeModel?.input_height || 640}
+              {trainedStatus?.enabled ? 320 : activeModel?.input_width || 640}×
+              {trainedStatus?.enabled ? 320 : activeModel?.input_height || 640}
             </span>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            {activeModel ? `Active method: ${activeModel.name} (v${activeModel.version})` : 'No active AI models registered'}
+            {trainedStatus?.enabled && trainedStatus.model
+              ? `Crack boxes: ${trainedStatus.model.name} v${trainedStatus.model.version} (project-trained). Corrosion and spalling: heuristic (non-ML).`
+              : activeModel
+                ? `Active method: ${activeModel.name} (v${activeModel.version})`
+                : 'No active AI models registered'}
           </p>
         </div>
         {isRunning ? (
@@ -101,7 +113,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
       {isRunning && (
         <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
           <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-primary animate-spin" aria-hidden="true" />
-          <span>Running heuristic analysis…</span>
+          <span>Running image analysis…</span>
         </div>
       )}
 
@@ -111,7 +123,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
         {canTriggerAI ? (
           <>
-            {models && models.length > 1 && (
+            {models && models.length > 1 && !trainedStatus?.enabled && (
               <div className="flex items-center gap-2">
                 <label className="text-xs font-bold text-slate-700">Model</label>
                 <select
@@ -169,6 +181,28 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         )}
       </div>
 
+      {latestJob?.status === 'completed' && (
+        <p className="text-xs text-slate-600 font-medium">
+          {latestJob.method === 'model'
+            ? `Trained detector: ${latestJob.method_detail?.crack_count ?? 0} crack box(es)`
+            : latestJob.method === 'gemini'
+              ? 'Gemini image analysis'
+              : `Heuristic: ${latestJob.method_detail?.other_count ?? detections?.length ?? 0} box(es)`}
+          {latestJob.method === 'model' && (latestJob.method_detail?.other_count ?? 0) > 0
+            ? ` · heuristic: ${latestJob.method_detail?.other_count} corrosion/spalling box(es)`
+            : ''}
+          {typeof latestJob.method_detail?.artifact_sha256 === 'string'
+            ? ` · artifact ${latestJob.method_detail.artifact_sha256.slice(0, 12)}…`
+            : ''}
+        </p>
+      )}
+      {latestJob?.status === 'completed' && latestJob.method_detail?.fallback_reason && (
+        <p className="text-xs font-bold text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-100">
+          Trained detector not used — {latestJob.method_detail.primary === 'heuristic' ? 'the full heuristic ran instead. ' : ''}
+          {latestJob.method_detail.fallback_reason}
+        </p>
+      )}
+
       {latestJob?.status === 'failed' && (
         <p className="text-xs font-bold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
           {latestJob.error_message || 'AI analysis inference failed'}
@@ -198,7 +232,11 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
       ) : (
         <div className="text-xs text-slate-500 font-medium border-t border-slate-200 pt-4">
           {latestJob?.status === 'completed'
-            ? `${latestJob.method === 'gemini' ? 'Gemini' : 'The heuristic'} reported no visible defect patterns.`
+            ? latestJob.method === 'model'
+              ? `The trained crack detector found no visible crack regions${(latestJob.method_detail?.other_count ?? 0) > 0 ? '; the heuristic proposed other defect types.' : ', and the heuristic proposed no other defect types.'}`
+              : latestJob.method === 'gemini'
+                ? 'Gemini reported no visible defect patterns.'
+                : 'The heuristic reported no visible defect patterns.'
             : latestJob ? 'No findings are available for this image.' : 'Not analyzed yet. Run analysis to inspect this image.'}
         </div>
       )}

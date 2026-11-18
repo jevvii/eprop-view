@@ -434,6 +434,16 @@ export function useAIModels() {
   })
 }
 
+export function useTrainedDetectorStatus() {
+  return useQuery({
+    queryKey: ['trained-detector-status'],
+    queryFn: async () => {
+      const { getTrainedDetectorStatus } = await import('@/app/actions/ai')
+      return getTrainedDetectorStatus()
+    },
+  })
+}
+
 export function useAdminAIModels() {
   return useQuery({
     queryKey: ['admin-ai-models'],

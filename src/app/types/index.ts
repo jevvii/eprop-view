@@ -284,7 +284,19 @@ export interface AIDamageDetection {
 }
 
 export interface AIAnalysisJob {
-  method?: 'heuristic' | 'gemini'
+  method?: 'heuristic' | 'gemini' | 'model'
+  /** Actual method, artifact digest and any fallback reason for this run. */
+  method_detail?: {
+    primary?: 'model' | 'heuristic'
+    flag?: 'on' | 'off' | 'blocked-production'
+    artifact_sha256?: string
+    crack_count?: number
+    other_count?: number
+    fallback_reason?: string
+    trained_latency_ms?: number
+    heuristic_latency_ms?: number
+    [key: string]: unknown
+  }
   id: string
   image_id: string
   model_id: string | null

@@ -141,3 +141,41 @@ verified against the Preview database. CI enforces the first four on every push.
 - Multi-tenancy, billing, SSO, production monitoring/APM.
 - Rotating the leaked production credentials (owner action, tracked separately).
 - Rewriting git history to purge seeded passwords.
+
+---
+
+# Dated addendum — 2026-11-18: Preview-only trained crack detector
+
+**Status:** authorised by the project owner on 2026-11-18 for the November 19
+Preview walkthrough. This addendum **narrows and extends** the contract; it does
+not rewrite it. Every historical statement above remains the baseline of record
+for the manuscript and for `main`.
+
+## What changes
+
+| Contract clause | Baseline (still true for `main`) | Addendum (Preview only) |
+| --- | --- | --- |
+| §1.2 "No model training, no GPU, no real model deployment." | Production carries the deterministic heuristic. | A compact detector is fine-tuned on a public crack dataset and offered for **saved-photo analysis in Preview only**, behind a flag that defaults **off**. |
+| §8 "Real ML training or a trained checkpoint." | Out of scope for the capped baseline. | In scope for this dated Preview pilot, with the measured comparison and rollback recorded in `verification/`. |
+| §1.3 "Honest provenance." | `gemini` / `heuristic` / `engineer`. | Adds `model` for project-trained detections. A job records the method that actually ran, the artifact digest, and any fallback reason. |
+| §1.4 "Additive database changes only." | Unchanged. | Migration 026 widens a CHECK constraint and adds an RPC/column; the previous RPCs are untouched. |
+
+## Boundaries that do **not** change
+
+* `main` remains production; nothing is merged or promoted by this work.
+* Production and production aliases are untouched. The flag is refused when
+  `VERCEL_ENV=production`.
+* Only the designated Preview database (`gbuwldihkmapzondxkto`) and the Vercel
+  project `eprop-view` (Preview target) are written.
+* Gemini's deliberate analysis, its fallback, the AR/capture paths and the
+  annotation workflow keep their existing behaviour.
+* The heuristic remains the fallback and is never removed.
+
+## Claim the pilot is allowed to make
+
+"On held-out photographs from the public DamSegment v1 release, the
+project-trained detector met or beat the heuristic on the predeclared pilot
+gates." It may **not** claim field accuracy, local-building generalization,
+engineering certification, or adviser approval. Results and limitations are
+recorded in `verification/trained-detector-decision-rule.md` and
+`verification/trained-crack-detector-model-card.md`.

@@ -7,7 +7,6 @@ import {
   type PreprocessingConfig,
 } from './preprocessing'
 import { calculateDefectSeverity } from './severity-scoring'
-import { supportsLocalInference } from './registry'
 import { decodeImage } from './image-decoder'
 
 export interface InferenceResult {
@@ -122,7 +121,9 @@ export async function runDetection(
 ): Promise<InferenceResult> {
   const startTime = performance.now()
 
-  if (!supportsLocalInference(model)) throw new Error('Only the local heuristic detection method can run here.')
+  if (model.format !== 'heuristic' || model.task !== 'detection') {
+    throw new Error('Only the local heuristic detection method can run in this worker.')
+  }
   const inputWidth = options?.imageWidth ?? model.input_width ?? DEFAULT_PREPROCESSING.inputWidth
   const inputHeight = options?.imageHeight ?? model.input_height ?? DEFAULT_PREPROCESSING.inputHeight
   const confThreshold = model.confidence_threshold ?? 0.25

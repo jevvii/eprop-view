@@ -12,6 +12,9 @@ const eslintConfig = [
       "next-env.d.ts",
       "docs/**",
       "supabase/**",
+      // Training data, the isolated Python environment and run artifacts.
+      // Gitignored and never part of the deployment.
+      "dataset/**",
     ],
   },
   ...nextTs,
