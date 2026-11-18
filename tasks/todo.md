@@ -18,7 +18,7 @@ Complete in order unless the plan identifies an independent probe. Record the ev
 - [x] Test, typecheck, lint and build. Apply any guarded forward migration. Verify signed-in Preview behavior, hosted latency and rollback before enabling the successful candidate.
   - 254/254 tests, typecheck, lint (0 errors), build OK. Migration 026 applied and `verify:preview` passes.
   - Deployment A (flag off): https://eprop-view-8p7gghbyb-jevviis-projects.vercel.app — method recorded as heuristic.
-  - Deployment B (flag on): https://eprop-view-54h2pwnfr-jevviis-projects.vercel.app — walkthrough in progress.
+  - Deployment B (flag on): https://eprop-view-1cgxjpoyr-jevviis-projects.vercel.app — all walkthrough cases passed; final badge-fixed deployment is https://eprop-view-fmf5e1660-jevviis-projects.vercel.app.
 - [x] Record the final flag state, Preview URL, checkpoint location, Git commit, manuscript sections and unresolved limitations. If a gate failed, record the retained working configuration.
   - Final flag state: `TRAINED_CRACK_DETECTOR=on` for Preview only; refused on production.
   - Final deployment: https://eprop-view-fmf5e1660-jevviis-projects.vercel.app (commit `589f922`); rollback deployment A: https://eprop-view-8p7gghbyb-jevviis-projects.vercel.app (flag off, heuristic).
