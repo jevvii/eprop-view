@@ -38,8 +38,11 @@ DO $$ BEGIN
     RAISE EXCEPTION 'FAIL: missing coordinates were accepted';
   EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
 END $$;
+-- Analysis inserts are service-only. Exercise review and risk reads as the admin.
+SET LOCAL ROLE service_role;
 INSERT INTO ai_damage_detections(id,image_id,damage_type,severity,severity_score,confidence,provenance,crack_width_band)
  VALUES ('67111111-1111-4111-8111-111111111111','66111111-1111-4111-8111-111111111111','crack','medium',40,0.7,'heuristic','wide');
+SET LOCAL ROLE authenticated;
 SELECT pg_temp.assert_true((SELECT raw_severity_score=40 AND severity_score=50 FROM ai_damage_detections WHERE id='67111111-1111-4111-8111-111111111111'),'category weights preserve raw baseline');
 SELECT pg_temp.assert_true((SELECT risk_score=6 FROM inspections WHERE id='65111111-1111-4111-8111-111111111111'),'detection contributes to inspection risk');
 UPDATE ai_damage_detections SET crack_width_band='severe' WHERE id='67111111-1111-4111-8111-111111111111';
