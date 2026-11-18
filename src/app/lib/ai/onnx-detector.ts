@@ -61,35 +61,38 @@ export interface ArtifactManifest {
 const cache = new Map<string, Promise<LoadedDetector>>()
 let manifestPromise: Promise<ArtifactManifest> | null = null
 
-async function sha256File(file: string): Promise<string> {
-  const hash = crypto.createHash('sha256')
-  hash.update(await fs.readFile(/* turbopackIgnore: true */ file))
-  return hash.digest('hex')
-}
-
-function relativeCandidates(relative: string): string[] {
-  const candidates = [
-    path.join(/* turbopackIgnore: true */ process.cwd(), relative),
-    path.join(/* turbopackIgnore: true */ process.cwd(), '.next', 'server', relative),
-  ]
+/**
+ * Read the bundled artifact with literal paths.
+ *
+ * The path must be statically analyzable: a dynamic path makes webpack's file
+ * tracer include all of node_modules, which pushes the Vercel function over its
+ * 250 MB limit. Reading bytes and handing a buffer to ONNX Runtime also removes
+ * the need to resolve a path at run time.
+ */
+async function readBundledManifest(): Promise<string> {
   try {
-    candidates.push(path.join(path.dirname(new URL(import.meta.url).pathname), path.basename(relative)))
+    return await fs.readFile(
+      path.join(process.cwd(), 'src', 'app', 'lib', 'ai', 'models', 'crack-ssdlite320-damsegment-v1.json'),
+      'utf8',
+    )
   } catch {
-    // import.meta is unavailable in some bundled CommonJS outputs.
+    return await fs.readFile(
+      path.join(process.cwd(), '.next', 'server', 'src', 'app', 'lib', 'ai', 'models', 'crack-ssdlite320-damsegment-v1.json'),
+      'utf8',
+    )
   }
-  return candidates
 }
 
-async function firstExisting(candidates: string[]): Promise<string | null> {
-  for (const candidate of candidates) {
-    try {
-      await fs.access(/* turbopackIgnore: true */ candidate)
-      return candidate
-    } catch {
-      // try the next location
-    }
+async function readBundledArtifact(): Promise<Buffer> {
+  try {
+    return await fs.readFile(
+      path.join(process.cwd(), 'src', 'app', 'lib', 'ai', 'models', 'crack-ssdlite320-damsegment-v1.onnx'),
+    )
+  } catch {
+    return await fs.readFile(
+      path.join(process.cwd(), '.next', 'server', 'src', 'app', 'lib', 'ai', 'models', 'crack-ssdlite320-damsegment-v1.onnx'),
+    )
   }
-  return null
 }
 
 /**
@@ -99,9 +102,13 @@ async function firstExisting(candidates: string[]): Promise<string | null> {
 export async function loadArtifactManifest(): Promise<ArtifactManifest> {
   if (!manifestPromise) {
     manifestPromise = (async () => {
-      const file = await firstExisting(relativeCandidates(TRAINED_ARTIFACT_MANIFEST))
-      if (!file) throw new Error('Trained detector artifact manifest is not present in this deployment.')
-      const parsed = JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file, 'utf8')) as ArtifactManifest
+      let text: string
+      try {
+        text = await readBundledManifest()
+      } catch {
+        throw new Error('Trained detector artifact manifest is not present in this deployment.')
+      }
+      const parsed = JSON.parse(text) as ArtifactManifest
       if (!parsed.sha256 || !/^[0-9a-f]{64}$/.test(parsed.sha256)) {
         throw new Error('Trained detector artifact manifest has no valid sha256 pin.')
       }
@@ -128,16 +135,20 @@ export async function loadTrainedDetector(registrySha256?: string): Promise<Load
   if (existing) return existing
 
   const pending = (async () => {
-    const file = await firstExisting(relativeCandidates(TRAINED_ARTIFACT_FILE))
-    if (!file) throw new Error('Trained detector artifact is not present in this deployment.')
-    const sha256 = await sha256File(file)
+    let bytes: Buffer
+    try {
+      bytes = await readBundledArtifact()
+    } catch {
+      throw new Error('Trained detector artifact is not present in this deployment.')
+    }
+    const sha256 = crypto.createHash('sha256').update(bytes).digest('hex')
     if (sha256 !== manifest.sha256) {
       throw new Error(
         `Trained detector artifact failed its checksum (expected ${manifest.sha256.slice(0, 12)}…, found ${sha256.slice(0, 12)}…).`,
       )
     }
     const ort = await import('onnxruntime-node')
-    const session = await ort.InferenceSession.create(file, {
+    const session = await ort.InferenceSession.create(new Uint8Array(bytes), {
       executionProviders: ['cpu'],
       graphOptimizationLevel: 'all',
       logSeverityLevel: 3,
