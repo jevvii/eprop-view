@@ -143,7 +143,10 @@ export async function runAIAnalysis(
   const { isTrainedCrackDetector } = await import('@/app/lib/ai/registry')
   const flagState = trainedCrackDetectorFlagState()
   let trainedModel: AIModel | null = null
-  if (trainedCrackDetectorEnabled() && modelId === undefined) {
+  // The UI's default selection is the active heuristic row. That is not an
+  // explicit override, so the trained detector still runs when the flag is on;
+  // only a genuinely different model id pins the run to that model.
+  if (trainedCrackDetectorEnabled() && (modelId === undefined || modelId === model.id)) {
     const { data: onnxRows, error: onnxError } = await supabase
       .from('ai_models').select('*').eq('is_active', true).eq('format', 'onnx').eq('task', 'detection')
       .order('created_at', { ascending: false }).limit(10)
@@ -247,11 +250,6 @@ export async function runAIAnalysis(
     const detail = {
       primary: 'heuristic', flag: flagState,
       fallback_reason: fallbackReason,
-      env_debug: {
-        flag_length: (process.env.TRAINED_CRACK_DETECTOR ?? '').length,
-        flag_equals_on: (process.env.TRAINED_CRACK_DETECTOR ?? '').trim().toLowerCase() === 'on',
-        vercel_env: process.env.VERCEL_ENV ?? null,
-      },
 
       heuristic_latency_ms: heuristic.latencyMs,
       other_count: heuristic.detections.length,
