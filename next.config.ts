@@ -2,27 +2,14 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  // onnxruntime-node ships a native .node binary; bundling it breaks the
-  // dynamic require, so it is loaded from node_modules at run time.
-  serverExternalPackages: ['onnxruntime-node'],
-  // The fitted detector is a binary asset, not an import. Only the saved-photo
-  // review route can invoke it, so trace the artifact and the Linux x64 ONNX
-  // runtime into that route only. A global key would push unrelated functions
-  // over Vercel's 250 MB uncompressed limit.
+  // onnxruntime-web is a normal dependency (bundled), so only its WASM payload
+  // needs tracing. The native package is auto-external in Next and Vercel then
+  // copies all 294 MB of it into the function.
   outputFileTracingIncludes: {
     '/document': [
       'src/app/lib/ai/models/**/*',
-      'node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**/*',
-    ],
-  },
-  // The ONNX Runtime package ships every platform. Excluding the ones the
-  // Preview runtime cannot load keeps the saved-photo function under the
-  // deployment size limit even when the package is copied wholesale.
-  outputFileTracingExcludes: {
-    '/document': [
-      'node_modules/onnxruntime-node/bin/napi-v6/darwin/**/*',
-      'node_modules/onnxruntime-node/bin/napi-v6/win32/**/*',
-      'node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**/*',
+      'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm',
+      'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs',
     ],
   },
   // Existing snapshot validation caps decoded evidence at 8 MB (base64 adds 1/3).

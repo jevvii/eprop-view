@@ -60,6 +60,25 @@ export interface ArtifactManifest {
 
 const cache = new Map<string, Promise<LoadedDetector>>()
 let manifestPromise: Promise<ArtifactManifest> | null = null
+let runtimePromise: Promise<typeof import('onnxruntime-web')> | null = null
+
+/**
+ * The WASM runtime is a normal dependency, so the bundler traces only the files
+ * it needs. The native package is auto-external in Next and Vercel then copies
+ * all 294 MB of it into the function; WASM is bit-identical and fits the limit.
+ */
+async function loadRuntime(): Promise<typeof import('onnxruntime-web')> {
+  if (!runtimePromise) {
+    runtimePromise = (async () => {
+      const ort = await import('onnxruntime-web')
+      ort.env.wasm.numThreads = 1
+      ort.env.wasm.wasmPaths = `${path.join(process.cwd(), 'node_modules', 'onnxruntime-web', 'dist')}${path.sep}`
+      return ort
+    })()
+    runtimePromise.catch(() => { runtimePromise = null })
+  }
+  return runtimePromise
+}
 
 /**
  * Read the bundled artifact with literal paths.
@@ -147,11 +166,10 @@ export async function loadTrainedDetector(registrySha256?: string): Promise<Load
         `Trained detector artifact failed its checksum (expected ${manifest.sha256.slice(0, 12)}…, found ${sha256.slice(0, 12)}…).`,
       )
     }
-    const ort = await import('onnxruntime-node')
+    const ort = await loadRuntime()
     const session = await ort.InferenceSession.create(new Uint8Array(bytes), {
-      executionProviders: ['cpu'],
+      executionProviders: ['wasm'],
       graphOptimizationLevel: 'all',
-      logSeverityLevel: 3,
     })
     return { session: session as unknown as LoadedDetector['session'], sha256 }
   })()
@@ -207,7 +225,7 @@ export async function runTrainedDetection(imageInput: Blob | ArrayBuffer | Uint8
     tensor[2 * plane + i] = pixels[i * 4 + 2] / 255
   }
 
-  const ort = await import('onnxruntime-node')
+  const ort = await loadRuntime()
   const feeds = { [session.inputNames[0]]: new ort.Tensor('float32', tensor, [1, 3, inputSize, inputSize]) }
   const outputs = await withTimeout(session.run(feeds), INFERENCE_TIMEOUT_MS)
 

@@ -16,8 +16,7 @@
     "verify:preview": "tsx src/scripts/verify-preview.ts",
     "db:migrate:preview": "tsx src/scripts/verify-preview.ts --migrate",
     "backfill:capture": "tsx src/scripts/backfill-capture-metadata.ts",
-    "export:dataset": "tsx src/scripts/export-annotations.ts",
-    "prebuild": "node scripts/prune-onnxruntime.mjs"
+    "export:dataset": "tsx src/scripts/export-annotations.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -31,7 +30,7 @@
     "lucide-react": "^1.16.0",
     "mapbox-gl": "3.20.0",
     "next": "^16.4.6",
-    "onnxruntime-node": "^1.31.1",
+    "onnxruntime-web": "^1.31.1",
     "qrcode-generator": "2.0.4",
     "react": "19.2.4",
     "react-chartjs-2": "^5.3.1",
