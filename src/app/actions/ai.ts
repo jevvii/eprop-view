@@ -247,6 +247,12 @@ export async function runAIAnalysis(
     const detail = {
       primary: 'heuristic', flag: flagState,
       fallback_reason: fallbackReason,
+      env_debug: {
+        flag_length: (process.env.TRAINED_CRACK_DETECTOR ?? '').length,
+        flag_equals_on: (process.env.TRAINED_CRACK_DETECTOR ?? '').trim().toLowerCase() === 'on',
+        vercel_env: process.env.VERCEL_ENV ?? null,
+      },
+
       heuristic_latency_ms: heuristic.latencyMs,
       other_count: heuristic.detections.length,
     }
