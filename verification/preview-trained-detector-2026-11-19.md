@@ -85,13 +85,38 @@ Local CPU latency (WASM, 320×320, single image): mean 28 ms, p50 24 ms, p95
 
 ## Hosted Preview
 
+Commit under test: `589f922` (the server behaviour below is identical to
+`4a812c9`; `589f922` only makes the panel follow the completed job).
+
 | Deployment | Flag | URL | Observed |
 | --- | --- | --- | --- |
-| A | absent (off) | https://eprop-view-8p7gghbyb-jevviis-projects.vercel.app | Method recorded as **heuristic**; trained path refused with "Trained detector flag is off." |
-| B | `on` | https://eprop-view-54h2pwnfr-jevviis-projects.vercel.app | Pending final walkthrough (login rate limit) |
+| A | absent (off) | https://eprop-view-8p7gghbyb-jevviis-projects.vercel.app | Method **heuristic**; "Trained detector flag is off." |
+| B | `on` | https://eprop-view-1cgxjpoyr-jevviis-projects.vercel.app | All walkthrough cases below |
+| B final | `on` | https://eprop-view-fmf5e1660-jevviis-projects.vercel.app | Positive re-verified; badge/caption correct |
 
-Deployment A is a real, tested deployment of the same commit and proves the flag
+Deployment A is a real, tested deployment of the same source and proves the flag
 restores the previous route.
+
+### Signed-in walkthrough (admin, hosted Preview)
+
+| Case | Observed method | Result |
+| --- | --- | --- |
+| Known positive, `E (143)` | `model` | 3 crack boxes, scores 0.752 / 0.519 / 0.495; overlay matches the crack |
+| Reviewed negative, `E (113)` | `model` | 2 crack boxes — a documented false positive, consistent with the offline run |
+| Explicit Gemini analysis | `gemini` | Completed; provenance `gemini`; no fallback |
+| Verify a finding, then rerun | `model` | Verified count 1 before and after rerun; no duplicate boxes |
+| Forced artifact failure (registry checksum corrupted in Preview) | `heuristic` | Reason recorded: "Registry checksum deadbeefdead… disagrees with the bundled artifact manifest 7a20253d77a…." |
+| Recovery after restoring the pin | `model` | 3 crack boxes again |
+
+Hosted inference latency from the job records: **cold 2.86 s** (first call in a
+fresh function, including WASM init), **warm 111–147 ms**; heuristic 124–284 ms.
+The panel showed the badge "Trained detector (ONNX)", `320×320`, and the caption
+naming "DamSegment Crack Detector v1.0.0" (`dataset/walkthrough/final-positive/`).
+
+### Server-only checks
+
+The SQL transaction test ran against the Preview database inside a transaction
+and was rolled back; no walkthrough rows were committed by it.
 
 ### Hosting constraints encountered
 
@@ -107,9 +132,17 @@ restores the previous route.
 `TRAINED_CRACK_DETECTOR=on` is set for the Preview environment only; the code
 refuses it when `VERCEL_ENV=production`. Deployment A (flag off) remains live.
 
-## Remaining steps
+## Final flag state
 
-Final hosted walkthrough on deployment B (positive, negative, forced artifact
-failure and recovery, Gemini, review + rerun), then the flag-state summary in
-`tasks/todo.md` and the model card/metrics tables. No unresolved blocker beyond
-the login-rate-limit wait.
+`TRAINED_CRACK_DETECTOR=on` for the Preview environment only. The code refuses
+it when `VERCEL_ENV=production`. Deployment A (flag off) remains live and proves
+rollback. The candidate is enabled because every predeclared gate passed.
+
+## Remaining limitations
+
+* Source E is weaker than the heuristic on photo recall (0.648 vs 0.831) at the
+  selected threshold; this is disclosed, not hidden.
+* Eight crack-negative test photos give the false-alarm gate low power.
+* One dam, box labels only, no field validation, no adviser approval.
+* The preview deployment uses the Vercel Hobby plan; the WASM runtime was chosen
+  to fit the 250 MB function limit rather than for speed.

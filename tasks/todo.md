@@ -19,5 +19,9 @@ Complete in order unless the plan identifies an independent probe. Record the ev
   - 254/254 tests, typecheck, lint (0 errors), build OK. Migration 026 applied and `verify:preview` passes.
   - Deployment A (flag off): https://eprop-view-8p7gghbyb-jevviis-projects.vercel.app — method recorded as heuristic.
   - Deployment B (flag on): https://eprop-view-54h2pwnfr-jevviis-projects.vercel.app — walkthrough in progress.
-- [ ] Record the final flag state, Preview URL, checkpoint location, Git commit, manuscript sections and unresolved limitations. If a gate failed, record the retained working configuration.
-  - Docs written: model card, decision rule, manuscript sections, verification record. Final walkthrough cases and commit URL pending.
+- [x] Record the final flag state, Preview URL, checkpoint location, Git commit, manuscript sections and unresolved limitations. If a gate failed, record the retained working configuration.
+  - Final flag state: `TRAINED_CRACK_DETECTOR=on` for Preview only; refused on production.
+  - Final deployment: https://eprop-view-fmf5e1660-jevviis-projects.vercel.app (commit `589f922`); rollback deployment A: https://eprop-view-8p7gghbyb-jevviis-projects.vercel.app (flag off, heuristic).
+  - Hosted walkthrough: positive → model/3 boxes; negative → model/2 boxes (documented false positive); Gemini → gemini; verify+rerun → verified persisted; forced checksum failure → heuristic with exact reason; recovery → model. Cold 2.86 s, warm 111–147 ms.
+  - Docs: `verification/trained-crack-detector-model-card.md`, `trained-detector-decision-rule.md`, `manuscript-ai-modules-and-training-process.md`, `preview-trained-detector-2026-11-19.md`.
+  - Limitation disclosed: source E photo recall 0.648 vs heuristic 0.831; walkthrough uploads remain in the Preview vault.
