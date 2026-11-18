@@ -57,6 +57,7 @@ async function signIn(page, base) {
   // before the server action's Set-Cookie lands aborts the session.
   await page.waitForFunction(
     () => document.body.innerText.includes('Logout') || Boolean(document.querySelector('#login-error')),
+    null,
     { timeout: 60_000 },
   )
   if (page.url().includes('/login') || (await page.locator('#login-error').count()) > 0) {
@@ -73,40 +74,67 @@ async function signIn(page, base) {
 
 async function openDocument(page, base) {
   await page.goto(`${base}/document`, { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('select', { timeout: 30_000 })
-  // Wait for the first inspection to be auto-selected.
-  await page.waitForFunction(
-    () => {
-      const s = document.querySelector('select')
-      return s && s.value && s.value.length > 0
-    },
-    { timeout: 30_000 },
-  )
+  const select = page.locator('select').first()
+  await select.waitFor({ timeout: 30_000 })
+  // Select explicitly: the auto-selection effect can still be pending while
+  // the first render is interactive.
+  if (!(await select.inputValue())) {
+    const values = await select.locator('option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean))
+    if (!values.length) throw new Error('No inspection is available to attach an upload to.')
+    await select.selectOption(values[0])
+  }
+  await page.waitForSelector('input[type="file"][accept="image/*"]', { timeout: 30_000, state: 'attached' })
 }
 
 async function upload(page, file) {
   const input = page.locator('input[type="file"][accept="image/*"]').first()
   const name = path.basename(file)
   const selector = `img[alt="${name}"]`
-  const before = await page.locator(selector).count()
+  // The feed can render newest-first, so a count index is not reliable. Track
+  // the signed URLs instead and pick the one that did not exist before.
+  // Signed URLs carry a fresh token after every refetch, so compare the stable
+  // storage path instead of the full URL.
+  const beforePaths = await page.locator(selector).evaluateAll((els) =>
+    els.map((e) => (e.getAttribute('src') || '').split('?')[0]),
+  )
   await input.setInputFiles(file)
   await page.getByRole('button', { name: 'Confirm Upload' }).click()
   await page.waitForFunction(
-    ({ sel, n }) => document.querySelectorAll(sel).length > n,
-    { sel: selector, n: before },
+    ({ sel, before }) => [...document.querySelectorAll(sel)].some(
+      (e) => !before.includes((e.getAttribute('src') || '').split('?')[0]),
+    ),
+    { sel: selector, before: beforePaths },
     { timeout: 90_000 },
   )
-  return page.locator(selector).nth(before)
+  const newPath = await page.evaluate(
+    ({ sel, before }) =>
+      [...document.querySelectorAll(sel)]
+        .map((e) => (e.getAttribute('src') || '').split('?')[0])
+        .find((src) => !before.includes(src)) || null,
+    { sel: selector, before: beforePaths },
+  )
+  if (!newPath) throw new Error('The uploaded asset did not appear in the feed.')
+  return newPath
 }
 
-function cardFor(img) {
-  return img.locator('xpath=ancestor::div[.//button[contains(., "Run AI Analysis") or contains(., "Re-Run Analysis") or contains(., "Analyzing")]][1]')
+function cardFor(page, pathname) {
+  // Match the one card whose image URL starts with the uploaded object's stable
+  // path. Signed tokens differ on every refetch, so the prefix is the reliable
+  // identity.
+  const escaped = pathname.replace(/"/g, '\\"')
+  return page.locator(`div.bg-white.rounded-lg:has(img[src^="${escaped}"])`).last()
 }
 
 async function runAnalysis(page, card) {
   const button = card.getByRole('button', { name: /Run AI Analysis|Re-Run Analysis|Analyzing Image/i })
+  await button.waitFor({ timeout: 30_000 })
   await button.click()
-  await card.getByText(COMPLETED).first().waitFor({ timeout: 180_000 })
+  // Wait for the run to start, then for it to finish. A previous run's summary
+  // can already be on screen, so completion alone is not a completion signal.
+  const running = card.getByText(/Analyzing Image…|Inference Active/).first()
+  const started = await running.waitFor({ timeout: 15_000 }).then(() => true).catch(() => false)
+  if (started) await running.waitFor({ state: 'detached', timeout: 180_000 })
+  await card.getByText(COMPLETED).first().waitFor({ timeout: 30_000 })
   await page.waitForTimeout(1500)
   const text = await card.innerText()
   const findings = Number((text.match(/Findings for review \((\d+)\)/) || [])[1] ?? 0)
@@ -149,8 +177,8 @@ async function main() {
 
     if (scenario === 'analyze' || scenario === 'review-rerun') {
       const t0 = Date.now()
-      const img = await upload(page, file)
-      const card = cardFor(img)
+      const imagePath = await upload(page, file)
+      const card = cardFor(page, imagePath)
       const first = await runAnalysis(page, card)
       result.cold_ms = Date.now() - t0
       result.first_run = { method: first.method, findings: first.findings }
@@ -173,12 +201,13 @@ async function main() {
         await page.waitForTimeout(2000)
       }
     } else if (scenario === 'gemini') {
-      const img = await upload(page, file)
-      const card = cardFor(img)
+      const imagePath = await upload(page, file)
+      const card = cardFor(page, imagePath)
       const t0 = Date.now()
       await card.getByRole('button', { name: /Deep AI analysis/i }).click()
       await page.waitForFunction(
         () => document.body.innerText.includes('Gemini (') || document.body.innerText.includes('Heuristic fallback (non-ML)'),
+        null,
         { timeout: 180_000 },
       )
       result.latency_ms = Date.now() - t0

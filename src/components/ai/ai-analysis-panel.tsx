@@ -32,6 +32,9 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
     : models?.find((model) => model.is_active) ?? models?.[0]
 
   const latestJob = jobs?.[0]
+  // The status query can lag or fail; a completed job that names the trained
+  // method is direct evidence of what actually ran.
+  const trainedActive = Boolean(trainedStatus?.enabled) || latestJob?.method === 'model'
   const isRunning = runAnalysis.isPending
   const unfinished = latestJob?.status === 'running' || latestJob?.status === 'pending'
 
@@ -39,7 +42,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
     if (!activeModel) return
     // With the trained detector enabled the method is chosen server-side; an
     // explicit model id would pin the run to the heuristic instead.
-    runAnalysis.mutate({ imageId, modelId: trainedStatus?.enabled ? undefined : activeModel.id })
+    runAnalysis.mutate({ imageId, modelId: trainedActive ? undefined : activeModel.id })
   }
 
   // Calculate aggregate damage score if detections exist
@@ -69,7 +72,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="text-xs font-bold text-slate-700">Visual Damage Review</h3>
-            {trainedStatus?.enabled ? (
+            {trainedActive ? (
               <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">
                 Trained detector (ONNX)
               </span>
@@ -81,13 +84,13 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
               </span>
             ) : null}
             <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 tabular-nums">
-              {trainedStatus?.enabled ? 320 : activeModel?.input_width || 640}×
-              {trainedStatus?.enabled ? 320 : activeModel?.input_height || 640}
+              {trainedActive ? 320 : activeModel?.input_width || 640}×
+              {trainedActive ? 320 : activeModel?.input_height || 640}
             </span>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            {trainedStatus?.enabled && trainedStatus.model
-              ? `Crack boxes: ${trainedStatus.model.name} v${trainedStatus.model.version} (project-trained). Corrosion and spalling: heuristic (non-ML).`
+            {trainedActive
+              ? `Crack boxes: ${trainedStatus?.model ? `${trainedStatus.model.name} v${trainedStatus.model.version}` : 'project-trained detector'}. Corrosion and spalling: heuristic (non-ML).`
               : activeModel
                 ? `Active method: ${activeModel.name} (v${activeModel.version})`
                 : 'No active AI models registered'}
@@ -123,7 +126,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
         {canTriggerAI ? (
           <>
-            {models && models.length > 1 && !trainedStatus?.enabled && (
+            {models && models.length > 1 && !trainedActive && (
               <div className="flex items-center gap-2">
                 <label className="text-xs font-bold text-slate-700">Model</label>
                 <select
