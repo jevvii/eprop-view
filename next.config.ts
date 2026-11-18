@@ -5,14 +5,13 @@ const nextConfig: NextConfig = {
   // onnxruntime-node ships a native .node binary; bundling it breaks the
   // dynamic require, so it is loaded from node_modules at run time.
   serverExternalPackages: ['onnxruntime-node'],
-  // The fitted detector is a binary asset, not an import. Trace it into the
-  // server bundle explicitly so the Preview function can read it. The ONNX
-  // runtime's shared library is loaded dynamically, so it needs the same help.
+  // The fitted detector is a binary asset, not an import. Only the saved-photo
+  // review route can invoke it, so trace the artifact and the Linux x64 ONNX
+  // runtime into that route only. A global key would push unrelated functions
+  // over Vercel's 250 MB uncompressed limit.
   outputFileTracingIncludes: {
-    '/*': [
+    '/document': [
       'src/app/lib/ai/models/**/*',
-      // Only the Linux x64 N-API binary is used by the Preview function. The
-      // package also ships macOS/Windows/arm64 builds (~294 MB in total).
       'node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**/*',
     ],
   },
