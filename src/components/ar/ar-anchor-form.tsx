@@ -186,7 +186,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
             htmlFor="ar-anchor-label"
             className="block text-xs font-black text-primary mb-1 ml-1"
           >
-            Anchor Label
+            Marker label
           </label>
           <input
             id="ar-anchor-label"

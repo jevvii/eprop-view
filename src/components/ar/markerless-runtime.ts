@@ -31,36 +31,36 @@ export class MarkerlessRuntime {
   constructor(private publish: (state: XRInspectionState) => void, private ended: () => void) {}
 
   async start(overlay: HTMLElement): Promise<string> {
-    if (this.session) throw new Error('An AR session is already active')
+    if (this.session) throw new Error('A scanning session is already active')
     const generation = ++this.generation
     if (!navigator.xr) throw new Error('Immersive WebXR is unavailable. Use camera/photo inspection.')
     // This call must stay before all awaited work so the Start gesture is preserved.
     const session = await navigator.xr.requestSession('immersive-ar', {
       requiredFeatures: ['hit-test', 'dom-overlay'], optionalFeatures: ['anchors'], domOverlay: { root: overlay },
     })
-    if (generation !== this.generation) { await session.end(); throw new Error('AR start was cancelled') }
+    if (generation !== this.generation) { await session.end(); throw new Error('Scanning start was cancelled') }
     this.session = session
     session.addEventListener('end', this.onEnd)
     session.addEventListener('visibilitychange', this.onVisibility)
     try {
       const canvas = document.createElement('canvas') // never reuse the camera capture canvas
       const gl = canvas.getContext('webgl', { alpha: true, antialias: true })
-      if (!gl) throw new Error('WebGL is unavailable for AR')
+      if (!gl) throw new Error('WebGL is unavailable for live scanning')
       this.gl = gl
       await gl.makeXRCompatible?.()
-      if (generation !== this.generation) throw new Error('AR start was cancelled')
+      if (generation !== this.generation) throw new Error('Scanning start was cancelled')
       session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) })
       this.space = await session.requestReferenceSpace('local')
       this.space.addEventListener('reset', this.onReset)
       const viewer = await session.requestReferenceSpace('viewer')
-      if (!session.requestHitTestSource) throw new Error('This browser does not provide AR surface hit testing')
+      if (!session.requestHitTestSource) throw new Error('This browser does not provide surface hit testing for live scanning')
       this.source = await session.requestHitTestSource({ space: viewer })
-      if (generation !== this.generation) throw new Error('AR start was cancelled')
+      if (generation !== this.generation) throw new Error('Scanning start was cancelled')
       const key = crypto.randomUUID()
       this.setState({ active: true, sessionKey: key, tracking: false, hit: false, pins: {}, message: 'Move the phone slowly to find a surface.' })
       this.frameId = session.requestAnimationFrame(this.onFrame)
       this.watchdog = setTimeout(() => {
-        if (!this.state.tracking && this.session === session) this.setState({ ...this.state, message: 'No tracked camera pose yet. Move slowly in a well-lit area, or end AR and use camera/photo inspection.' })
+        if (!this.state.tracking && this.session === session) this.setState({ ...this.state, message: 'No tracked camera pose yet. Move slowly in a well-lit area, or end the scan and use camera/photo inspection.' })
       }, 6000)
       return key
     } catch (error) {
@@ -71,7 +71,7 @@ export class MarkerlessRuntime {
 
   private setState(state: XRInspectionState) { this.state = state; this.publish(state) }
   private onVisibility = () => {
-    if (this.session?.visibilityState !== 'visible') this.setState({ ...this.state, tracking: false, hit: false, pins: {}, message: 'Tracking paused. Return to the AR view.' })
+    if (this.session?.visibilityState !== 'visible') this.setState({ ...this.state, tracking: false, hit: false, pins: {}, message: 'Tracking paused. Return to the scan view.' })
   }
   private onReset = () => {
     // Saved local coordinates cannot be carried into a changed physical origin.
@@ -107,7 +107,7 @@ export class MarkerlessRuntime {
         void anchorPromise.then((anchor) => {
           clearTimeout(request.timer)
           this.pendingCaptures.delete(request)
-          if (request.cancelled || generation !== this.generation || key !== this.state.sessionKey) { anchor?.delete(); request.reject(new Error('The AR session ended before placement completed')); return }
+          if (request.cancelled || generation !== this.generation || key !== this.state.sessionKey) { anchor?.delete(); request.reject(new Error('The scanning session ended before placement completed')); return }
           this.placements.set(localId, { pose, anchor })
           request.resolve(pose)
         })
@@ -134,14 +134,14 @@ export class MarkerlessRuntime {
   }
 
   capture(): Promise<ARPose> {
-    if (!this.session || !this.state.tracking) return Promise.reject(new Error('Start AR and find a tracked surface first'))
+    if (!this.session || !this.state.tracking) return Promise.reject(new Error('Start live scanning and find a tracked surface first'))
     if (this.pendingCaptures.size) return Promise.reject(new Error('A marker is already being placed'))
     return new Promise((resolve, reject) => {
       const request: CaptureRequest = { resolve, reject, cancelled: false, timer: setTimeout(() => {
         if (this.captureRequest === request) this.captureRequest = null
         request.cancelled = true
         this.pendingCaptures.delete(request)
-        reject(new Error('AR placement timed out. Try again.'))
+        reject(new Error('Marker placement timed out. Try again.'))
       }, 5000) }
       this.captureRequest = request
       this.pendingCaptures.add(request)
@@ -161,7 +161,7 @@ export class MarkerlessRuntime {
     this.placements.forEach(({ anchor }) => anchor?.delete())
     this.placements.clear(); this.registered.clear()
     for (const request of this.pendingCaptures) {
-      clearTimeout(request.timer); request.cancelled = true; request.reject(new Error('AR tracking session ended'))
+      clearTimeout(request.timer); request.cancelled = true; request.reject(new Error('Scanning session ended'))
     }
     this.pendingCaptures.clear(); this.captureRequest = null
   }

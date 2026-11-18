@@ -480,7 +480,7 @@ export async function getReportPublication(reportId: string): Promise<{
     if (!row.snapshot_path) return row as ARAnchor
     const location = resolveEvidenceLocation(row)
     const { data, error } = await supabase.storage.from(location.bucket).createSignedUrl(location.path, 3600)
-    if (error) throw new Error('Could not load captured AR evidence for this report.')
+    if (error) throw new Error('Could not load captured scanning evidence for this report.')
     return { ...row, image_url: data?.signedUrl } as ARAnchor
   }))
   const images = await Promise.all((imageResult.data ?? []).map(async (row) => {

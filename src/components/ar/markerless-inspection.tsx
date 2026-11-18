@@ -11,7 +11,7 @@ import { inspectionStartError } from '@/app/lib/ar/permission-errors'
 import { MarkerlessRuntime, type XRInspectionState } from './markerless-runtime'
 
 const IDLE: XRInspectionState = { active: false, sessionKey: null, tracking: false, hit: false, pins: {}, message: null }
-const UNSUPPORTED_AR_MESSAGE = 'This device or browser does not support markerless AR. Use camera/photo inspection to save evidence without spatial tracking or printed targets.'
+const UNSUPPORTED_AR_MESSAGE = 'This device or browser does not support markerless live scanning. Use camera/photo inspection to save evidence without spatial tracking or printed targets.'
 
 export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (active: boolean) => void }) {
   const { data: profile } = useProfile()
@@ -73,8 +73,8 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
     if (!navigator.xr) setXrSupported(false)
     runtime.current = new MarkerlessRuntime((next) => { if (mounted) setState(next) }, () => {
       generation.current++
-      if (mounted) setNotice('AR session ended. Saved records remain available; spatial points will not be restored in a new session.')
-      void closeRow().catch(() => { if (mounted) setError('The AR session ended, but its record could not be closed. Reload before starting again.') })
+      if (mounted) setNotice('Scanning session ended. Saved records remain available; spatial points will not be restored in a new session.')
+      void closeRow().catch(() => { if (mounted) setError('The scanning session ended, but its record could not be closed. Reload before starting again.') })
     })
     return () => {
       mounted = false
@@ -109,7 +109,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
     try {
       let key: string
       if (mode === 'webxr') {
-        if (!overlayRef.current || !runtime.current) throw new Error('The AR viewport is not ready')
+        if (!overlayRef.current || !runtime.current) throw new Error('The scanning viewport is not ready')
         // Do not insert a network await before this user-gesture-sensitive request.
         key = await runtime.current.start(overlayRef.current)
       } else {
@@ -187,14 +187,14 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
   return <section className="space-y-4">
     {arStartError && <div role="alert" aria-atomic="true" className="fixed inset-x-4 top-4 z-[120] mx-auto flex max-w-md items-start gap-3 rounded-xl border border-red-200 bg-white p-4 text-sm text-red-800">
       <div className="min-w-0 flex-1">
-        <p className="font-semibold">Markerless AR unavailable</p>
+        <p className="font-semibold">Markerless live scanning unavailable</p>
         <p className="mt-1">{arStartError.message}</p>
       </div>
-      <button type="button" aria-label="Dismiss AR error" onClick={() => setArStartError(null)} className="min-h-[44px] min-w-[44px] rounded-lg px-2 font-semibold">Close</button>
+      <button type="button" aria-label="Dismiss scanning error" onClick={() => setArStartError(null)} className="min-h-[44px] min-w-[44px] rounded-lg px-2 font-semibold">Close</button>
     </div>}
     <div hidden={state.active} className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
       <h2 className="text-xl text-primary">Markerless inspection</h2>
-      <p className="text-sm text-slate-600">Mark detected surfaces during one AR session. Records are saved, but physical locations are not restored after you end or reload.</p>
+      <p className="text-sm text-slate-600">Mark detected surfaces during one scanning session. Records are saved, but physical locations are not restored after you end or reload.</p>
       <label className="block text-sm font-semibold">Inspection
         <select value={selectedId} disabled={active || busy} onChange={(event) => {
           setInspectionId(event.target.value)
@@ -208,7 +208,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
       </label>
       {!active && <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2" role="group" aria-label="Start inspection">
         <button type="button" disabled={busy || !selectedId || xrSupported === null} onClick={() => void start('webxr')}
-          className="min-h-12 w-full min-w-0 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Starting…' : 'Start markerless AR'}</button>
+          className="min-h-12 w-full min-w-0 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Starting…' : 'Start markerless scanning'}</button>
         <button type="button" disabled={busy || !selectedId} onClick={() => void start('camera')}
           className="min-h-12 w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 text-sm font-semibold">Use camera/photo inspection</button>
       </div>}
@@ -216,7 +216,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
  <div ref={overlayRef} data-markerless-overlay data-xr-active={state.active} className={`relative h-[420px] overflow-hidden rounded-lg border border-slate-200 ${state.active ? 'bg-transparent' : 'bg-slate-950'}`}>
       <video ref={videoRef} autoPlay muted playsInline onPlaying={() => setCameraPlaying(true)} onPause={() => setCameraPlaying(false)}
         className="absolute inset-0 h-full w-full object-cover" style={{ display: state.active ? 'none' : 'block' }} />
-      {!active && <p className="absolute inset-0 flex items-center justify-center p-6 text-center text-white">Start markerless AR on a supported device, or open camera/photo inspection.</p>}
+      {!active && <p className="absolute inset-0 flex items-center justify-center p-6 text-center text-white">Start markerless scanning on a supported device, or open camera/photo inspection.</p>}
       {state.active && Object.entries(state.pins).map(([id, pin]) => <div key={id} data-xr-marker={id} className="absolute -translate-x-1/2 -translate-y-full rounded-lg bg-black/80 p-2 text-xs text-white pointer-events-none" style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}>
         {markers.find((marker) => marker.id === id)?.label || 'Saved point'}<span className="block">{pin.distance.toFixed(1)} m · this session</span>
       </div>)}

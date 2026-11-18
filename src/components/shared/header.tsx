@@ -20,7 +20,7 @@ export function Header() {
     '/reports': 'Reports',
     '/document': 'Documents',
     '/settings': 'Settings',
-    '/ar': 'AR Inspection',
+    '/ar': 'Live Image Scanning',
   }
   const currentPage = pageTitles[pathname] ?? 'Dashboard'
 

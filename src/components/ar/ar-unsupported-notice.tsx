@@ -12,10 +12,10 @@ export function ARUnsupportedNotice() {
         
         <div>
           <h4 className="text-xs font-black text-sky-950">
-            Universal Optical AR Active
+            Live image scanning active
           </h4>
           <p className="text-xs text-sky-800 font-medium mt-0.5 leading-relaxed">
-            Running in progressive AR mode (Live WebRTC Camera + 6-DOF Gyro & Spatial Touch Raycasting). Full anchor placement, plane locking, and snapshot persistence are enabled.
+            Running in live scanning mode with the device camera. Marker positions are screen-space estimates; frame capture and heuristic analysis are available.
           </p>
         </div>
       </div>

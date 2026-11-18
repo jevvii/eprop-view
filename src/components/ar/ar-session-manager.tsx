@@ -686,7 +686,7 @@ export function ARSessionManager({ children, onStarted, onEnded }: ARSessionMana
           const canvas = canvasRef.current
           if (!canvas) {
             await xrSession.end().catch(() => {})
-            throw new Error('AR canvas is not mounted.')
+            throw new Error('Scanning canvas is not mounted.')
           }
 
           const gl = canvas.getContext('webgl', {

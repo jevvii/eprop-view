@@ -16,9 +16,9 @@ test('dismissed camera prompts are not reported as a permanent denial', () => {
   assert.doesNotMatch(message, /you denied|permanently/i)
 })
 
-test('AR permission failures explain AR access and the camera alternative', () => {
+test('live scanning permission failures explain camera access and the alternative', () => {
   const message = inspectionStartError(new DOMException('The request is not allowed', 'NotAllowedError'), 'webxr')
-  assert.match(message, /AR permission was not granted/)
+  assert.match(message, /Live scanning permission was not granted/)
   assert.match(message, /camera\/photo inspection/)
 })
 

@@ -51,7 +51,7 @@ export function RiskHotspots() {
     const mappedAnchors: HotspotItem[] = arAnchors.map((anchor, index) => ({
       id: `ar-${anchor.id || index}`,
       type: 'ar',
-      title: anchor.label || 'AR marker',
+      title: anchor.label || 'Live scan marker',
       subtitle: `${anchor.damage_type ?? 'unclassified'} · ${anchor.severity ?? 'no severity'}`,
       description: anchor.notes || 'Screen-space marker. No map coordinates recorded.',
       severity: normalizeSeverity(anchor.severity ?? 'moderate'),
@@ -107,7 +107,7 @@ export function RiskHotspots() {
   const tabs: { key: HotspotTab; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'hotspots', label: 'Hotspots' },
-    { key: 'ar', label: 'AR' },
+    { key: 'ar', label: 'Scan' },
     { key: 'ai', label: 'AI' },
   ]
 
@@ -144,7 +144,7 @@ export function RiskHotspots() {
           <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
             <p className="text-sm font-medium text-slate-700">No mapped hotspots</p>
             <p className="mt-1 text-sm text-slate-500">
-              Only records with coordinates are plotted. AR markers and image detections are listed below.
+              Only records with coordinates are plotted. Live scan markers and image detections are listed below.
             </p>
           </div>
         ) : (

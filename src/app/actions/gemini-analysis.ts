@@ -561,7 +561,7 @@ export async function analyzeARSnapshotWithGemini(anchorId: string): Promise<Dee
   if (!imageId) {
     const { data: inserted, error: insertError } = await service.from('inspection_images').upsert({
       source_anchor_id: anchor.id, inspection_id: anchor.inspection_id, storage_bucket: location.bucket,
-      storage_path: location.path, caption: 'Captured AR photograph', uploader_id: userId,
+      storage_path: location.path, caption: 'Captured scan photograph', uploader_id: userId,
     }, { onConflict: 'source_anchor_id', ignoreDuplicates: true }).select('id').maybeSingle()
     if (insertError) throw insertError
     imageId = inserted?.id

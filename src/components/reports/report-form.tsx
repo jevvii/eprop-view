@@ -105,7 +105,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
         .map((a) => `${a.label} (${a.damage_type ?? 'structural'} - ${a.severity ?? 'unspecified'})`)
         .join('; ')
       findingsParts.push(
-        `[AR Spatial Telemetry]\n• Registered ${arAnchors.length} AR Spatial Anchors: ${anchorLabels}`
+        `[Live Image Scanning Telemetry]\n• Registered ${arAnchors.length} Live scan markers: ${anchorLabels}`
       )
     }
 
@@ -255,7 +255,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
             <div className="flex items-center gap-2">
               <span className="flex h-2.5 w-2.5 rounded-full bg-blue-600 animate-pulse" />
               <span className="text-xs font-black text-slate-800">
-                AI & AR Intelligence Feed
+                AI & Live Image Scanning Feed
               </span>
             </div>
             {(aiSummary || arAnchors.length > 0) && (
@@ -300,7 +300,7 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
 
               {arAnchors.length > 0 ? (
                 <div className="bg-white/90 rounded-xl p-3.5 border border-slate-200 space-y-2">
-                  <div className="text-xs font-bold text-slate-600">AR Spatial Anchors (<span className="tabular-nums">{arAnchors.length}</span>)</div>
+                  <div className="text-xs font-bold text-slate-600">Live scan markers (<span className="tabular-nums">{arAnchors.length}</span>)</div>
                   <div className="flex flex-wrap gap-1.5">
                     {arAnchors.slice(0, 3).map((anchor) => (
                       <span key={anchor.id} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 font-semibold text-xs">
@@ -314,13 +314,13 @@ export function ReportForm({ projectId, onClose }: ReportFormProps) {
                 </div>
               ) : (
                 <div className="bg-white/60 rounded-xl p-3.5 border border-dashed border-slate-200 flex items-center text-xs font-medium text-slate-500">
-                  No AR anchors placed for this inspection.
+                  No live scan markers placed for this inspection.
                 </div>
               )}
             </div>
           ) : (
             <p className="text-xs font-medium text-slate-600">
-              No AI detections or AR anchors yet for this inspection. Run AI analysis in the Asset Vault or drop anchors in AR Mode.
+              No AI detections or live scan markers yet for this inspection. Run AI analysis in the Asset Vault or place markers in Live Image Scanning.
             </p>
           )}
         </div>

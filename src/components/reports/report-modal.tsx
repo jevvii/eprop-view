@@ -80,7 +80,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
             <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 md:col-span-2 space-y-3">
               <div className="text-xs font-bold text-blue-900 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-                AI & AR Inspection Telemetry
+                AI & Live Image Scanning Telemetry
               </div>
               
               {detections.length > 0 && (
@@ -109,7 +109,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
               {anchors.length > 0 && (
                 <div className="space-y-1.5 pt-1">
                   <div className="text-xs font-bold text-slate-600">
-                    AR Spatial Anchors (<span className="tabular-nums">{anchors.length}</span>)
+                    Live scan markers (<span className="tabular-nums">{anchors.length}</span>)
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {anchors.map((a) => (

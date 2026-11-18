@@ -57,7 +57,7 @@ export function CreateInspectorForm({ onClose }: CreateUserFormProps) {
               onChange={(e) => setSelectedRole(e.target.value as Role)}
               className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-base sm:text-sm font-semibold bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
             >
-              <option value="inspector">INSPECTOR (FIELD CAPTURE & AR)</option>
+              <option value="inspector">INSPECTOR (FIELD CAPTURE & LIVE SCANNING)</option>
               <option value="engineer">ENGINEER (ANALYSIS & VALIDATION)</option>
               <option value="admin">ADMIN (GOVERNANCE & OPS)</option>
             </select>

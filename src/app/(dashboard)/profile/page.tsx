@@ -107,7 +107,7 @@ export default function ProfilePage() {
 
       <Panel title="What your role can do">
         <ul className="space-y-1.5 text-xs sm:text-sm text-slate-600 font-medium">
-          <li><strong className="text-slate-900">Inspector</strong> — create inspections, upload evidence, run AR capture, record field tests and checklists.</li>
+          <li><strong className="text-slate-900">Inspector</strong> — create inspections, upload evidence, run live image scans, record field tests and checklists.</li>
           <li><strong className="text-slate-900">Engineer</strong> — review and validate findings, classify cracks, confirm costs, sign recommendations, publish reports.</li>
           <li><strong className="text-slate-900">Admin</strong> — manage users, buildings, geohazard layers, storage and the audit trail.</li>
           <li><strong className="text-slate-900">Viewer</strong> — read published reports only.</li>

@@ -70,7 +70,7 @@ export function Sidebar() {
       badge: unreadCount && unreadCount > 0 ? unreadCount : null,
       roles: ['admin', 'engineer', 'inspector'],
     },
-    { href: '/ar', label: 'AR Inspection', Icon: ScanLine, roles: ['inspector', 'admin'] },
+    { href: '/ar', label: 'Live Image Scanning', Icon: ScanLine, roles: ['inspector', 'admin'] },
     { href: '/annotate', label: 'Annotate', Icon: Tag, roles: ['inspector', 'engineer', 'admin'] },
     { href: '/profile', label: 'My Profile', Icon: UserCircle, roles: ['admin', 'engineer', 'inspector', 'viewer'] },
     { href: '/settings', label: 'Settings', Icon: Settings, roles: ['admin'] },

@@ -11,7 +11,7 @@ export type ExportRow = Record<string, unknown>
 export type RecordCollections = Record<RecordCollection, ExportRow[]>
 
 export const EXPORT_OMISSIONS = [
-  'Image/model binaries, AI detections, image comments, and AR sessions/anchors are not included.',
+  'Image/model binaries, AI detections, image comments, and live scanning sessions/markers are not included.',
   'Revision and audit history, public share links, user accounts, and profile assignments are not restored.',
   'Engineering approvals and signatures are invalidated: restored reports are open and recommendations are drafts requiring a new review.',
   'Forensic image/detection evidence links are omitted because their evidence files are not included.',

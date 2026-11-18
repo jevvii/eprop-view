@@ -252,8 +252,8 @@ function ARPageContent() {
   if (profile && !canUseAR) {
     return (
       <AccessDenied
-        title="AR Inspection Restricted"
-        message="Augmented Reality (AR) field capture is restricted to certified Field Inspectors. Engineering reviewers and administrators can inspect submitted visual evidence and spatial anchors in the Document Vault."
+        title="Live Image Scanning Restricted"
+        message="Live image scanning is restricted to certified Field Inspectors. Engineering reviewers and administrators can inspect submitted visual evidence and markers in the Document Vault."
         returnHref="/document"
         returnLabel="View Document Vault"
       />
@@ -267,10 +267,10 @@ function ARPageContent() {
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xl sm:text-2xl font-koulen text-primary tracking-wide uppercase">
-              AR Inspection Mode
+              Live Image Scanning
             </h2>
             <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-              Printed reference AR
+              Printed reference scanning
             </span>
           </div>
 
@@ -308,7 +308,7 @@ function ARPageContent() {
           </div>
         </div>
 
-        {/* Start / End AR Session Button */}
+        {/* Start / End live scan Button */}
         <div className="w-full shrink-0 md:w-auto">
           {isActive ? (
             <Button
@@ -317,7 +317,7 @@ function ARPageContent() {
               variant="outline"
               className="w-full whitespace-normal text-xs font-black tracking-[0.15em] px-6 py-3 h-auto min-h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
             >
-              End AR Session
+              End live scan
             </Button>
           ) : (
             <Button
@@ -325,7 +325,7 @@ function ARPageContent() {
               disabled={!inspectionId || starting}
               className="w-full whitespace-normal text-xs font-black tracking-[0.15em] px-6 py-3 h-auto min-h-12 rounded-xl"
             >
-              {starting ? 'Starting camera…' : 'Start AR Session'}
+              {starting ? 'Starting camera…' : 'Start live scan'}
             </Button>
           )}
         </div>

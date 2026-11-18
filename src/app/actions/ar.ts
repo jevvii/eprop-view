@@ -95,7 +95,7 @@ export async function startARSession(
   }
 
   if (role === 'inspector' && inspection.lead_inspector_id && inspection.lead_inspector_id !== userId) {
-    throw new Error('Access denied: inspectors may only start AR sessions for their assigned inspections')
+    throw new Error('Access denied: inspectors may only start live scanning sessions for their assigned inspections')
   }
 
   const { data, error } = await supabase
@@ -109,7 +109,7 @@ export async function startARSession(
     .select()
     .single()
 
-  if (error || !data) throw error ?? new Error('Failed to start AR session')
+  if (error || !data) throw error ?? new Error('Failed to start the live scanning session')
   return data as ARSession
 }
 
@@ -128,7 +128,7 @@ export async function endARSession(sessionId: string): Promise<ARSession> {
       .single()
 
     if (sessionData?.started_by && sessionData.started_by !== userId) {
-      throw new Error('Access denied: inspectors may only end their own AR sessions')
+      throw new Error('Access denied: inspectors may only end their own live scanning sessions')
     }
   }
 
@@ -142,7 +142,7 @@ export async function endARSession(sessionId: string): Promise<ARSession> {
     .select()
     .single()
 
-  if (error || !data) throw error ?? new Error('Failed to end AR session')
+  if (error || !data) throw error ?? new Error('Failed to end the live scanning session')
   return data as ARSession
 }
 
@@ -250,7 +250,7 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
 
   const parsed = createAnchorSchema.safeParse(input)
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? 'Invalid anchor payload')
+    throw new Error(parsed.error.issues[0]?.message ?? 'Invalid marker payload')
   }
   const anchorInput = parsed.data
   // The server derives reference-local coordinates instead of trusting a second,
@@ -271,7 +271,7 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
     .maybeSingle()
   if (anchorSessionError) throw anchorSessionError
   if (!anchorSession || anchorSession.inspection_id !== anchorInput.inspectionId || anchorSession.status !== 'active') {
-    throw new Error('An active AR session for this inspection is required')
+    throw new Error('An active live scanning session for this inspection is required')
   }
   if (role === 'inspector' && anchorSession.started_by !== userId) {
     throw new Error('Access denied: inspectors may only add markers to their own sessions')
@@ -293,7 +293,7 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
     }
 
     if (inspection.lead_inspector_id && inspection.lead_inspector_id !== userId) {
-      throw new Error('Access denied: inspectors may only place AR anchors on their own inspections')
+      throw new Error('Access denied: inspectors may only place scan markers on their own inspections')
     }
   }
 
@@ -328,7 +328,7 @@ export async function createARAnchor(input: CreateARAnchorInput): Promise<ARAnch
       const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([snapshotPath])
       if (cleanupError) console.error('AR snapshot cleanup failed after marker insert:', cleanupError.message)
     }
-    throw error ?? new Error('Failed to create AR anchor')
+    throw error ?? new Error('Failed to create the scan marker')
   }
 
   // An AR snapshot is evidence, and the only imagery in the system with a

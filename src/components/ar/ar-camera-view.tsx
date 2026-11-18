@@ -64,7 +64,7 @@ export function ARCameraView({ onTapToAnchor, onAimChange, aim, frame, viewport,
         </svg>}
         <div className="absolute inset-0 z-30 flex flex-col justify-between p-3 sm:p-5 pointer-events-none">
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <span className="rounded-full border border-white/20 bg-black/75 px-3 py-2 text-xs font-semibold text-white">Printed reference AR</span>
+            <span className="rounded-full border border-white/20 bg-black/75 px-3 py-2 text-xs font-semibold text-white">Printed reference scanning</span>
  <span role="status" className={`rounded-full bg-black/75 px-3 py-2 text-xs font-semibold ${frame ? 'text-emerald-300' : 'text-amber-300'}`}>{status}</span>
             {frame && <span className="max-w-full truncate rounded-lg bg-black/75 px-3 py-1.5 text-xs text-white">{frame.target.label}</span>}
           </div>
