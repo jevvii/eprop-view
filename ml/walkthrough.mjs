@@ -45,12 +45,30 @@ function credentials() {
 const COMPLETED = /(Trained detector: \d+ crack box|Heuristic: \d+ box|The trained crack detector found no visible crack|The heuristic reported no visible defect|Gemini image analysis|Gemini reported no visible)/
 
 async function signIn(page, base) {
-  await page.goto(`${base}/login`, { waitUntil: 'domcontentloaded' })
+  await page.goto(`${base}/login`, { waitUntil: 'networkidle' })
+  // The form uses a client server-action; clicking before hydration submits
+  // nothing and leaves the page on /login with no error.
+  await page.waitForTimeout(1500)
   const creds = credentials()
   await page.fill('#email', creds.email)
   await page.fill('#password', creds.password)
   await page.locator('form button[type="submit"]').click()
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45_000 })
+  // Wait for the authenticated shell, not merely a URL change: navigating away
+  // before the server action's Set-Cookie lands aborts the session.
+  await page.waitForFunction(
+    () => document.body.innerText.includes('Logout') || Boolean(document.querySelector('#login-error')),
+    { timeout: 60_000 },
+  )
+  if (page.url().includes('/login') || (await page.locator('#login-error').count()) > 0) {
+    const message = await page.locator('#login-error').innerText().catch(() => 'unknown login error')
+    throw new Error(`Sign-in refused: ${message}`)
+  }
+  for (let i = 0; i < 20; i++) {
+    const cookies = await page.context().cookies()
+    if (cookies.some((c) => c.name.startsWith('sb-') && c.name.includes('auth-token'))) break
+    await page.waitForTimeout(250)
+  }
+  await page.waitForLoadState('networkidle')
 }
 
 async function openDocument(page, base) {
