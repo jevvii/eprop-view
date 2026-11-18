@@ -16,7 +16,8 @@
     "verify:preview": "tsx src/scripts/verify-preview.ts",
     "db:migrate:preview": "tsx src/scripts/verify-preview.ts --migrate",
     "backfill:capture": "tsx src/scripts/backfill-capture-metadata.ts",
-    "export:dataset": "tsx src/scripts/export-annotations.ts"
+    "export:dataset": "tsx src/scripts/export-annotations.ts",
+    "prebuild": "node scripts/prune-onnxruntime.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
