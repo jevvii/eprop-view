@@ -15,6 +15,16 @@ const nextConfig: NextConfig = {
       'node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**/*',
     ],
   },
+  // The ONNX Runtime package ships every platform. Excluding the ones the
+  // Preview runtime cannot load keeps the saved-photo function under the
+  // deployment size limit even when the package is copied wholesale.
+  outputFileTracingExcludes: {
+    '/document': [
+      'node_modules/onnxruntime-node/bin/napi-v6/darwin/**/*',
+      'node_modules/onnxruntime-node/bin/napi-v6/win32/**/*',
+      'node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**/*',
+    ],
+  },
   // Existing snapshot validation caps decoded evidence at 8 MB (base64 adds 1/3).
   experimental: { serverActions: { bodySizeLimit: '12mb' } },
   // Exposed so the AR device panel can prove which deployment a phone is

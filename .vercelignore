@@ -3,6 +3,7 @@ node_modules/
 .next/
 .vercel/
 .env*
+!.env.example
 docs/
 backend/
 EPROPVIEW_v1/
