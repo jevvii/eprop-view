@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
 import { z } from 'zod'
+import { supportsLocalInference } from '@/app/lib/ai/registry'
 import type { Role, AIModel, AIModelFormat, AIModelTask } from '@/app/types'
 
 const createUserSchema = z.object({
@@ -206,12 +207,20 @@ export async function toggleAIModelStatus(modelId: string, currentStatus: boolea
   }
 
   const supabase = await createClient()
-  const { error } = await supabase
-    .from('ai_models')
-    .update({ is_active: !currentStatus })
-    .eq('id', modelId)
-
+  if (!currentStatus) {
+    // Activating is only allowed for a method this deployment can actually run:
+    // the heuristic, or the exact artifact the build ships.
+    const { data: row, error: readError } = await supabase
+      .from('ai_models').select('*').eq('id', modelId).maybeSingle()
+    if (readError) return { error: readError.message }
+    if (!row || !supportsLocalInference(row as AIModel)) {
+      return { error: 'Only a locally runnable method (heuristic or the bundled trained artifact) can be activated.' }
+    }
+  }
+  const { data, error } = await supabase
+    .from('ai_models').update({ is_active: !currentStatus }).eq('id', modelId).select('id').maybeSingle()
   if (error) return { error: error.message }
+  if (!data) return { error: 'The model could not be updated.' }
   revalidatePath('/settings')
   return { success: true }
 }
@@ -242,12 +251,12 @@ export async function registerAIModel(modelData: {
     .from('ai_models')
     .insert({
       ...modelData,
-      architecture: modelData.architecture || 'yolov8',
+      architecture: modelData.format === 'heuristic' ? 'heuristic' : modelData.architecture ?? null,
       input_width: modelData.input_width || 640,
       input_height: modelData.input_height || 640,
       confidence_threshold: modelData.confidence_threshold ?? 0.25,
       iou_threshold: modelData.iou_threshold ?? 0.45,
-      is_active: modelData.is_active ?? true,
+      is_active: supportsLocalInference(modelData) && (modelData.is_active ?? true),
     })
     .select()
     .single()

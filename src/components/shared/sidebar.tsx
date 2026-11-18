@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   ScanLine,
   Settings,
+  Tag,
   UserCircle,
 } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
@@ -70,6 +71,7 @@ export function Sidebar() {
       roles: ['admin', 'engineer', 'inspector'],
     },
     { href: '/ar', label: 'AR Inspection', Icon: ScanLine, roles: ['inspector', 'admin'] },
+    { href: '/annotate', label: 'Annotate', Icon: Tag, roles: ['inspector', 'engineer', 'admin'] },
     { href: '/profile', label: 'My Profile', Icon: UserCircle, roles: ['admin', 'engineer', 'inspector', 'viewer'] },
     { href: '/settings', label: 'Settings', Icon: Settings, roles: ['admin'] },
   ]

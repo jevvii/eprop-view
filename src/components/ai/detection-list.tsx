@@ -15,6 +15,23 @@ interface DetectionListProps {
 const damageTypeOptions: DamageType[] = ['crack', 'corrosion', 'spalling', 'deformation', 'leakage', 'none']
 const severityOptions: SeverityLevel[] = ['low', 'medium', 'high', 'critical']
 
+/** Per-finding attribution: which method produced this box. */
+function methodLabel(provenance: AIDamageDetection['provenance']): string {
+  switch (provenance) {
+    case 'model':
+      return 'Trained detector'
+    case 'heuristic':
+      return 'Heuristic (non-ML)'
+    case 'gemini':
+      return 'Gemini'
+    case 'synthetic':
+    case 'legacy_synthetic':
+      return 'Synthetic preview data'
+    default:
+      return 'unrecorded'
+  }
+}
+
 export function DetectionList({ detections }: DetectionListProps) {
   const { data: profile } = useProfile()
   const verify = useVerifyDetection()
@@ -42,7 +59,7 @@ export function DetectionList({ detections }: DetectionListProps) {
   }
 
   const saveEdit = async (detectionId: string) => {
-    await updateDetection.mutateAsync({
+    updateDetection.mutate({
       detectionId,
       params: {
         damage_type: editDamageType,
@@ -50,8 +67,7 @@ export function DetectionList({ detections }: DetectionListProps) {
         severity_score: editScore,
         notes: editNotes,
       },
-    })
-    setEditingId(null)
+    }, { onSuccess: () => setEditingId(null) })
   }
 
   if (detections.length === 0) {
@@ -64,12 +80,12 @@ export function DetectionList({ detections }: DetectionListProps) {
 
   return (
     <div className="space-y-3">
+      {(updateDetection.isError || verify.isError) && (
+        <p role="alert" className="text-xs text-red-700">The review could not be saved. Retry the action.</p>
+      )}
       {detections.map((detection) => {
         const isVerified = Boolean(detection.verified_by)
-        const isRejected = !isVerified && (
-          detection.notes?.toLowerCase().includes('reject') ||
-          detection.notes?.toLowerCase().includes('false positive')
-        )
+        const isRejected = detection.is_rejected
         const isEditing = editingId === detection.id
 
         if (isEditing) {
@@ -208,8 +224,15 @@ export function DetectionList({ detections }: DetectionListProps) {
                 )}
               </div>
               <div className="text-xs text-slate-500 font-medium flex items-center gap-2 flex-wrap">
-                <span>Method: {detection.provenance ?? 'unrecorded'}</span>
-                <span className="tabular-nums" title="This value is not a calibrated measure of accuracy.">{detection.provenance === 'gemini' ? 'Model confidence' : 'Response strength'} {(detection.confidence * 100).toFixed(1)}% (uncalibrated)</span>
+                <span>Method: {methodLabel(detection.provenance)}</span>
+                <span className="tabular-nums" title="This value is not a calibrated measure of accuracy.">
+                  {detection.provenance === 'gemini'
+                    ? 'Model confidence'
+                    : detection.provenance === 'model'
+                      ? 'Detection score'
+                      : 'Response strength'}{' '}
+                  {(detection.confidence * 100).toFixed(1)}% (uncalibrated)
+                </span>
                 <span>·</span>
                 <span className="tabular-nums">Score {detection.severity_score}/100</span>
                 {detection.notes && (
@@ -241,7 +264,6 @@ export function DetectionList({ detections }: DetectionListProps) {
                       verify.mutate({
                         detectionId: detection.id,
                         approved: true,
-                        notes: 'Verified by structural engineer.',
                       })
                     }
                     className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors"
@@ -259,7 +281,6 @@ export function DetectionList({ detections }: DetectionListProps) {
                       verify.mutate({
                         detectionId: detection.id,
                         approved: false,
-                        notes: 'Rejected: Marked as false positive.',
                       })
                     }
                     className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
@@ -277,7 +298,6 @@ export function DetectionList({ detections }: DetectionListProps) {
                       verify.mutate({
                         detectionId: detection.id,
                         approved: false,
-                        notes: 'Rejected: Marked as false positive.',
                       })
                     }
                     className="text-xs font-bold min-h-[36px] py-1.5 px-3 bg-white hover:bg-slate-200 text-slate-600 transition-colors"

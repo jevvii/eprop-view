@@ -85,6 +85,6 @@ jobs:
         run: |
           for suite in supabase/tests/*.sql; do
             if [ "$suite" != "supabase/tests/bootstrap.sql" ]; then
-              psql -v ON_ERROR_STOP=1 -f "$suite"
+              psql -v ON_ERROR_STOP=1 -v disposable_ci=1 -f "$suite"
             fi
           done

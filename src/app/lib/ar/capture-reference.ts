@@ -5,7 +5,12 @@ import {
 } from './printed-reference'
 import type { ARPose } from '@/app/types'
 
-export interface ReferenceEvidence { pose: ARPose; snapshotDataUrl: string }
+export interface ReferenceEvidence {
+  pose: ARPose
+  snapshotDataUrl: string
+  /** Physical edge span of the printed target in stored-image pixels; 0 when unmeasurable. */
+  observedWidthPx: number
+}
 
 /** Detect and place against the same immutable camera pixels that become evidence. */
 export function captureReferenceEvidence(
@@ -38,7 +43,12 @@ export function captureReferenceEvidence(
     bottomRight: point(code.location.bottomRightCorner), bottomLeft: point(code.location.bottomLeftCorner) }
   const homography = getReferenceHomography(corners)
   if (!homography) return null
+  const observedWidthPx =
+    (Math.hypot(corners.topRight.x - corners.topLeft.x, corners.topRight.y - corners.topLeft.y) +
+      Math.hypot(corners.bottomRight.x - corners.bottomLeft.x, corners.bottomRight.y - corners.bottomLeft.y)) /
+    2
   const pose = getReferencePose(aim, { target, corners, homography,
     imageWidth: photo.width, imageHeight: photo.height, observedAt: performance.now() }, viewport)
-  return pose ? { pose, snapshotDataUrl: photo.toDataURL('image/jpeg', .85) } : null
+  if (!pose) return null
+  return { pose, snapshotDataUrl: photo.toDataURL('image/jpeg', .85), observedWidthPx: Math.round(observedWidthPx) }
 }

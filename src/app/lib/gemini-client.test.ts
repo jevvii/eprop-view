@@ -106,3 +106,14 @@ test('a 5xx across the whole chain reads as provider overload, not missing confi
     /temporarily overloaded/
   )
 })
+
+test('only the final completed Gemini answer can be accepted', async () => {
+  for (const finishReason of ['MAX_TOKENS', 'SAFETY', 'STOP']) {
+    const api = client('unit-test-key', async () => Response.json({ candidates: [{
+      finishReason, content: { parts: [{ thought: true, text: 'intermediate' }, { text: '{"value":1}' }] },
+    }] }))
+    const request = api.generateStructured({ prompt: 'Test', schema: {}, parse: raw => raw })
+    if (finishReason === 'STOP') assert.deepEqual((await request).value, { value: 1 })
+    else await assert.rejects(request, /did not complete/)
+  }
+})

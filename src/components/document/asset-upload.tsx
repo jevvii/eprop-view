@@ -9,6 +9,8 @@ import {
 } from '@/app/actions/uploads'
 import { createClient } from '@/app/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { CaptureFields, DEFAULT_CAPTURE } from '@/components/uploads/capture-fields'
+import type { CaptureMetadataInput } from '@/app/types'
 
 interface AssetUploadProps {
   inspectionId: string
@@ -20,6 +22,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [capture, setCapture] = useState<CaptureMetadataInput>(DEFAULT_CAPTURE)
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -69,6 +72,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
           inspectionId,
           storagePath,
           caption: file.name,
+          capture,
         })
       }
 
@@ -130,6 +134,7 @@ export function AssetUpload({ inspectionId, onSuccess }: AssetUploadProps) {
 
       {files.length > 0 && (
         <div className="space-y-3">
+          <CaptureFields value={capture} onChange={setCapture} />
           <div className="flex items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10">
             <span className="text-xs font-bold text-primary truncate flex-1 tabular-nums">
               {files.length} Assets Staged

@@ -114,7 +114,7 @@ export function MarkerlessInspection({ onActiveChange }: { onActiveChange?: (act
         key = await runtime.current.start(overlayRef.current)
       } else {
         if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access requires HTTPS and a browser with camera support')
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
         if (current !== generation.current) { stream.getTracks().forEach((track) => track.stop()); return }
         streamRef.current = stream
         const video = videoRef.current

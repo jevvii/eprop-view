@@ -38,12 +38,17 @@ export type Capability =
   | 'storage:admin'
   | 'audit:read'
   | 'audit:view'
+  | 'annotation:read'
+  | 'annotation:write'
+  | 'annotation:review'
+  | 'dataset:export'
 
 export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   viewer: [
     'inspection:read',
     'report:read',
     'report:view',
+    'annotation:read',
   ],
   inspector: [
     'inspection:create',
@@ -56,6 +61,8 @@ export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
     'ai:trigger',
     'ar:use',
     'anchor:create',
+    'annotation:read',
+    'annotation:write',
   ],
   engineer: [
     'inspection:read',
@@ -64,6 +71,9 @@ export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
     'comment:create',
     'comment:add',
     'ai:review',
+    'annotation:read',
+    'annotation:write',
+    'annotation:review',
     'envrisk:assess',
     'dashboard:view',
     'maintenance:view',
@@ -93,6 +103,10 @@ export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
     'ai:review',
     'ai:admin',
     'ai:manage_models',
+    'annotation:read',
+    'annotation:write',
+    'annotation:review',
+    'dataset:export',
     'ar:use',
     'anchor:create',
     'envrisk:assess',

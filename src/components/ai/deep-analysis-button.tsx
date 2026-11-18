@@ -32,6 +32,7 @@ export function DeepAnalysisButton({
       );
       await Promise.all(
         [
+          "ai-jobs",
           "ai-detections",
           "ai-detections-inspection",
           "all-ai-detections",

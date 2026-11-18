@@ -2,6 +2,16 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // onnxruntime-web is a normal dependency (bundled), so only its WASM payload
+  // needs tracing. The native package is auto-external in Next and Vercel then
+  // copies all 294 MB of it into the function.
+  outputFileTracingIncludes: {
+    '/document': [
+      'src/app/lib/ai/models/**/*',
+      'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm',
+      'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs',
+    ],
+  },
   // Existing snapshot validation caps decoded evidence at 8 MB (base64 adds 1/3).
   experimental: { serverActions: { bodySizeLimit: '12mb' } },
   // Exposed so the AR device panel can prove which deployment a phone is

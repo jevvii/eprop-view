@@ -187,13 +187,6 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
   const openInspection = inspections[2].id
 
   // 4. Images and detections
-  const { data: model } = await supabase
-    .from('ai_models')
-    .select('id')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle()
-
   const imageSpecs = [
     { inspectionId: recentInspection, caption: 'Diagonal crack, unit 2B slab', shade: 168 },
     { inspectionId: recentInspection, caption: 'Column C1, hairline map cracking', shade: 176 },
@@ -224,6 +217,9 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
         storage_path: storagePath,
         caption: spec.caption,
         uploader_id: inspectorId,
+        // Demo images are generated placeholders, never training data.
+        training_eligible: false,
+        scale_source: 'unknown',
       })
       .select('id')
       .single()
@@ -244,7 +240,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
       severity_score: 74,
       confidence: 0.82,
       bbox: { x: 0.22, y: 0.16, width: 0.3, height: 0.66 },
-      provenance: 'heuristic',
+      provenance: 'synthetic',
       notes: 'Diagonal crack crossing the slab soffit, wider at the support.',
       crack_width_mm: 1.6,
       crack_width_band: 'wide',
@@ -260,7 +256,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
       severity_score: 48,
       confidence: 0.71,
       bbox: { x: 0.18, y: 0.2, width: 0.42, height: 0.5 },
-      provenance: 'heuristic',
+      provenance: 'synthetic',
       notes: 'Map cracking across the column face, consistent with shrinkage and carbonation.',
       crack_width_mm: 0.22,
       crack_width_band: 'fine',
@@ -276,7 +272,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
       severity_score: 38,
       confidence: 0.63,
       bbox: { x: 0.3, y: 0.55, width: 0.34, height: 0.28 },
-      provenance: 'heuristic',
+      provenance: 'synthetic',
       notes: 'Surface spalling at the plinth where erosion has removed cover.',
     },
   ]
@@ -286,7 +282,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
     .map(({ imageIndex, ...row }) => ({
       ...row,
       image_id: imageIds[imageIndex],
-      model_id: model?.id ?? null,
+      model_id: null,
     }))
 
   let detectionIds: string[] = []
@@ -495,7 +491,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
       final_text:
         'Commission a geotechnical review of the C1 footing and continue level surveys at 30-day intervals. Restrict storage loading on the unit 2B slab until movement stabilises.',
       status: 'signed',
-      provenance: 'gemini',
+      provenance: 'synthetic',
       signed_by: engineerId,
       signed_at: new Date().toISOString(),
     })
@@ -514,7 +510,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
         ai_confidence: 0.62,
         table_estimate_php: 250000,
         divergence_flag: false,
-        provenance: 'gemini',
+        provenance: 'synthetic',
         confirmed_by: engineerId,
         confirmed_at: new Date().toISOString(),
       })

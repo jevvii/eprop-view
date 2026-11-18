@@ -3,6 +3,7 @@ node_modules/
 .next/
 .vercel/
 .env*
+!.env.example
 docs/
 backend/
 EPROPVIEW_v1/
@@ -15,3 +16,10 @@ build/
 *.pem
 *.log
 *.tsbuildinfo
+
+# Training data, isolated Python environment, checkpoints and run logs.
+# The exported model lives under src/app/lib/ai/models and IS uploaded.
+dataset/
+ml/
+tasks/
+verification/

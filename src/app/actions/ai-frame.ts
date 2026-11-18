@@ -55,7 +55,7 @@ export async function analyzeCapturedFrame(input: unknown): Promise<FrameAnalysi
     throw new Error('Inspection record not found')
   }
 
-  if (role === 'inspector' && inspection.lead_inspector_id && inspection.lead_inspector_id !== userId) {
+  if (role === 'inspector' && inspection.lead_inspector_id !== userId) {
     throw new Error('Access denied: inspectors may only analyze their assigned inspections')
   }
 
@@ -73,6 +73,8 @@ export async function analyzeCapturedFrame(input: unknown): Promise<FrameAnalysi
     .from('ai_models')
     .select('*')
     .eq('is_active', true)
+    .eq('format', 'heuristic')
+    .eq('task', 'detection')
     .order('created_at', { ascending: false })
     .limit(1)
 

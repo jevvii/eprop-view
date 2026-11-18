@@ -7,7 +7,8 @@ import { z } from 'zod'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireRole } from '@/app/lib/dal'
 import { enforceRateLimit } from '@/app/lib/rate-limit'
-import type { InspectionImage } from '@/app/types'
+import type { CaptureMetadataInput, InspectionImage } from '@/app/types'
+import { buildCaptureRow } from '@/app/lib/capture/geometry'
 
 const BUCKET = 'inspection-images'
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
@@ -31,11 +32,24 @@ const prepareSchema = z
   })
   .strict()
 
+const captureSchema = z
+  .object({
+    lighting: z.enum(['direct_sun', 'diffuse', 'flash', 'low_light', 'unknown']),
+    surfaceState: z.enum(['dry', 'wet', 'efflorescence', 'debris', 'unknown']),
+    elementType: z.enum(['deck', 'wall', 'column', 'beam', 'slab', 'pavement', 'foundation', 'other']),
+    distanceMm: z.number().positive().max(100_000).nullish(),
+    gsdMmPerPx: z.number().positive().max(100).nullish(),
+    scaleSource: z.enum(['printed_reference', 'manual_gsd', 'unknown']).optional(),
+    referenceTargetId: z.string().uuid().nullish(),
+  })
+  .strict()
+
 const finalizeSchema = z
   .object({
     inspectionId: z.string().uuid(),
     storagePath: z.string().min(1).max(500),
     caption: z.string().trim().max(200).optional(),
+    capture: captureSchema.optional(),
   })
   .strict()
 
@@ -169,6 +183,16 @@ export async function finalizeInspectionImageUpload(input: unknown): Promise<Ins
     throw new Error('Could not finalise the upload. Please retry.')
   }
 
+  // The re-encode may have downscaled the image, so its stored dimensions —
+  // not the source ones — are what GSD and annotation coordinates describe.
+  const storedMetadata = await sharp(normalized).metadata()
+  const captureRow = buildCaptureRow({
+    metadata,
+    storedWidth: storedMetadata.width ?? metadata.width ?? 0,
+    storedHeight: storedMetadata.height ?? metadata.height ?? 0,
+    capture: (parsed.data.capture as CaptureMetadataInput | undefined) ?? null,
+  })
+
   const { data: imageRecord, error: insertError } = await supabase
     .from('inspection_images')
     .insert({
@@ -176,6 +200,7 @@ export async function finalizeInspectionImageUpload(input: unknown): Promise<Ins
       storage_path: storagePath,
       caption: caption || 'Site photo',
       uploader_id: userId,
+      ...captureRow,
     })
     .select()
     .single()

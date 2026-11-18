@@ -193,7 +193,24 @@ export interface InspectionImage {
   uploader_name?: string
   uploaded_at: string
   signed_url?: string | null
+  annotation_suggested_at?: string | null
   comment_count?: number
+  // Capture metadata (migration 023). Null means "not recorded", never a default.
+  source_width_px?: number | null
+  source_height_px?: number | null
+  width_px?: number | null
+  height_px?: number | null
+  captured_at?: string | null
+  distance_mm?: number | null
+  gsd_mm_per_px?: number | null
+  scale_source?: ScaleSource | null
+  lighting?: LightingCondition | null
+  surface_state?: SurfaceState | null
+  element_type?: ElementType | null
+  capture_method?: CaptureMethod | null
+  camera_model?: string | null
+  training_eligible: boolean
+  capture_notes?: string | null
 }
 
 export interface ImageComment {
@@ -242,6 +259,7 @@ export interface AIModel {
 }
 
 export interface AIDamageDetection {
+  is_rejected?: boolean
   id: string
   image_id: string
   model_id: string | null
@@ -266,6 +284,19 @@ export interface AIDamageDetection {
 }
 
 export interface AIAnalysisJob {
+  method?: 'heuristic' | 'gemini' | 'model'
+  /** Actual method, artifact digest and any fallback reason for this run. */
+  method_detail?: {
+    primary?: 'model' | 'heuristic'
+    flag?: 'on' | 'off' | 'blocked-production'
+    artifact_sha256?: string
+    crack_count?: number
+    other_count?: number
+    fallback_reason?: string
+    trained_latency_ms?: number
+    heuristic_latency_ms?: number
+    [key: string]: unknown
+  }
   id: string
   image_id: string
   model_id: string | null
@@ -589,7 +620,7 @@ export interface ReportLimitation {
 }
 
 // A6. Cost estimates
-export type CostProvenance = 'table' | 'gemini' | 'engineer'
+export type CostProvenance = 'table' | 'gemini' | 'engineer' | 'synthetic'
 
 export interface CostEstimate {
   id: string
@@ -622,7 +653,7 @@ export interface Recommendation {
   draft_text: string | null
   final_text: string | null
   status: RecommendationStatus
-  provenance: Exclude<DetectionProvenance, 'model' | 'synthetic' | 'legacy_synthetic'>
+  provenance: 'gemini' | 'heuristic' | 'engineer' | 'synthetic'
   signed_by: string | null
   signed_at: string | null
   created_at: string
@@ -653,3 +684,48 @@ export interface ShareToken {
   created_at: string
 }
 
+
+// Capture discipline and in-app annotation (migration 023)
+export interface Point { x: number; y: number }
+export type GeometryKind = 'polygon' | 'box' | 'none'
+export type AnnotationStatus = 'draft' | 'submitted' | 'approved' | 'rejected'
+export type AnnotationSource = 'manual' | 'heuristic' | 'gemini' | 'model'
+export type ScaleSource = 'printed_reference' | 'manual_gsd' | 'unknown'
+export type LightingCondition = 'direct_sun' | 'diffuse' | 'flash' | 'low_light' | 'unknown'
+export type SurfaceState = 'dry' | 'wet' | 'efflorescence' | 'debris' | 'unknown'
+export type ElementType = 'deck' | 'wall' | 'column' | 'beam' | 'slab' | 'pavement' | 'foundation' | 'other'
+export type CaptureMethod = 'upload' | 'ar_printed_reference' | 'ar_markerless'
+
+export interface CaptureMetadataInput {
+  lighting: LightingCondition
+  surfaceState: SurfaceState
+  elementType: ElementType
+  distanceMm?: number | null
+  gsdMmPerPx?: number | null
+  scaleSource?: ScaleSource
+  referenceTargetId?: string | null
+}
+
+export interface ImageAnnotation {
+  id: string
+  image_id: string
+  damage_type: DamageType
+  severity: SeverityLevel | null
+  severity_score: number | null
+  geometry_kind: GeometryKind
+  polygon: Point[] | null
+  bbox: BoundingBox | null
+  crack_width_mm: number | null
+  measured_width_px: number | null
+  mask_path: string | null
+  source: AnnotationSource
+  source_confidence: number | null
+  original_geometry: unknown
+  status: AnnotationStatus
+  notes: string
+  created_by: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
+}

@@ -6,6 +6,7 @@ import { analyzeCapturedFrame } from '@/app/actions/ai-frame'
 import { useARSessionContext } from './ar-session-manager'
 import { Button } from '@/components/ui/button'
 import type { ReferenceEvidence } from '@/app/lib/ar/capture-reference'
+import { gsdFromReference } from '@/app/lib/capture/geometry'
 import type { ARPose, DamageType, SeverityLevel } from '@/app/types'
 
 interface ARAnchorFormProps {
@@ -39,6 +40,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
   const [notes, setNotes] = useState('')
   const [snapshot, setSnapshot] = useState<string | null>(null)
   const [capturedPose, setCapturedPose] = useState<ARPose | null>(null)
+  const [capturedObservedWidthPx, setCapturedObservedWidthPx] = useState<number | null>(null)
   const [isScanningAI, setIsScanningAI] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
 
@@ -52,6 +54,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
     }
     setSnapshot(evidence.snapshotDataUrl)
     setCapturedPose(evidence.pose)
+    setCapturedObservedWidthPx(evidence.observedWidthPx)
     setScanError(null)
   }, [captureEvidence])
 
@@ -65,6 +68,7 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
     const frame = evidence.snapshotDataUrl
     setSnapshot(frame)
     setCapturedPose(evidence.pose)
+    setCapturedObservedWidthPx(evidence.observedWidthPx)
     setIsScanningAI(true)
 
     try {
@@ -104,6 +108,14 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
         throw new Error('The captured photo uses another target. Retake it for the visible reference.')
       }
       const evidence = snapshot || currentEvidence.snapshotDataUrl
+      // Metric scale only exists while the printed target is measurable.
+      // The uploaded photo may be an earlier capture, so its own reference
+      // span is what converts to millimetres.
+      const observedWidthPx = snapshot ? capturedObservedWidthPx : currentEvidence.observedWidthPx
+      const gsdMmPerPx =
+        freshPose.reference && observedWidthPx && observedWidthPx > 0
+          ? gsdFromReference(freshPose.reference.target.sizeMm, observedWidthPx)
+          : undefined
       await createAnchor.mutateAsync({
         sessionId,
         inspectionId,
@@ -113,10 +125,13 @@ export function ARAnchorForm({ sessionId, inspectionId, hitPose, captureEvidence
         severity,
         notes,
         snapshotDataUrl: evidence,
+        gsdMmPerPx,
+        scaleSource: freshPose.reference ? 'printed_reference' : 'unknown',
       })
 
       setSnapshot(null)
       setCapturedPose(null)
+      setCapturedObservedWidthPx(null)
       onSaved?.()
     } catch (err) {
       setScanError(err instanceof Error ? err.message : 'Could not save the anchor')

@@ -123,7 +123,9 @@ export function enhanceCrackContrast(imageData: Uint8ClampedArray | Uint8Array):
     if (luma > max) max = luma
   }
 
-  const range = Math.max(1, max - min)
+  // Avoid amplifying sensor noise on nearly uniform surfaces.
+  const range = max - min
+  if (range < 16) return new Uint8ClampedArray(imageData)
 
   for (let i = 0; i < imageData.length; i += 4) {
     for (let c = 0; c < 3; c++) {

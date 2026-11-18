@@ -3,7 +3,7 @@ import { DeepAnalysisButton } from './deep-analysis-button'
 import { ClipboardCheck } from 'lucide-react'
 
 import { useState } from 'react'
-import { useAIModels, useAIDetections, useAIAnalysisJobs, useProfile } from '@/app/lib/queries'
+import { useAIModels, useAIDetections, useAIAnalysisJobs, useProfile, useTrainedDetectorStatus } from '@/app/lib/queries'
 import { useRunAIAnalysis } from '@/app/lib/mutations'
 import { hasCapability } from '@/app/lib/role-utils'
 import { Button } from '@/components/ui/button'
@@ -17,9 +17,10 @@ interface AIAnalysisPanelProps {
 
 export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
   const { data: profile } = useProfile()
-  const { data: models, isLoading: modelsLoading } = useAIModels()
-  const { data: detections, isLoading: detectionsLoading } = useAIDetections(imageId)
-  const { data: jobs, isLoading: jobsLoading } = useAIAnalysisJobs(imageId)
+  const { data: models, isLoading: modelsLoading, isError: modelsError } = useAIModels()
+  const { data: detections, isLoading: detectionsLoading, isError: detectionsError } = useAIDetections(imageId)
+  const { data: jobs, isLoading: jobsLoading, isError: jobsError } = useAIAnalysisJobs(imageId)
+  const { data: trainedStatus } = useTrainedDetectorStatus()
   const runAnalysis = useRunAIAnalysis()
 
   const [selectedModelId, setSelectedModelId] = useState<string>('')
@@ -31,16 +32,23 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
     : models?.find((model) => model.is_active) ?? models?.[0]
 
   const latestJob = jobs?.[0]
-  const isRunning = latestJob?.status === 'running' || latestJob?.status === 'pending' || runAnalysis.isPending
+  // The status query can lag or fail; a completed job that names the trained
+  // method is direct evidence of what actually ran.
+  const trainedActive = Boolean(trainedStatus?.enabled) || latestJob?.method === 'model'
+  const isRunning = runAnalysis.isPending
+  const unfinished = latestJob?.status === 'running' || latestJob?.status === 'pending'
 
   const handleRun = () => {
     if (!activeModel) return
-    runAnalysis.mutate({ imageId, modelId: activeModel.id })
+    // With the trained detector enabled the method is chosen server-side; an
+    // explicit model id would pin the run to the heuristic instead.
+    runAnalysis.mutate({ imageId, modelId: trainedActive ? undefined : activeModel.id })
   }
 
   // Calculate aggregate damage score if detections exist
-  const damageScore = detections && detections.length > 0
-    ? computeFinalDamageScore(Math.max(...detections.map((d) => d.severity_score)), 1.2, 1.0, 1.0)
+  const screened = detections?.filter(d => !d.is_rejected && d.damage_type !== 'none' && d.provenance !== 'synthetic' && d.provenance !== 'legacy_synthetic')
+  const damageScore = screened && screened.length > 0
+    ? computeFinalDamageScore(Math.max(...screened.map((d) => d.severity_score)), 1.2, 1.0, 1.0)
     : null
 
   const riskLevel = damageScore !== null ? scoreToRiskLevel(damageScore) : null
@@ -54,25 +62,38 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
     )
   }
 
+  if (modelsError || detectionsError || jobsError) {
+    return <p role="alert" className="p-4 text-xs text-red-700">Could not load the image analysis. Refresh to try again.</p>
+  }
+
   return (
     <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-lg sm:rounded-lg border border-slate-200 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="text-xs font-bold text-slate-700">Visual Damage Review</h3>
-            {activeModel && (
+            {trainedActive ? (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">
+                Trained detector (ONNX)
+              </span>
+            ) : activeModel ? (
               <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
                 {activeModel.format === 'heuristic' || activeModel.format === 'mock'
                   ? 'Heuristic (non-ML)'
                   : activeModel.format}
               </span>
-            )}
+            ) : null}
             <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 tabular-nums">
-              {activeModel?.input_width || 640}×{activeModel?.input_height || 640}
+              {trainedActive ? 320 : activeModel?.input_width || 640}×
+              {trainedActive ? 320 : activeModel?.input_height || 640}
             </span>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            {activeModel ? `Active method: ${activeModel.name} (v${activeModel.version})` : 'No active AI models registered'}
+            {trainedActive
+              ? `Crack boxes: ${trainedStatus?.model ? `${trainedStatus.model.name} v${trainedStatus.model.version}` : 'project-trained detector'}. Corrosion and spalling: heuristic (non-ML).`
+              : activeModel
+                ? `Active method: ${activeModel.name} (v${activeModel.version})`
+                : 'No active AI models registered'}
           </p>
         </div>
         {isRunning ? (
@@ -80,7 +101,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
             <span className="text-xs font-bold text-blue-700">Inference Active</span>
           </div>
-        ) : latestJob?.completed_at ? (
+        ) : latestJob?.status === 'completed' && latestJob.completed_at ? (
           <div className="text-right">
             <span className="text-xs font-mono text-slate-500 font-medium">
               Completed {new Date(latestJob.completed_at).toLocaleTimeString()}
@@ -89,10 +110,13 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         ) : null}
       </div>
 
+      {unfinished && !isRunning && (
+        <p role="status" className="text-xs text-slate-600">The previous run has no recorded result. You can retry the analysis.</p>
+      )}
       {isRunning && (
         <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
           <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-primary animate-spin" aria-hidden="true" />
-          <span>Running heuristic analysis…</span>
+          <span>Running image analysis…</span>
         </div>
       )}
 
@@ -102,7 +126,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
         {canTriggerAI ? (
           <>
-            {models && models.length > 1 && (
+            {models && models.length > 1 && !trainedActive && (
               <div className="flex items-center gap-2">
                 <label className="text-xs font-bold text-slate-700">Model</label>
                 <select
@@ -160,6 +184,28 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         )}
       </div>
 
+      {latestJob?.status === 'completed' && (
+        <p className="text-xs text-slate-600 font-medium">
+          {latestJob.method === 'model'
+            ? `Trained detector: ${latestJob.method_detail?.crack_count ?? 0} crack box(es)`
+            : latestJob.method === 'gemini'
+              ? 'Gemini image analysis'
+              : `Heuristic: ${latestJob.method_detail?.other_count ?? detections?.length ?? 0} box(es)`}
+          {latestJob.method === 'model' && (latestJob.method_detail?.other_count ?? 0) > 0
+            ? ` · heuristic: ${latestJob.method_detail?.other_count} corrosion/spalling box(es)`
+            : ''}
+          {typeof latestJob.method_detail?.artifact_sha256 === 'string'
+            ? ` · artifact ${latestJob.method_detail.artifact_sha256.slice(0, 12)}…`
+            : ''}
+        </p>
+      )}
+      {latestJob?.status === 'completed' && latestJob.method_detail?.fallback_reason && (
+        <p className="text-xs font-bold text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-100">
+          Trained detector not used — {latestJob.method_detail.primary === 'heuristic' ? 'the full heuristic ran instead. ' : ''}
+          {latestJob.method_detail.fallback_reason}
+        </p>
+      )}
+
       {latestJob?.status === 'failed' && (
         <p className="text-xs font-bold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
           {latestJob.error_message || 'AI analysis inference failed'}
@@ -176,7 +222,7 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between border-t border-slate-200 pt-4">
             <span className="text-xs font-bold text-slate-700">
-              Identified Defects ({detections.length})
+              Findings for review ({detections.length})
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
               {detections.map((d) => (
@@ -189,8 +235,12 @@ export function AIAnalysisPanel({ imageId }: AIAnalysisPanelProps) {
       ) : (
         <div className="text-xs text-slate-500 font-medium border-t border-slate-200 pt-4">
           {latestJob?.status === 'completed'
-            ? 'No defect patterns detected in this image by the heuristic.'
-            : 'Not analyzed yet. Run analysis to inspect this image.'}
+            ? latestJob.method === 'model'
+              ? `The trained crack detector found no visible crack regions${(latestJob.method_detail?.other_count ?? 0) > 0 ? '; the heuristic proposed other defect types.' : ', and the heuristic proposed no other defect types.'}`
+              : latestJob.method === 'gemini'
+                ? 'Gemini reported no visible defect patterns.'
+                : 'The heuristic reported no visible defect patterns.'
+            : latestJob ? 'No findings are available for this image.' : 'Not analyzed yet. Run analysis to inspect this image.'}
         </div>
       )}
     </div>
